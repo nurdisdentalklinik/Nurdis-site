@@ -1,6 +1,8 @@
-const CACHE_NAME = "nurdis-v1";
+const CACHE_NAME = "nurdis-v2";
 const ASSETS = [
-  "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png",
+  "./index.html", "./app.js", "./manifest.json", "./icon-192.png", "./icon-512.png",
+  "./assets/doctor-photo.jpg", "./assets/clinic-hero.jpg", "./assets/whitening-before-after.jpg",
+  "./assets/treatment-process.jpg", "./assets/info-toothache.jpg",
   "./screenshot-1-home.png", "./screenshot-2-services.png", "./screenshot-3-booking.png"
 ];
 

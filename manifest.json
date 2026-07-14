@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Nur Diş & Dental Klinik",
   "short_name": "Nur Diş",
-  "description": "Nur Diş & Dental Klinik için randevu alma, hizmet ve ürün listesi, diş sağlığı bilgileri ve iletişim uygulaması.",
+  "description": "Nur Diş & Dental Klinik için randevu, hizmetler, mağaza, gülüş tasarımı ve diş sağlığı asistanı uygulaması.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -12,7 +12,7 @@
   "theme_color": "#0A5C52",
   "lang": "tr",
   "dir": "ltr",
-  "categories": ["health", "medical", "lifestyle"],
+  "categories": ["health", "medical", "lifestyle", "shopping"],
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
@@ -25,19 +25,11 @@
     { "src": "screenshot-3-booking.png", "sizes": "860x1864", "type": "image/png", "form_factor": "narrow", "label": "Randevu al" }
   ],
   "shortcuts": [
-    {
-      "name": "Randevu Al",
-      "short_name": "Randevu",
-      "description": "Hızlıca randevu oluştur",
-      "url": "./index.html#booking",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
-    },
-    {
-      "name": "İletişim",
-      "short_name": "İletişim",
-      "description": "Kliniğe ulaş",
-      "url": "./index.html#contact",
-      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
-    }
+    { "name": "Randevu Al", "short_name": "Randevu", "description": "Hızlıca randevu oluştur", "url": "./index.html#booking",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Mağaza", "short_name": "Mağaza", "description": "Ürünlere göz at", "url": "./index.html#store",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "İletişim", "short_name": "İletişim", "description": "Kliniğe ulaş", "url": "./index.html#contact",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }] }
   ]
 }
