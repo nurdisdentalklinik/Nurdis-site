@@ -119,6 +119,8 @@ window.fb = {
   setServiceVideo: (id, url) => setMapValue("service_videos", id, url),
   subscribeProductImages: (cb) => subscribeMap("product_images", cb),
   setProductImage: (id, url) => setMapValue("product_images", id, url),
+  subscribeDeviceVideos: (cb) => subscribeMap("device_videos", cb),
+  setDeviceVideo: (id, url) => setMapValue("device_videos", id, url),
 };
 
 window.dispatchEvent(new Event("fb-ready"));

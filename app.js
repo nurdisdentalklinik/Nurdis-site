@@ -9,27 +9,27 @@
 /* ---------------- VERİ ---------------- */
 
 const SERVICES = [
-  { id:"muayene", name:"Diş Muayenesi & Kontrol", price:"500 ₺", desc:"Genel ağız sağlığı kontrolü ve yönlendirme.", icon:"🩺", tone:"teal",
+  { id:"muayene", name:"Diş Muayenesi & Kontrol", price:"500 ₺", desc:"Genel ağız sağlığı kontrolü ve yönlendirme.", icon:"stethoscope", tone:"teal",
     info:"İlk muayenede ağız içi kontrol edilir, gerekiyorsa röntgen çekilir ve size özel tedavi planı çıkarılır.", before:null, after:null, video:null },
-  { id:"temizlik", name:"Diş Temizliği (Detertraj)", price:"900 ₺", desc:"Diş taşı ve leke temizliği, parlatma.", icon:"✨", tone:"teal",
+  { id:"temizlik", name:"Diş Temizliği (Detertraj)", price:"900 ₺", desc:"Diş taşı ve leke temizliği, parlatma.", icon:"sparkle", tone:"teal",
     info:"Ultrasonik cihazla diş taşları temizlenir, ardından parlatma işlemi yapılır. Ortalama 20-30 dakika sürer, ağrısızdır.", before:null, after:null, video:null },
-  { id:"dolgu", name:"Dolgu", price:"700–1.500 ₺", desc:"Estetik kompozit dolgu uygulamaları.", icon:"🧩", tone:"teal",
+  { id:"dolgu", name:"Dolgu", price:"700–1.500 ₺", desc:"Estetik kompozit dolgu uygulamaları.", icon:"tooth", tone:"teal",
     info:"Çürük temizlenir, diş rengiyle uyumlu kompozit malzeme ile doldurulur. Tek seansta tamamlanır.", before:null, after:"treatment-process.jpg", video:null },
-  { id:"kanal", name:"Kanal Tedavisi", price:"2.500–4.000 ₺", desc:"Ağrısız kanal tedavisi, tek/çok seans.", icon:"🌀", tone:"teal",
+  { id:"kanal", name:"Kanal Tedavisi", price:"2.500–4.000 ₺", desc:"Ağrısız kanal tedavisi, tek/çok seans.", icon:"spiral", tone:"teal",
     info:"Lokal anestezi ile ağrısız şekilde uygulanır. Diş içindeki iltihaplı doku temizlenir, kanallar doldurulur.", before:null, after:"treatment-process.jpg", video:"placeholder" },
-  { id:"cekim", name:"Diş Çekimi", price:"800–2.000 ₺", desc:"Basit ve cerrahi çekim işlemleri.", icon:"✂️", tone:"teal",
+  { id:"cekim", name:"Diş Çekimi", price:"800–2.000 ₺", desc:"Basit ve cerrahi çekim işlemleri.", icon:"extract", tone:"teal",
     info:"Lokal anestezi altında yapılır. Gömülü/yirmilik diş gibi zor vakalarda cerrahi yöntem uygulanabilir.", before:null, after:null, video:null },
-  { id:"beyazlatma", name:"Diş Beyazlatma", price:"3.000 ₺", desc:"Ofis tipi profesyonel beyazlatma.", icon:"☀️", tone:"teal",
+  { id:"beyazlatma", name:"Diş Beyazlatma", price:"3.000 ₺", desc:"Ofis tipi profesyonel beyazlatma.", icon:"sun", tone:"teal",
     info:"Diş minesine zarar vermeyen özel jel ve ışık sistemi ile 1 seansta belirgin fark elde edilir.", before:"whitening-before-after.jpg", after:null, video:null },
-  { id:"implant", name:"İmplant", price:"12.000–18.000 ₺", desc:"Tek dişten tam çeneye implant çözümleri.", icon:"⚓", tone:"teal",
+  { id:"implant", name:"İmplant", price:"12.000–18.000 ₺", desc:"Tek dişten tam çeneye implant çözümleri.", icon:"implant", tone:"teal",
     info:"Eksik diş kökünün yerine titanyum vida yerleştirilir, üzerine kalıcı diş yapılır. Süreç ortalama 3-6 ay sürer, ara dönemde geçici diş kullanılır.", before:null, after:null, video:"placeholder" },
-  { id:"zirkonyum", name:"Zirkonyum Kaplama", price:"4.500–7.000 ₺ / diş", desc:"Doğal görünümlü, dayanıklı diş kaplaması.", icon:"💎", tone:"blue",
+  { id:"zirkonyum", name:"Zirkonyum Kaplama", price:"4.500–7.000 ₺ / diş", desc:"Doğal görünümlü, dayanıklı diş kaplaması.", icon:"gem", tone:"blue",
     info:"Diş az miktarda küçültülür, ölçü alınır, zirkonyum kaplama üretilip yapıştırılır. Işığı doğal diş gibi yansıtır.", before:null, after:null, video:"placeholder" },
-  { id:"ortodonti", name:"Ortodonti (Tel Tedavisi)", price:"Muayene sonrası", desc:"Şeffaf plak ve metal braket seçenekleri.", icon:"⭕", tone:"blue",
+  { id:"ortodonti", name:"Ortodonti (Tel Tedavisi)", price:"Muayene sonrası", desc:"Şeffaf plak ve metal braket seçenekleri.", icon:"brace", tone:"blue",
     info:"Diş sıralaması ve kapanış bozukluklarını düzeltmek için tel veya şeffaf plak kullanılır. Süreç 6 ay - 2 yıl arasında değişir.", before:null, after:null, video:"placeholder" },
-  { id:"seffafplak", name:"Şeffaf Plak", price:"Muayene sonrası", desc:"Görünmez, çıkarılabilir diş düzeltme plakları.", icon:"◯", tone:"blue",
+  { id:"seffafplak", name:"Şeffaf Plak", price:"Muayene sonrası", desc:"Görünmez, çıkarılabilir diş düzeltme plakları.", icon:"tray", tone:"blue",
     info:"Şeffaf, çıkarılabilir plaklar ile fark edilmeden diş düzeltme yapılır. Günde 20-22 saat takılması önerilir.", before:null, after:null, video:null },
-  { id:"kopru", name:"Köprü", price:"4.000–9.000 ₺ / diş", desc:"Eksik dişler için sabit köprü protezi.", icon:"🔗", tone:"blue",
+  { id:"kopru", name:"Köprü", price:"4.000–9.000 ₺ / diş", desc:"Eksik dişler için sabit köprü protezi.", icon:"link", tone:"blue",
     info:"Eksik dişin iki yanındaki dişler destek alınarak köprü protezi yapılır, sabittir ve çıkarılmaz.", before:null, after:null, video:null },
 ];
 
@@ -41,17 +41,25 @@ const DOCTORS = [
 ];
 
 const DEVICES = [
-  { name:"CBCT (3 Boyutlu Görüntüleme)", desc:"Çene ve diş yapısını 3 boyutlu olarak görüntüleyen ileri teknoloji cihaz. İmplant planlamasında hassas ölçüm sağlar.", icon:"🩻" },
-  { name:"Ağız İçi 3D Tarayıcı", desc:"Ölçü almak için eski yöntemler yerine ağız içini dijital olarak tarar, hasta konforu artar.", icon:"📷" },
-  { name:"3D Yazıcı", desc:"Şeffaf plak ve model üretiminde kullanılan hassas üretim cihazı.", icon:"🖨️" },
-  { name:"Dijital Panoramik Röntgen", desc:"Düşük radyasyonla tüm ağız yapısının net görüntüsünü verir.", icon:"🦷" },
+  { id:"cbct", name:"CBCT (Konik Işınlı Bilgisayarlı Tomografi)", icon:"scan3d",
+    desc:"Çene ve diş yapısını 3 boyutlu olarak, milimetrik hassasiyetle görüntüler. Özellikle implant planlamasında sinir kanalı, kemik yoğunluğu ve yapının tam konumunu görmemizi sağlar — bu da işlemi çok daha öngörülebilir ve güvenli hale getirir." },
+  { id:"scanner", name:"Ağız İçi 3D Tarayıcı (İntraoral Scanner)", icon:"wand",
+    desc:"Klasik ölçü kaşığı ve ölçü maddesi yerine ağız içini birkaç dakikada dijital olarak tarar. Kusma hissi ya da rahatsızlık olmadan, çok daha konforlu ve hassas bir ölçü alma deneyimi sunar." },
+  { id:"printer3d", name:"3D Yazıcı", icon:"printer",
+    desc:"Şeffaf plak, cerrahi rehber ve geçici protez modellerini dijital tasarımdan doğrudan üretir. Bu sayede üretim süresi kısalır ve hassasiyet artar." },
+  { id:"panoramic", name:"Dijital Panoramik Röntgen", icon:"jaw",
+    desc:"Tüm ağız yapısını, çeneleri ve diş köklerini tek karede, klasik filme göre çok daha düşük radyasyon dozuyla görüntüler. Sonuç saniyeler içinde ekranda incelenebilir." },
+  { id:"scaler", name:"Diş Taşı Temizleme Ünitesi (Ultrasonik Scaler)", icon:"sparkle",
+    desc:"Diş taşı ve renklenmeleri diş minesine zarar vermeden, ultrasonik titreşimle nazikçe temizler." },
+  { id:"ledwhite", name:"LED Beyazlatma Sistemi", icon:"sun",
+    desc:"Özel jel ile birlikte kullanılan LED ışık sistemi, tek seansta belirgin ve güvenli bir beyazlatma sonucu sağlar." },
 ];
 
 const SMILE_STYLES = [
-  { id:"hollywood", name:"Hollywood Gülüşü", desc:"Parlak, maksimum beyazlık, simetrik kesim.", tint:"rgba(255,255,255,0.92)", glow:"rgba(255,255,255,0.35)" },
-  { id:"dogal", name:"Doğal Gülüş", desc:"Hafif fildişi tonu, doğal diş dokusu hissi.", tint:"rgba(250,244,225,0.55)", glow:"rgba(255,250,235,0.15)" },
-  { id:"zirkonyum", name:"Zirkonyum Estetik", desc:"Parlak yüzey, hafif mavi-beyaz yansıma.", tint:"rgba(235,248,255,0.85)", glow:"rgba(180,230,255,0.4)" },
-  { id:"plak", name:"Şeffaf Plak Önizleme", desc:"Diş sıralamasının nasıl düzeleceğine dair kaba önizleme.", tint:"rgba(255,255,255,0.5)", glow:"rgba(160,255,220,0.25)" },
+  { id:"hollywood", name:"Hollywood Gülüşü", desc:"Parlak, maksimum beyazlık, simetrik kesim.", icon:"sun", tint:"rgba(255,255,255,0.92)", glow:"rgba(255,255,255,0.35)" },
+  { id:"dogal", name:"Doğal Gülüş", desc:"Hafif fildişi tonu, doğal diş dokusu hissi.", icon:"tooth", tint:"rgba(250,244,225,0.55)", glow:"rgba(255,250,235,0.15)" },
+  { id:"zirkonyum", name:"Zirkonyum Estetik", desc:"Parlak yüzey, hafif mavi-beyaz yansıma.", icon:"gem", tint:"rgba(235,248,255,0.85)", glow:"rgba(180,230,255,0.4)" },
+  { id:"plak", name:"Şeffaf Plak Önizleme", desc:"Diş sıralamasının nasıl düzeleceğine dair kaba önizleme.", icon:"tray", tint:"rgba(255,255,255,0.5)", glow:"rgba(160,255,220,0.25)" },
 ];
 
 const PRODUCT_CATEGORIES = [
@@ -72,12 +80,26 @@ const PRODUCT_CATEGORIES = [
 ];
 
 const ARTICLES = [
-  { group:"Bebekler", title:"İlk diş ne zaman çıkar?", body:"Bebeklerde ilk süt dişi genellikle 6-10 ay arasında çıkar. Diş çıkarma döneminde huzursuzluk, hafif ateş ve salya artışı görülebilir. Diş eti kaşıyıcıları ve soğutulmuş (dondurulmamış) diş kaşıyıcı halkalar rahatlatabilir." },
-  { group:"Bebekler", title:"Biberon çürüğü nedir?", body:"Bebeğin geceleri şekerli sıvı (meyve suyu, şekerli süt) ile uyutulması ön dişlerde hızlı çürümeye yol açabilir. Gece emzirme/biberon sonrası nemli gazlı bezle diş etleri silinmelidir." },
-  { group:"Çocuklar", title:"Süt dişleri neden önemli?", body:"Süt dişleri sadece çiğneme için değil, çene gelişimi ve kalıcı dişlerin doğru yerden çıkması için de kritik rol oynar. Erken çekilen süt dişi kalıcı dişte sıralanma bozukluğuna yol açabilir." },
-  { group:"Çocuklar", title:"Çocuklarda fırçalama eğitimi", body:"6 yaşına kadar fırçalamayı bir yetişkin yapmalı veya kontrol etmelidir. Bezelye tanesi kadar florürlü macun kullanımı bu yaştan itibaren güvenlidir." },
-  { group:"Yetişkinler", title:"Diş eti hastalıkları", body:"Diş eti kanaması, kızarıklık ve kötü ağız kokusu diş eti iltihabının (gingivitis) erken belirtileridir. Tedavi edilmezse periodontitise, sonrasında diş kaybına yol açabilir." },
-  { group:"Yetişkinler", title:"Diş beyazlatma güvenli mi?", body:"Diş hekimi kontrolünde yapılan profesyonel beyazlatma güvenlidir. Minede kalıcı hasar bırakmaz, ancak hamilelikte ve aşırı hassasiyet durumunda ertelenmesi önerilir." },
+  { group:"Bebekler", title:"İlk diş ne zaman çıkar?", body:"İlk süt dişi genellikle 6 ay civarında çıkar, ancak 3-14 ay arasında çıkması normal kabul edilir. Genellikle önce alt ön kesici dişler görünür. 18 ayda hiç diş çıkmadıysa çocuk diş hekimine danışılması önerilir." },
+  { group:"Bebekler", title:"Diş çıkarma belirtileri nelerdir?", body:"Huzursuzluk, diş eti hassasiyeti, salya artışı ve hafif sıcaklık artışı diş çıkarmayla ilişkilendirilebilir. Ancak yüksek ateş, kızarıklık, ishal gibi belirtiler diş çıkarmayla açıklanamaz ve çocuk doktoruna danışılmalıdır." },
+  { group:"Bebekler", title:"Diş çıkarma sırasında rahatlatma", body:"Temiz, soğutulmuş (dondurulmamış) bir diş kaşıyıcı, temiz bir parmakla nazik masaj ya da soğuk bir kaşık diş etindeki rahatsızlığı hafifletebilir. Sıvı içerikli ya da kolay kırılabilen plastik kaşıyıcılardan kaçınılmalıdır." },
+  { group:"Bebekler", title:"Biberon çürüğü nedir?", body:"Bebeğin gece boyu şekerli sıvı (meyve suyu, şekerli süt) ile emzirilmesi ya da biberonla uyutulması, özellikle üst ön dişlerde hızlı ve yaygın çürümeye yol açabilir. Gece biberonuna sadece su konması önerilir." },
+  { group:"Bebekler", title:"Bebeğin ağız bakımına ne zaman başlanmalı?", body:"İlk diş çıkmadan önce bile, her beslenme sonrası diş etleri temiz ve nemli bir gazlı bezle nazikçe silinebilir. İlk diş çıkar çıkmaz, macun kullanmadan parmak fırça ile fırçalamaya başlanabilir." },
+  { group:"Bebekler", title:"İlk diş hekimi ziyareti ne zaman olmalı?", body:"Dünya Sağlık Örgütü ve birçok pedodonti uzmanı, ilk diş hekimi ziyaretinin ilk diş çıktıktan sonra, en geç 1 yaşına kadar yapılmasını önerir. Bu ziyaret erken teşhis ve ebeveynlere beslenme/bakım rehberliği açısından önemlidir." },
+  { group:"Çocuklar", title:"Süt dişleri neden önemli?", body:"Süt dişleri yalnızca çiğneme için değil, çene ve yüz gelişimi, konuşma becerisi ve kalıcı dişlerin doğru yerden çıkması için de kritik rol oynar. Erken kaybedilen bir süt dişi, kalıcı dişte sıralanma bozukluğuna yol açabilir." },
+  { group:"Çocuklar", title:"Çocuklarda fırçalama eğitimi", body:"5-6 yaşına kadar fırçalamayı bir yetişkin yapmalı ya da yakından kontrol etmelidir. 3 yaşına kadar bezelye tanesi büyüklüğünde florürsüz, sonrasında florürlü diş macunu kullanımı önerilir." },
+  { group:"Çocuklar", title:"Süt dişleri ne zaman dökülmeye başlar?", body:"Süt dişleri genellikle 5,5-6 yaş civarında dökülmeye başlar ve bu süreç yaklaşık 11-12 yaşına kadar sürer. Toplam 20 süt dişinin yerini kalıcı dişler alır." },
+  { group:"Çocuklar", title:"Fissür örtücü (çukur dolgu) nedir?", body:"Azı dişlerinin çiğneme yüzeyindeki derin çukur ve oyuklara uygulanan koruyucu bir tabakadır. Diş dokusu kesilmeden, ağrısız şekilde yapılır ve çürük oluşumunu önemli ölçüde azaltır." },
+  { group:"Çocuklar", title:"Çocuğumun diş hekimi korkusu var, ne yapmalıyım?", body:"Ziyaret öncesi sakinleştirici, basit bir dille anlatım yapılması, 'iğne' gibi korkutucu kelimelerden kaçınılması ve geçmişteki kötü deneyimlerin çocuğun yanında konuşulmaması önerilir. Çocuğa özel (pedodonti) yaklaşım süreci çok kolaylaştırır." },
+  { group:"Çocuklar", title:"Diş çürüğü bulaşıcı mıdır?", body:"Çürüğe neden olan bakteriler, özellikle bakım veren kişilerin (anne, yakın çevre) tükürüğü yoluyla bebeğe geçebilir. Kaşığı ortak kullanmamak, emziği ağza alıp temizlememek gibi basit önlemler bulaşmayı azaltır." },
+  { group:"Yetişkinler", title:"Diş eti iltihabı (gingivitis) nedir?", body:"Diş eti hastalığının ilk ve geri döndürülebilir evresidir. Diş etlerinde kızarıklık, şişlik ve fırçalarken kanama görülür. Düzenli fırçalama, diş ipi ve profesyonel temizlikle tamamen iyileşebilir." },
+  { group:"Yetişkinler", title:"Periodontitis (ileri diş eti hastalığı) nedir?", body:"Tedavi edilmeyen gingivitis, dişleri destekleyen kemik ve dokularda geri dönüşü zor hasara yol açan periodontitise ilerleyebilir. Erişkinlerde diş kaybının en sık nedenlerinden biridir; erken teşhis çok önemlidir." },
+  { group:"Yetişkinler", title:"Diş eti çekilmesini önlemek", body:"Düzenli 6 aylık kontroller, doğru teknikle ve çok sert olmayan kıllı fırça kullanımı, düzenli profesyonel diş taşı temizliği diş eti çekilmesi riskini azaltır." },
+  { group:"Yetişkinler", title:"Diş beyazlatma güvenli mi?", body:"Diş hekimi kontrolünde yapılan profesyonel beyazlatma, mineye kalıcı hasar vermeden güvenli şekilde uygulanır. Hamilelikte, emzirme döneminde ve aşırı hassasiyet durumunda ertelenmesi önerilir." },
+  { group:"Yetişkinler", title:"Sigara ağız sağlığını nasıl etkiler?", body:"Sigara ve tütün ürünleri periodontal hastalık riskini belirgin şekilde artırır, iyileşmeyi yavaşlatır ve implant başarısızlığı riskini yükseltir. Bırakmak diş eti sağlığı için en etkili adımlardan biridir." },
+  { group:"Yetişkinler", title:"Diş eti sağlığı ile genel sağlık ilişkisi", body:"Bilimsel çalışmalar, ağızdaki kronik iltihabın vücudun başka bölgelerini de etkileyebileceğini, örneğin periodontal hastalığın kalp-damar sağlığı riskiyle ilişkili olabileceğini göstermektedir. Bu da düzenli diş eti bakımını genel sağlık için önemli kılar." },
+  { group:"Yetişkinler", title:"Elektrikli fırça mı, manuel fırça mı?", body:"Çalışmalar, elektrikli diş fırçalarının plak temizliğinde manuel fırçalara göre klinik olarak daha etkili olabildiğini gösteriyor. Ancak doğru teknikle kullanılan manuel fırça da yeterli temizliği sağlayabilir." },
+  { group:"Yetişkinler", title:"Beslenme ve diş eti sağlığı", body:"Şeker ve rafine karbonhidratı sınırlamak, kalsiyum ve magnezyum açısından zengin besinler (süt ürünleri, badem, yeşil yapraklılar) ve omega-3 tüketmek diş eti iltihabına karşı koruyucu olabilir." },
 ];
 
 const MYTHS = [
@@ -91,27 +113,65 @@ const MYTHS = [
 const TIME_SLOTS = ["09:00","10:00","11:00","12:00","14:00","15:00","16:00","17:00"];
 
 const NAV_TABS = [
-  { id:"home", label:"Ana Sayfa", icon:"🏠" },
-  { id:"services", label:"Hizmetler", icon:"✨" },
-  { id:"booking", label:"Randevu", icon:"📅" },
-  { id:"chatbot", label:"Sohbet", icon:"💬" },
-  { id:"more", label:"Diğer", icon:"⋯" },
+  { id:"home", label:"Ana Sayfa", icon:"home" },
+  { id:"services", label:"Hizmetler", icon:"sparkle" },
+  { id:"booking", label:"Randevu", icon:"calendar" },
+  { id:"chatbot", label:"Sohbet", icon:"chat" },
+  { id:"more", label:"Diğer", icon:"dots" },
 ];
 
 const MORE_ITEMS = [
-  { id:"account", label:"Hesabım", icon:"👋" },
-  { id:"doctors", label:"Doktorlarımız", icon:"👤" },
-  { id:"devices", label:"Cihazlarımız", icon:"🖥️" },
-  { id:"smile", label:"Gülüşünü Tasarla", icon:"😁" },
-  { id:"reviews", label:"Referanslar", icon:"⭐" },
-  { id:"store", label:"Mağaza", icon:"📦" },
-  { id:"address", label:"Adresimiz", icon:"📍" },
-  { id:"contact", label:"İletişim", icon:"✉️" },
-  { id:"info", label:"Diş Sağlığı Bilgileri", icon:"📘" },
-  { id:"admin-login", label:"Yönetici Girişi", icon:"🔒" },
+  { id:"account", label:"Hesabım", icon:"login" },
+  { id:"doctors", label:"Doktorlarımız", icon:"user" },
+  { id:"devices", label:"Cihazlarımız", icon:"monitor" },
+  { id:"smile", label:"Gülüşünü Tasarla", icon:"smile" },
+  { id:"reviews", label:"Referanslar", icon:"star" },
+  { id:"store", label:"Mağaza", icon:"box" },
+  { id:"address", label:"Adresimiz", icon:"pin" },
+  { id:"contact", label:"İletişim", icon:"mail" },
+  { id:"info", label:"Diş Sağlığı Bilgileri", icon:"book" },
+  { id:"admin-login", label:"Yönetici Girişi", icon:"lock" },
 ];
 
 /* Basit chatbot bilgi tabanı (kural bazlı, gerçek LLM değil — bkz. yorum en altta) */
+/* ---------------- ÖZEL ÇİZİLMİŞ İKON KÜTÜPHANESİ ----------------
+   Hepsi orijinal, elle çizilmiş SVG path'leri — hiçbir dış ikon
+   setinden veya görselden kopyalanmadı, telif riski yoktur. */
+const ICONS = {
+  home: '<path d="M4 11.5 12 4l8 7.5" /><path d="M6 10v9a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1v-9" />',
+  sparkle: '<path d="M12 3l1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6z" />',
+  calendar: '<rect x="4" y="5.5" width="16" height="14" rx="2"/><path d="M4 10h16M8 3.5v3M16 3.5v3"/>',
+  chat: '<path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7A2.5 2.5 0 0 1 17.5 16H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5z"/>',
+  dots: '<circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/>',
+  user: '<circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.2-6 7-6s7 2.4 7 6"/>',
+  monitor: '<rect x="3.5" y="5" width="17" height="12" rx="1.6"/><path d="M9 20h6M12 17v3"/>',
+  smile: '<circle cx="12" cy="12" r="8"/><path d="M8.5 13.5c1 1.6 2.2 2.4 3.5 2.4s2.5-.8 3.5-2.4"/><circle cx="9" cy="10" r=".9" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r=".9" fill="currentColor" stroke="none"/>',
+  star: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z"/>',
+  box: '<path d="M12 3.5 20 8v8l-8 4.5L4 16V8z"/><path d="M4 8l8 4.5L20 8M12 12.5V21"/>',
+  pin: '<path d="M12 21s-6.5-6-6.5-11A6.5 6.5 0 0 1 18.5 10c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+  mail: '<rect x="3.5" y="5.5" width="17" height="13" rx="1.8"/><path d="M4 6.5l8 6.5 8-6.5"/>',
+  book: '<path d="M4 5.5c2.4-1 5-1 7 .3v13c-2-1.3-4.6-1.3-7-.3z"/><path d="M20 5.5c-2.4-1-5-1-7 .3v13c2-1.3 4.6-1.3 7-.3z"/>',
+  lock: '<rect x="5" y="10.5" width="14" height="9.5" rx="1.8"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
+  login: '<path d="M11 4H6.5A1.5 1.5 0 0 0 5 5.5v13A1.5 1.5 0 0 0 6.5 20H11"/><path d="M14 8l4 4-4 4M18 12H9"/>',
+  stethoscope: '<path d="M7 4v5a4 4 0 0 0 8 0V4"/><path d="M11 13v2a5 5 0 0 0 10 0v-1.5"/><circle cx="21" cy="12.3" r="1.4"/><circle cx="7" cy="4" r="1.2"/><circle cx="11" cy="4" r="1.2"/>',
+  tooth: '<path d="M12 4c-2.4 0-4 1.3-5.4.4-1.4-1-3 .3-2.7 2.4.3 2 .9 3 1.3 5 .4 2 1 4 2.3 4 1.4 0 1.4-2.6 2.6-2.6s1.2 2.6 2.6 2.6c1.3 0 1.9-2 2.3-4 .4-2 1-3 1.3-5 .3-2.1-1.3-3.4-2.7-2.4C16 5.3 14.4 4 12 4z"/>',
+  spiral: '<path d="M12 20a3 3 0 1 1 0-6 5 5 0 1 1 0-10 7 7 0 1 1 0 14"/>',
+  extract: '<path d="M9 3v9c0 2.8 1.3 5 3 5s3-2.2 3-5V3"/><path d="M7 21l2.5-4M17 21l-2.5-4"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v3M12 18.5v3M4.5 12h-3M22.5 12h-3M6 6l-2-2M20 6l-2-2M6 18l-2 2M20 18l2 2"/>',
+  implant: '<path d="M8 3h8l-1 6H9z"/><path d="M9.5 9v3.5a2.5 2.5 0 0 0 5 0V9"/><path d="M11.2 12.5l-.6 7.5M12.8 12.5l.6 7.5"/>',
+  gem: '<path d="M5 9l3.5-5.5h7L19 9l-7 11.5z"/><path d="M5 9h14M8.5 3.5L9.5 9l2.5 11.5M15.5 3.5L14.5 9 12 20.5"/>',
+  brace: '<path d="M4 12h2l1.5-3L9 15l1.5-6L12 12h2l1.5-3L17 15l1.5-6h1.5"/>',
+  tray: '<path d="M4.5 9.5c0-2.5 3.4-4.5 7.5-4.5s7.5 2 7.5 4.5-3.4 4.5-7.5 4.5-7.5-2-7.5-4.5z"/><path d="M6 12v2.5c0 2 2.7 3.5 6 3.5s6-1.5 6-3.5V12"/>',
+  link: '<circle cx="7" cy="12" r="3.2"/><circle cx="17" cy="12" r="3.2"/><path d="M10 12h4"/>',
+  scan3d: '<circle cx="12" cy="12" r="7.5"/><path d="M4.5 12a7.5 3 0 0 0 15 0 7.5 3 0 0 0-15 0z"/><path d="M12 4.5v15"/>',
+  printer: '<rect x="5" y="9" width="14" height="7" rx="1.4"/><path d="M7.5 9V4.5h9V9M7.5 16v3.5h9V16"/>',
+  wand: '<path d="M5 19l9-9"/><path d="M15.5 3.5l1 2 2 1-2 1-1 2-1-2-2-1 2-1z"/><circle cx="6" cy="18" r="1.3"/>',
+  jaw: '<path d="M4 9c0 6 3.6 10 8 10s8-4 8-10"/><path d="M8 9v3M11 9v4M14 9v4M17 9v3"/>',
+};
+function icon(name, size=20) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]||''}</svg>`;
+}
+
 const CHATBOT_KB = [
   { keys:["ağrı","acıyor","acı","sızlıyor"], reply:"Diş ağrısı genelde çürük, iltihap ya da kırık dişten kaynaklanır. Ağrı kesici geçici rahatlatabilir ama kaynağı ortadan kaldırmaz — en kısa sürede muayene randevusu almanı öneririm, kliniğimizde aynı gün bakılabiliyoruz." },
   { keys:["fiyat","ücret","ne kadar","kaç para","pahalı","ucuz"], reply:"Fiyat tedaviye ve ağzının durumuna göre değişir, bu yüzden net rakamı ancak muayeneden sonra hekimimiz söyleyebilir. İlk muayene 500₺. İstersen hemen randevu oluşturayım mı?" },
@@ -125,7 +185,15 @@ const CHATBOT_KB = [
   { keys:["telefon","iletişim","numara"], reply:"Bize 0505 105 03 02 numarasından ulaşabilirsin, ya da İletişim sekmesinden mesaj bırakabilirsin." },
   { keys:["zirkonyum"], reply:"Zirkonyum kaplama doğal diş görünümüne çok yakın, dayanıklı ve estetik bir çözümdür. Gülüşünü Tasarla sekmesinden kamerayla nasıl görüneceğini önizleyebilirsin." },
   { keys:["şeffaf plak","plak","invisalign"], reply:"Şeffaf plaklar görünmez şekilde diş düzeltir, günde 20-22 saat takılması gerekir. Tel tedavisine göre daha konforlu bir alternatiftir." },
-  { keys:["merhaba","selam","iyi günler","günaydın"], reply:"Merhaba! Nur Diş & Dental Klinik asistanınızım. Diş ağrısı, tedavi fiyatları, randevu ya da merak ettiğin herhangi bir konuda sorabilirsin." },
+  { keys:["merhaba","selam","iyi günler","günaydın","hey","selamun"], reply:"Merhaba! Nur Diş & Dental Klinik asistanınızım. Diş ağrısı, tedavi fiyatları, randevu ya da merak ettiğin herhangi bir konuda sorabilirsin." },
+  { keys:["nasılsın","naber","ne haber","iyi misin"], reply:"Ben bir yazılımım, o yüzden günüm falan yok ama hazır ve nazırım 😊 Sen nasılsın, dişlerinle ilgili bir şey mi merak ediyorsun?" },
+  { keys:["iyiyim","ben de iyi","güzel","süper","harika"], reply:"Duymak güzel! Diş sağlığınla ilgili merak ettiğin bir şey varsa ya da randevu almak istersen buradayım." },
+  { keys:["adın ne","ismin ne","adin"], reply:"Benim özel bir adım yok, Nur Diş & Dental Klinik'in dijital asistanıyım. Bana istediğin şeyi sorabilirsin." },
+  { keys:["kaç yaşındasın","yaşın kaç"], reply:"Ben bir yapay zeka asistanıyım, yaşım yok 😄 Ama sana yardımcı olmak için buradayım." },
+  { keys:["görüşürüz","hoşça kal","bay bay","kapat"], reply:"Görüşmek üzere! İhtiyacın olursa yine buradayım. İyi günler 👋" },
+  { keys:["evet"], reply:"Harika, o zaman Randevu sekmesine geçip birkaç saniyede muayene randevunu oluşturabilirsin. Yardımcı olmamı ister misin?" },
+  { keys:["hayır","yok"], reply:"Tamam, sorun değil. Başka merak ettiğin bir şey olursa buradayım." },
+  { keys:["şaka","komik","güldürüyorsun"], reply:"😄 Diş hekimliğinde gülmek serbest, hatta önerilir! Başka bir konuda yardımcı olabilir miyim?" },
   { keys:["teşekkür","sağol","eyvallah"], reply:"Rica ederim! Başka bir sorun olursa buradayım. İyi günler dilerim 😊" },
   { keys:["hassasiyet","hassas diş","soğuk sıcak"], reply:"Sıcak-soğuğa hassasiyet genelde mine aşınması, diş eti çekilmesi ya da çürükten kaynaklanır. Hassasiyet macunları geçici rahatlatır ama nedeni bulup tedavi etmek kalıcı çözümdür — bir muayene ile netleştirebiliriz." },
   { keys:["diş eti","kanama","kanıyor"], reply:"Diş eti kanaması genelde diş eti iltihabının (gingivit) ilk belirtisidir. Erken fark edilirse detertraj (diş taşı temizliği) ile kolayca düzelir, ihmal edilirse periodontitise ilerleyebilir." },
@@ -186,6 +254,8 @@ let state = {
   orders: [],
   serviceVideos: {},   // { serviceId: youtubeUrl }
   productImages: {},   // { productId: imageUrl }
+  deviceVideos: {},    // { deviceId: youtubeUrl }
+  expandedDevice: null,
   expandedService: null,
   user: null,        // Firebase Google ile giriş yapan kullanıcı (null = giriş yapılmamış)
   fbReady: false,     // firebase-init.js yüklenip window.fb hazır olunca true olur
@@ -232,7 +302,7 @@ function topbar(title, subtitle, opts) {
     <div class="topbar">
       <div class="topbar-inner">
         ${backBtn}
-        <div class="logo-badge">🦷</div>
+        <img src="icon-192.png" class="logo-badge-img" alt="Nur Diş logo" />
         <div>
           <p class="eyebrow">Nur Diş &amp; Dental Klinik</p>
           <h1 class="title">${title}</h1>
@@ -254,14 +324,14 @@ function stars(n) {
 function renderHome() {
   const grid = MORE_ITEMS.map(i => `
     <button class="grid-item" data-action="goto" data-screen="${i.id}">
-      <span class="grid-icon">${i.icon}</span><span class="grid-label">${i.label}</span>
+      <span class="grid-icon">${icon(i.icon,22)}</span><span class="grid-label">${i.label}</span>
     </button>`).join("");
 
   return `
     <div class="topbar" style="background:none;padding:0;">
       <div class="hero" style="background-image:linear-gradient(160deg, rgba(10,92,82,.88), rgba(46,143,192,.82)), url('clinic-hero.jpg');">
         <div class="hero-inner">
-          <div class="logo-badge">🦷</div>
+          <img src="icon-192.png" class="logo-badge-img" alt="Nur Diş logo" />
           <p class="eyebrow">Nur Diş &amp; Dental Klinik</p>
           <h1 class="title" style="font-size:26px;">Gülümsemenin adresi</h1>
           <p class="subtitle">Mardin, Kızıltepe TOKİ'de güven veren bakım.</p>
@@ -272,7 +342,7 @@ function renderHome() {
     <div class="content">
       <div class="card p5 mb4" style="border-color:var(--cta);">
         <div class="row-start">
-          <div class="badge badge-teal">✨</div>
+          <div class="badge badge-teal">${icon("sparkle",20)}</div>
           <div>
             <p class="name" style="font-size:17px;">Hızlı randevu</p>
             <p class="desc">60 saniyede muayene randevusu oluştur, biz seni arayalım.</p>
@@ -296,7 +366,7 @@ function renderHome() {
       <div class="hscroll">
         ${SERVICES.slice(0,6).map(s => `
           <div class="mini-card" data-action="goto-service" data-id="${s.id}">
-            <div style="font-size:18px;">${s.icon}</div>
+            <div>${icon(s.icon,18)}</div>
             <p class="name">${s.name}</p>
           </div>`).join("")}
       </div>
@@ -339,7 +409,7 @@ function renderServices() {
     return `
     <div class="card p4 mb3">
       <div class="row" data-action="toggle-service" data-id="${s.id}" style="cursor:pointer;">
-        <div class="badge ${s.tone==='blue'?'badge-blue':'badge-teal'}">${s.icon}</div>
+        <div class="badge ${s.tone==='blue'?'badge-blue':'badge-teal'}">${icon(s.icon,20)}</div>
         <div style="flex:1;padding-right:8px;">
           <p class="name">${s.name}</p>
           <p class="desc">${s.desc}</p>
@@ -362,9 +432,9 @@ function renderDoctors() {
         <div>
           <p class="name" style="font-size:18px;">${d.name}</p>
           <p class="desc" style="color:var(--tealLight);font-weight:500;margin-top:2px;">${d.title}</p>
-          <p class="desc" style="margin-top:8px;">🎓 ${d.school}</p>
-          <p class="desc">🕐 ${d.experience}</p>
-          <p class="desc">🦷 ${d.focus}</p>
+          <p class="desc" style="margin-top:8px;">${d.school}</p>
+          <p class="desc">${d.experience}</p>
+          <p class="desc">${d.focus}</p>
         </div>
       </div>
     </div>`).join("");
@@ -374,20 +444,36 @@ function renderDoctors() {
 /* ---------------- CİHAZLARIMIZ ---------------- */
 
 function renderDevices() {
-  const cards = DEVICES.map(d => `
-    <div class="card p4 mb3 row">
-      <div class="badge badge-blue" style="font-size:22px;">${d.icon}</div>
-      <div><p class="name" style="font-size:15px;">${d.name}</p><p class="desc">${d.desc}</p></div>
-    </div>`).join("");
-  return `${topbar("Cihazlarımız","Son teknoloji, yapay zeka destekli görüntüleme ve üretim cihazları.", {back:"home"})}
-    <div class="content">${cards}<p class="footnote">Cihaz görselleri şu an ikon olarak gösteriliyor — gerçek cihaz fotoğraflarınızı gönderirseniz yerlerine yerleştiririm.</p></div>`;
+  const cards = DEVICES.map(d => {
+    const expanded = state.expandedDevice === d.id;
+    let detail = "";
+    if (expanded) {
+      const ytUrl = state.deviceVideos[d.id];
+      const embed = youtubeEmbedUrl(ytUrl);
+      detail = `<div class="service-detail">
+        ${embed
+          ? `<div class="video-box"><iframe src="${embed}" style="width:100%;aspect-ratio:16/9;border:none;border-radius:12px;" allowfullscreen loading="lazy"></iframe></div>`
+          : `<div class="video-box"><div class="video-placeholder">${icon("monitor",22)}<br/><span>Bu cihazın tanıtım videosu yakında eklenecek</span></div></div>`}
+      </div>`;
+    }
+    return `
+    <div class="card p4 mb3">
+      <div class="row" data-action="toggle-device" data-id="${d.id}" style="cursor:pointer;">
+        <div class="badge badge-blue">${icon(d.icon,22)}</div>
+        <div><p class="name" style="font-size:15px;">${d.name}</p><p class="desc">${d.desc}</p></div>
+      </div>
+      ${detail}
+    </div>`;
+  }).join("");
+  return `${topbar("Cihazlarımız","Son teknoloji, yapay zeka destekli görüntüleme ve üretim cihazları. Kartlara dokunarak tanıtım videosunu izleyebilirsin.", {back:"home"})}
+    <div class="content">${cards}</div>`;
 }
 
 /* ---------------- GÜLÜŞÜNÜ TASARLA (kamera + yüz takibi) ---------------- */
 
 function renderSmile() {
   const styleBtns = SMILE_STYLES.map(s => `
-    <button class="chip ${state.smileStyle===s.id?'chip-active':''}" data-action="pick-smile-style" data-id="${s.id}">${s.name}</button>`).join("");
+    <button class="chip ${state.smileStyle===s.id?'chip-active':''}" data-action="pick-smile-style" data-id="${s.id}">${icon(s.icon,15)} ${s.name}</button>`).join("");
   const activeDesc = SMILE_STYLES.find(s=>s.id===state.smileStyle)?.desc || "";
 
   return `${topbar("Gülüşünü Tasarla","Kameranı aç, gülümse ve farklı gülüş stillerini gerçek zamanlı önizle.", {back:"home"})}
@@ -402,7 +488,7 @@ function renderSmile() {
           <div id="smile-status" class="cam-status">Kamerayı başlatmak için butona bas</div>
         </div>
         <button class="btn-primary" data-action="toggle-camera" style="margin-top:12px;">
-          ${state.smileCameraOn ? "📷 Kamerayı Kapat" : "📷 Kamerayı Aç ve Gülüşünü Gör"}
+          ${state.smileCameraOn ? icon("monitor",16)+" Kamerayı Kapat" : icon("monitor",16)+" Kamerayı Aç ve Gülüşünü Gör"}
         </button>
       </div>
     </div>`;
@@ -427,7 +513,7 @@ function renderAccount() {
   return `${topbar("Hesabım","", {back:"home"})}
     <div class="content">
       <div class="card p4 mb4 row">
-        <div class="badge badge-teal">👤</div>
+        <div class="badge badge-teal">${icon("user",20)}</div>
         <div><p class="name" style="font-size:14px;">${escapeHtml(state.user.name || "")}</p><p class="desc">${escapeHtml(state.user.email || "")}</p></div>
       </div>
       <button class="btn-primary" style="background:var(--bad);" data-action="sign-out">Çıkış Yap</button>
@@ -487,7 +573,7 @@ function renderBooking() {
         <div class="field"><label>Ad Soyad</label><input class="input" id="f-name" placeholder="Adınız Soyadınız" value="${escapeAttr(f.name)}" /></div>
         <div class="field"><label>Telefon</label><input class="input" id="f-phone" placeholder="05xx xxx xx xx" value="${escapeAttr(f.phone)}" /></div>
         <button class="btn-primary" data-action="submit-booking" ${!canSubmit || state.bookingStatus==='saving' ? 'disabled':''}>
-          ${state.bookingStatus==='saving' ? 'Kaydediliyor…' : '📅 Randevuyu Onayla'}
+          ${state.bookingStatus==='saving' ? 'Kaydediliyor…' : icon('calendar',16)+' Randevuyu Onayla'}
         </button>
         ${statusHtml}
       </div>` : ""}
@@ -514,7 +600,7 @@ function renderStore() {
         const img = state.productImages[p.id];
         const thumb = img
           ? `<img src="${img}" style="width:52px;height:52px;border-radius:10px;object-fit:cover;flex-shrink:0;" />`
-          : `<div class="badge badge-blue" style="width:52px;height:52px;">📦</div>`;
+          : `<div class="badge badge-blue" style="width:52px;height:52px;">${icon("box",22)}</div>`;
         return `
         <div class="card p4 mb3 row" style="justify-content:space-between;">
           ${thumb}
@@ -571,7 +657,7 @@ function renderAddress() {
   const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" + encodeURIComponent(mapsUrl);
   return `${topbar("Adresimiz","Bizi haritada bulun veya QR kodu okutun.", {back:"home"})}
     <div class="content">
-      <div class="card p4 mb4 row"><div style="font-size:16px;">📍</div><p style="margin:0;font-size:14px;">Mardin, Kızıltepe, TOKİ Mahallesi</p></div>
+      <div class="card p4 mb4 row"><div>${icon("pin",18)}</div><p style="margin:0;font-size:14px;">Mardin, Kızıltepe, TOKİ Mahallesi</p></div>
       <div class="card p5 mb4" style="text-align:center;">
         <img src="${qrUrl}" alt="Konum QR kodu" style="width:200px;height:200px;margin:0 auto;display:block;border-radius:12px;" />
         <p class="footnote">QR kodu okutunca doğrudan harita konumumuz açılır.</p>
@@ -591,10 +677,10 @@ function renderContact() {
   return `${topbar("İletişim","Bize ulaş, ya da mesaj bırak.", {back:"home"})}
     <div class="content">
       <div class="mb5">
-        <div class="card p4 mb3 row"><div style="font-size:16px;">📍</div><p style="margin:0;font-size:14px;">Mardin, Kızıltepe, TOKİ</p></div>
-        <div class="card p4 mb3 row"><div style="font-size:16px;">📞</div><p style="margin:0;font-size:14px;">0505 105 03 02</p></div>
-        <div class="card p4 mb3 row"><div style="font-size:16px;">🕐</div><p style="margin:0;font-size:14px;">Hafta içi 09:00–18:00, Cumartesi 10:00–14:00</p></div>
-        <div class="card p4 row"><div style="font-size:16px;">👤</div><p style="margin:0;font-size:14px;">Dt. Ramazan DAĞ</p></div>
+        <div class="card p4 mb3 row"><div>${icon("pin",18)}</div><p style="margin:0;font-size:14px;">Mardin, Kızıltepe, TOKİ</p></div>
+        <div class="card p4 mb3 row"><div>${icon("mail",18)}</div><p style="margin:0;font-size:14px;">0505 105 03 02</p></div>
+        <div class="card p4 mb3 row"><div>${icon("calendar",18)}</div><p style="margin:0;font-size:14px;">Hafta içi 09:00–18:00, Cumartesi 10:00–14:00</p></div>
+        <div class="card p4 row"><div>${icon("user",18)}</div><p style="margin:0;font-size:14px;">Dt. Ramazan DAĞ</p></div>
       </div>
       <div class="card p5">
         <p class="name" style="font-size:17px;margin-bottom:12px;">Mesaj bırak</p>
@@ -602,7 +688,7 @@ function renderContact() {
         <div class="field"><label>Telefon (opsiyonel)</label><input class="input" id="c-phone" value="${escapeAttr(c.phone)}" /></div>
         <div class="field"><label>Mesajınız</label><textarea id="c-msg" placeholder="Sorunuzu yazın">${escapeHtml(c.msg)}</textarea></div>
         <button class="btn-primary" data-action="submit-contact" ${!canSubmit || state.contactStatus==='saving' ? 'disabled':''}>
-          ${state.contactStatus==='saving' ? 'Gönderiliyor…' : '💬 Mesajı Gönder'}
+          ${state.contactStatus==='saving' ? 'Gönderiliyor…' : icon('mail',16)+' Mesajı Gönder'}
         </button>
         ${statusHtml}
       </div>
@@ -701,6 +787,15 @@ function renderAdminPanel() {
       </div>
     </div>`).join("");
 
+  const deviceVideoRows = DEVICES.map(d => `
+    <div class="card p3 mb2">
+      <p class="desc" style="margin:0 0 6px;font-weight:500;color:var(--ink);">${d.name}</p>
+      <div style="display:flex;gap:6px;">
+        <input class="input" id="dvid-${d.id}" placeholder="YouTube linki" value="${escapeAttr(state.deviceVideos[d.id]||"")}" style="flex:1;" />
+        <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-device-video" data-id="${d.id}">Kaydet</button>
+      </div>
+    </div>`).join("");
+
   return `${topbar("Yönetici Paneli","Randevular ve ürün yönetimi.", {back:"home"})}
     <div class="content">
       <p class="section-label">Gelen randevular (canlı)</p>
@@ -719,6 +814,9 @@ function renderAdminPanel() {
       <p class="section-label">Hizmet tanıtım videoları</p>
       <p class="footnote" style="margin-top:-4px;">YouTube'a yüklediğin videonun linkini ilgili hizmetin yanına yapıştır.</p>
       <div class="mb4">${videoRows}</div>
+      <p class="section-label">Cihaz tanıtım videoları</p>
+      <p class="footnote" style="margin-top:-4px;">Cihazın nasıl çalıştığını gösteren YouTube videosunun linkini yapıştır.</p>
+      <div class="mb4">${deviceVideoRows}</div>
       <button class="linklike" data-action="admin-logout">Çıkış yap</button>
       <p class="footnote" style="margin-top:14px;">${state.fbReady ? "✓ Firebase'e bağlı — bu liste tüm cihazlarda anlık günceldir." : "⚠ Firebase bağlantısı bekleniyor, geçici olarak yalnızca bu cihazdaki veriler görünüyor."}</p>
     </div>`;
@@ -740,7 +838,7 @@ const SCREEN_MAP = {
 function renderNav() {
   return NAV_TABS.map(t => `
     <button class="navbtn ${state.screen===t.id || (t.id==='more' && state.moreOpen) ?'active':''}" data-action="${t.id==='more'?'toggle-more':'goto'}" data-screen="${t.id}">
-      <span class="icon">${t.icon}</span><span>${t.label}</span>
+      <span class="icon">${icon(t.icon,20)}</span><span>${t.label}</span>
     </button>`).join("");
 }
 
@@ -748,7 +846,7 @@ function renderMoreSheet() {
   if (!state.moreOpen) return "";
   const items = MORE_ITEMS.map(i => `
     <button class="grid-item" data-action="goto" data-screen="${i.id}">
-      <span class="grid-icon">${i.icon}</span><span class="grid-label">${i.label}</span>
+      <span class="grid-icon">${icon(i.icon,22)}</span><span class="grid-label">${i.label}</span>
     </button>`).join("");
   return `<div class="sheet-overlay" data-action="toggle-more">
     <div class="sheet">
@@ -862,6 +960,10 @@ document.addEventListener("click", (e) => {
   }
   if (action === "toggle-service") {
     state.expandedService = state.expandedService === el.dataset.id ? null : el.dataset.id;
+    render();
+  }
+  if (action === "toggle-device") {
+    state.expandedDevice = state.expandedDevice === el.dataset.id ? null : el.dataset.id;
     render();
   }
   if (action === "toggle-more") {
@@ -1005,6 +1107,12 @@ document.addEventListener("click", (e) => {
     if (!window.fb || !state.fbReady) { alert("Firebase bağlantısı hazır değil."); return; }
     window.fb.setProductImage(id, val).then(() => alert("Ürün görseli kaydedildi.")).catch(() => alert("Kaydedilemedi."));
   }
+  if (action === "save-device-video") {
+    const id = el.dataset.id;
+    const val = document.getElementById(`dvid-${id}`)?.value || "";
+    if (!window.fb || !state.fbReady) { alert("Firebase bağlantısı hazır değil."); return; }
+    window.fb.setDeviceVideo(id, val).then(() => alert("Cihaz videosu kaydedildi.")).catch(() => alert("Kaydedilemedi."));
+  }
 });
 
 /* ---------------- KAMERA + YÜZ TAKİBİ (Gülüşünü Tasarla) ----------------
@@ -1055,42 +1163,57 @@ async function startCamera() {
   const canvas = document.getElementById("smile-canvas");
   if (!video || !canvas) return;
 
-  if (statusEl) statusEl.textContent = "Yüz takibi modeli yükleniyor...";
-  const ok = await ensureFaceApi();
-  if (!state.smileCameraOn) return; // kullanıcı bu sırada kapattıysa
-  if (!ok) { if (statusEl) statusEl.textContent = "Yüz takibi başlatılamadı (internet bağlantısını kontrol edin)."; return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (statusEl) statusEl.textContent = "Bu tarayıcı kamera erişimini desteklemiyor.";
+    state.smileCameraOn = false; render(); return;
+  }
 
+  // ÖNEMLİ: kamera izni, kullanıcının tıklama anındaki "gesture" penceresi
+  // içinde istenmeli. Önce modeli yükleyip SONRA izin istersek, bu pencere
+  // kapanmış olabilir ve bazı tarayıcılar isteği sessizce reddeder. Bu yüzden
+  // kamerayı EN ÖNCE, hiç beklemeden istiyoruz.
+  if (statusEl) statusEl.textContent = "Kameraya erişim isteniyor...";
   try {
     smileStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
   } catch (err) {
-    if (statusEl) statusEl.textContent = "Kameraya erişilemedi. Lütfen izin verin.";
-    return;
+    if (statusEl) statusEl.textContent = "Kameraya erişilemedi — tarayıcı ayarlarından bu site için kamera iznini kontrol et.";
+    state.smileCameraOn = false; render(); return;
   }
+  if (!state.smileCameraOn) { smileStream.getTracks().forEach(t=>t.stop()); return; } // bu sırada kapatıldıysa
+
   video.srcObject = smileStream;
   video.style.display = "block";
+  await new Promise((resolve) => { video.onloadedmetadata = resolve; });
   await video.play();
   canvas.width = video.videoWidth || 480;
   canvas.height = video.videoHeight || 640;
-  if (statusEl) statusEl.textContent = "";
+
+  if (statusEl) statusEl.textContent = "Yüz takibi modeli yükleniyor...";
+  const ok = await ensureFaceApi();
+  if (!state.smileCameraOn) return;
+  if (!ok && statusEl) statusEl.textContent = "Yüz takibi modeli yüklenemedi (internet bağlantısını kontrol et) — kamera görüntüsü gösteriliyor ama gülüş efekti uygulanamıyor.";
+  else if (statusEl) statusEl.textContent = "";
 
   const ctx = canvas.getContext("2d");
   const loop = async () => {
     if (!state.smileCameraOn) return;
     try {
-      const det = await window.faceapi.detectSingleFace(video, new window.faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
       ctx.clearRect(0,0,canvas.width,canvas.height);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      if (det) {
-        const mouth = det.landmarks.getMouth(); // 20 nokta, dış+iç dudak
-        const style = SMILE_STYLES.find(s=>s.id===state.smileStyle) || SMILE_STYLES[0];
-        ctx.save();
-        ctx.beginPath();
-        mouth.slice(0,12).forEach((pt,i) => { i===0 ? ctx.moveTo(pt.x,pt.y) : ctx.lineTo(pt.x,pt.y); });
-        ctx.closePath();
-        ctx.fillStyle = style.tint;
-        ctx.shadowColor = style.glow; ctx.shadowBlur = 8;
-        ctx.fill();
-        ctx.restore();
+      if (ok && window.faceapi) {
+        const det = await window.faceapi.detectSingleFace(video, new window.faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
+        if (det) {
+          const mouth = det.landmarks.getMouth(); // 20 nokta, dış+iç dudak
+          const style = SMILE_STYLES.find(s=>s.id===state.smileStyle) || SMILE_STYLES[0];
+          ctx.save();
+          ctx.beginPath();
+          mouth.slice(0,12).forEach((pt,i) => { i===0 ? ctx.moveTo(pt.x,pt.y) : ctx.lineTo(pt.x,pt.y); });
+          ctx.closePath();
+          ctx.fillStyle = style.tint;
+          ctx.shadowColor = style.glow; ctx.shadowBlur = 8;
+          ctx.fill();
+          ctx.restore();
+        }
       }
     } catch (err) { /* kare atlanır */ }
     smileRAF = requestAnimationFrame(loop);
@@ -1126,6 +1249,7 @@ function wireFirebase() {
   unsubReviews = window.fb.subscribeReviews((items) => { state.reviews = items; render(); });
   unsubProducts = window.fb.subscribeProducts((items) => { state.customProducts = items; render(); });
   window.fb.subscribeServiceVideos((map) => { state.serviceVideos = map; render(); });
+  window.fb.subscribeDeviceVideos((map) => { state.deviceVideos = map; render(); });
   window.fb.subscribeProductImages((map) => { state.productImages = map; render(); });
 
   render();
