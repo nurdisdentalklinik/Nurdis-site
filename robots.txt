@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://nurdisdentalklinik.github.io/Nurdis-site/sitemap.xml
