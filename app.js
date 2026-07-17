@@ -34,10 +34,11 @@ const SERVICES = [
 ];
 
 const DOCTORS = [
-  { name:"Dt. Ramazan DAĞ", title:"Diş Hekimi — Klinik Sorumlusu", photo:"doctor-photo.jpg",
+  { id:"ramazan", name:"Dt. Ramazan DAĞ", title:"Diş Hekimi — Klinik Sorumlusu", photo:"doctor-photo.jpg",
     school:"Çukurova Üniversitesi Diş Hekimliği Fakültesi mezunu.",
     experience:"5 yıllık klinik deneyim.",
-    focus:"İlgi alanları: kanal tedavisi, estetik diş hekimliği (zirkonyum/şeffaf plak) ve implantoloji." },
+    focus:"İlgi alanları: kanal tedavisi, estetik diş hekimliği (zirkonyum/şeffaf plak) ve implantoloji.",
+    bio:"Mesleğe başladığı ilk günden bu yana hastalarının sadece dişlerini değil, kendilerini de rahat hissettikleri bir ortam yaratmayı önceliği haline getirdi. Kanal tedavisi ve implantoloji alanında kendini sürekli güncel tutuyor, her vakayı kendi vakasıymış gibi titizlikle planlıyor. \"Bir hastanın yıllardır sakladığı gülüşünü yeniden özgürce göstermesini izlemek\" diyor, mesleğinin en çok sevdiği anı için — bu yüzden estetik diş hekimliğine ayrı bir tutkuyla yaklaşıyor. Kliniğinde hijyen ve hasta konforunu en az tedavi başarısı kadar önemsiyor." },
 ];
 
 const DEVICES = [
@@ -108,6 +109,23 @@ const MYTHS = [
   { wrong:"Diş ağrısı geçtiyse sorun kalmamıştır.", right:"Ağrının kesilmesi bazen sinirin hasar gördüğü anlamına gelir, tedavi şarttır." },
   { wrong:"Süt dişleri önemli değildir, nasılsa dökülecek.", right:"Süt dişleri çene gelişimi ve kalıcı dişlerin konumu için kritik rol oynar." },
   { wrong:"Sert fırçalamak dişleri daha iyi temizler.", right:"Sert fırçalama diş eti çekilmesine ve mine aşınmasına yol açar." },
+  { wrong:"Diş beyazlatma dişlere zarar verir.", right:"Hekim kontrolünde yapılan profesyonel beyazlatma mineye kalıcı zarar vermez." },
+  { wrong:"Diş eti kanaması olduğunda fırçalamayı bırakmalıyım.", right:"Aksine, nazik ama düzenli fırçalamaya devam etmek iyileşmeyi hızlandırır." },
+  { wrong:"Diş ipi sadece büyük parçalar sıkıştığında gerekir.", right:"Diş ipi, fırçanın ulaşamadığı diş aralarındaki günlük plağı temizlemek için her gün kullanılmalıdır." },
+  { wrong:"Ağız kokusu her zaman ağız temizliğiyle ilgilidir.", right:"Bazen mide, sinüs ya da sistemik nedenlerden de kaynaklanabilir; geçmiyorsa muayene gerekir." },
+  { wrong:"Süt dişi çürüğü kalıcı dişi etkilemez.", right:"Tedavi edilmeyen süt dişi çürüğü altındaki kalıcı diş tomurcuğuna da zarar verebilir." },
+];
+
+/* ---------------- ŞİFALI BİTKİLER (yalnızca bilgi amaçlıdır) ----------------
+   Bu bölüm tıbbi tavsiye yerine geçmez; tedavi öneren bir kaynak DEĞİLDİR.
+   Sorumluluk kullanıcıya aittir, ciddi/uzun süren şikayetlerde mutlaka
+   diş hekimine başvurulmalıdır. */
+const HERBS = [
+  { name:"Karanfil (Karanfil Yağı)", helps:"Geçici diş ağrısı, ağız kokusu", how:"Bir-iki damla karanfil yağı temiz bir pamuğa damlatılıp ağrıyan bölgeye nazikçe dokundurulabilir.", amount:"Günde birkaç kez, az miktarda", caution:"Yutulmamalı, dişetine doğrudan ve fazla miktarda uygulanmamalıdır — tahriş yapabilir." },
+  { name:"Adaçayı", helps:"Ağız içi iltihap, boğaz ve diş eti rahatsızlığı", how:"Kaynar suda demlenip ılınmış adaçayı ile gargara yapılabilir.", amount:"Günde 2-3 kez gargara", caution:"Hamilelikte ve uzun süreli yüksek dozda kullanımdan kaçınılmalıdır." },
+  { name:"Tuzlu Su", helps:"Diş çekimi sonrası, hafif diş eti iltihabı", how:"Ilık suya bir tatlı kaşığı tuz karıştırılıp nazikçe gargara yapılır.", amount:"Günde 2-3 kez", caution:"Yutulmamalı, çekim sonrası ilk 24 saatte hekim talimatına uyulmalıdır." },
+  { name:"Nane", helps:"Ağız kokusu, ferahlık hissi", how:"Taze nane çiğnenebilir ya da nane çayı gargara olarak kullanılabilir.", amount:"Günde birkaç kez", caution:"Ciddi bir yan etkisi bilinmemektedir, ancak reflü hastalarında mide yakınmasını artırabilir." },
+  { name:"Papatya", helps:"Ağız içi tahriş, hafif iltihap, rahatlama", how:"Papatya çayı demlenip ılıtıldıktan sonra gargara yapılabilir ya da içilebilir.", amount:"Günde 2-3 kez", caution:"Papatyaya karşı alerjisi olanlar kullanmamalıdır." },
 ];
 
 const TIME_SLOTS = ["09:00","10:00","11:00","12:00","14:00","15:00","16:00","17:00"];
@@ -125,7 +143,7 @@ const MORE_ITEMS = [
   { id:"doctors", label:"Doktorlarımız", icon:"user" },
   { id:"devices", label:"Cihazlarımız", icon:"monitor" },
   { id:"smile", label:"Gülüşünü Tasarla", icon:"smile" },
-  { id:"reviews", label:"Referanslar", icon:"star" },
+  { id:"reviews", label:"Yorumlar", icon:"star" },
   { id:"store", label:"Mağaza", icon:"box" },
   { id:"address", label:"Adresimiz", icon:"pin" },
   { id:"contact", label:"İletişim", icon:"mail" },
@@ -173,29 +191,34 @@ function icon(name, size=20) {
 }
 
 const CHATBOT_KB = [
-  { keys:["ağrı","acıyor","acı","sızlıyor"], reply:"Diş ağrısı genelde çürük, iltihap ya da kırık dişten kaynaklanır. Ağrı kesici geçici rahatlatabilir ama kaynağı ortadan kaldırmaz — en kısa sürede muayene randevusu almanı öneririm, kliniğimizde aynı gün bakılabiliyoruz." },
-  { keys:["fiyat","ücret","ne kadar","kaç para","pahalı","ucuz"], reply:"Fiyat tedaviye ve ağzının durumuna göre değişir, bu yüzden net rakamı ancak muayeneden sonra hekimimiz söyleyebilir. İlk muayene 500₺. İstersen hemen randevu oluşturayım mı?" },
-  { keys:["implant"], reply:"İmplant, eksik diş kökü yerine yerleştirilen titanyum bir vida ve üzerine yapılan kalıcı diştir. Süreç genelde 3-6 ay sürer ama ara dönemde geçici diş kullanılır, günlük hayatını etkilemez. Dr. Ramazan DAĞ implant konusunda deneyimli, muayeneye gelip planını çıkarabiliriz." },
-  { keys:["kanal","kanal tedavisi"], reply:"Kanal tedavisi lokal anestezi ile tamamen ağrısız yapılır — çoğu hasta işlem sırasında hiçbir şey hissetmez. Diş içindeki iltihaplı doku temizlenip kanallar doldurulur. Merak etme, korkulacak bir şey yok." },
-  { keys:["beyazlatma","sarı diş","sararma"], reply:"Profesyonel diş beyazlatma diş hekimi kontrolünde tamamen güvenlidir, mineye zarar vermez. Tek seansta belirgin fark görülür. Hamilelikte önerilmez, aşırı hassasiyette hekim değerlendirmesi gerekir." },
-  { keys:["randevu","muayene"], reply:"Randevu sekmesinden 60 saniyede muayene randevusu oluşturabilirsin, biz seni arayıp teyit ederiz. Şimdi Randevu sekmesine geçmemi ister misin?" },
-  { keys:["çocuk","bebek","çocuğum"], reply:"Çocuklarda ilk diş hekimi ziyareti genelde ilk dişin çıkmasıyla ya da 1 yaş civarında önerilir. Kliniğimizde çocuklara özel, ürkütmeyen bir yaklaşımımız var. Bilgi sekmesinde çocuk diş sağlığı hakkında yazılarımız da var." },
+  { keys:["ağrı","acıyor","acı","sızlıyor"], reply:"Diş ağrısı genelde çürük, iltihap ya da kırık dişten kaynaklanır. Ağrı kesici geçici rahatlatabilir ama kaynağı ortadan kaldırmaz — en kısa sürede muayene randevusu almanı öneririm, kliniğimizde aynı gün bakılabiliyoruz.", goto:"booking" },
+  { keys:["sgk","sosyal güvenlik","anlaşmalı mı","devlet"], reply:"Şu an için SGK anlaşmamız bulunmuyor. Ama muayene ücretsiz, tedavi fiyatlarımız da makul seviyede tutuyoruz." },
+  { keys:["fiyat","ücret","ne kadar","kaç para","pahalı","ucuz"], reply:"Muayene tamamen ücretsizdir! Diğer tedavilerin fiyatı ağzının durumuna göre değişir, net rakamı muayeneden sonra hekimimiz söyler. İstersen hemen ücretsiz muayene randevusu oluşturayım mı?", goto:"booking" },
+  { keys:["implant"], reply:"İmplant, eksik diş kökü yerine yerleştirilen titanyum bir vida ve üzerine yapılan kalıcı diştir. Süreç genelde 3-6 ay sürer ama ara dönemde geçici diş kullanılır, günlük hayatını etkilemez. Dr. Ramazan DAĞ implant konusunda deneyimli, muayeneye gelip planını çıkarabiliriz.", goto:"services", expand:"implant" },
+  { keys:["kanal","kanal tedavisi"], reply:"Kanal tedavisi lokal anestezi ile tamamen ağrısız yapılır — çoğu hasta işlem sırasında hiçbir şey hissetmez. Diş içindeki iltihaplı doku temizlenip kanallar doldurulur. Merak etme, korkulacak bir şey yok.", goto:"services", expand:"kanal" },
+  { keys:["beyazlatma","sarı diş","sararma"], reply:"Profesyonel diş beyazlatma diş hekimi kontrolünde tamamen güvenlidir, mineye zarar vermez. Tek seansta belirgin fark görülür. Hamilelikte önerilmez, aşırı hassasiyette hekim değerlendirmesi gerekir.", goto:"services", expand:"beyazlatma" },
+  { keys:["dolgu"], reply:"Dolgu, çürük temizlendikten sonra diş rengiyle uyumlu kompozit malzeme ile boşluğun doldurulmasıdır. Tek seansta, ağrısız şekilde tamamlanır.", goto:"services", expand:"dolgu" },
+  { keys:["çekim","diş çekimi"], reply:"Diş çekimi lokal anestezi altında ağrısız şekilde yapılır. Gömülü ya da yirmilik diş gibi zor vakalarda cerrahi yöntem uygulanabilir.", goto:"services", expand:"cekim" },
+  { keys:["köprü","kopru"], reply:"Köprü, eksik dişin iki yanındaki dişler destek alınarak yapılan sabit bir protezdir, çıkarılmaz.", goto:"services", expand:"kopru" },
+  { keys:["randevu","muayene ol","görüşmek istiyorum"], reply:"Hemen Randevu sekmesine yönlendiriyorum, 60 saniyede ücretsiz muayene randevunu oluşturabilirsin.", goto:"booking" },
+  { keys:["çocuk","bebek","çocuğum"], reply:"Çocuklarda ilk diş hekimi ziyareti genelde ilk dişin çıkmasıyla ya da 1 yaş civarında önerilir. Kliniğimizde çocuklara özel, ürkütmeyen bir yaklaşımımız var. Bilgi sekmesinde çocuk diş sağlığı hakkında yazılarımız da var.", goto:"info" },
   { keys:["korku","korkuyorum","panik","kaygı"], reply:"Diş hekimi korkusu çok yaygın, yalnız değilsin. Kliniğimizde adım adım anlatarak, acele etmeden ilerliyoruz. İstersen önce sadece tanışma/muayene için gel, hiçbir işlem baskısı olmadan." },
-  { keys:["adres","nerede","konum"], reply:"Kliniğimiz Mardin, Kızıltepe, TOKİ'de. Adresimiz sekmesinden QR kodla harita konumuna direkt ulaşabilirsin." },
-  { keys:["telefon","iletişim","numara"], reply:"Bize 0505 105 03 02 numarasından ulaşabilirsin, ya da İletişim sekmesinden mesaj bırakabilirsin." },
-  { keys:["zirkonyum"], reply:"Zirkonyum kaplama doğal diş görünümüne çok yakın, dayanıklı ve estetik bir çözümdür. Gülüşünü Tasarla sekmesinden kamerayla nasıl görüneceğini önizleyebilirsin." },
-  { keys:["şeffaf plak","plak","invisalign"], reply:"Şeffaf plaklar görünmez şekilde diş düzeltir, günde 20-22 saat takılması gerekir. Tel tedavisine göre daha konforlu bir alternatiftir." },
-  { keys:["merhaba","selam","iyi günler","günaydın","hey","selamun"], reply:"Merhaba! Nur Diş & Dental Klinik asistanınızım. Diş ağrısı, tedavi fiyatları, randevu ya da merak ettiğin herhangi bir konuda sorabilirsin." },
+  { keys:["adres","nerede","konum"], reply:"Kliniğimiz Mardin, Kızıltepe, TOKİ'de. Adresimiz sekmesinden QR kodla harita konumuna direkt ulaşabilirsin.", goto:"address" },
+  { keys:["telefon","iletişim","numara"], reply:"Bize 0505 105 03 02 numarasından ulaşabilirsin, ya da İletişim sekmesinden mesaj bırakabilirsin.", goto:"contact" },
+  { keys:["zirkonyum"], reply:"Zirkonyum kaplama doğal diş görünümüne çok yakın, dayanıklı ve estetik bir çözümdür. Gülüşünü Tasarla sekmesinden kamerayla nasıl görüneceğini önizleyebilirsin.", goto:"services", expand:"zirkonyum" },
+  { keys:["şeffaf plak","plak","invisalign"], reply:"Şeffaf plaklar görünmez şekilde diş düzeltir, günde 20-22 saat takılması gerekir. Tel tedavisine göre daha konforlu bir alternatiftir.", goto:"services", expand:"seffafplak" },
+  { keys:["ortodonti","diş teli","tel tedavisi"], reply:"Ortodonti, diş sıralaması ve kapanış bozukluklarını düzeltir; tel ya da şeffaf plak ile uygulanabilir. Hem çocuk hem yetişkinlerde uygulanabilir, yaş sınırı yoktur.", goto:"services", expand:"ortodonti" },
+  { keys:["merhaba","selam","iyi günler","günaydın","hey","selamun"], reply:"Merhaba! Nur Diş & Dental Klinik asistanınızım. Diş ağrısı, tedaviler, randevu ya da merak ettiğin herhangi bir konuda sorabilirsin." },
   { keys:["nasılsın","naber","ne haber","iyi misin"], reply:"Ben bir yazılımım, o yüzden günüm falan yok ama hazır ve nazırım 😊 Sen nasılsın, dişlerinle ilgili bir şey mi merak ediyorsun?" },
   { keys:["iyiyim","ben de iyi","güzel","süper","harika"], reply:"Duymak güzel! Diş sağlığınla ilgili merak ettiğin bir şey varsa ya da randevu almak istersen buradayım." },
   { keys:["adın ne","ismin ne","adin"], reply:"Benim özel bir adım yok, Nur Diş & Dental Klinik'in dijital asistanıyım. Bana istediğin şeyi sorabilirsin." },
   { keys:["kaç yaşındasın","yaşın kaç"], reply:"Ben bir yapay zeka asistanıyım, yaşım yok 😄 Ama sana yardımcı olmak için buradayım." },
   { keys:["görüşürüz","hoşça kal","bay bay","kapat"], reply:"Görüşmek üzere! İhtiyacın olursa yine buradayım. İyi günler 👋" },
-  { keys:["evet"], reply:"Harika, o zaman Randevu sekmesine geçip birkaç saniyede muayene randevunu oluşturabilirsin. Yardımcı olmamı ister misin?" },
+  { keys:["evet"], reply:"Harika, o zaman seni Randevu sekmesine yönlendiriyorum.", goto:"booking" },
   { keys:["hayır","yok"], reply:"Tamam, sorun değil. Başka merak ettiğin bir şey olursa buradayım." },
   { keys:["şaka","komik","güldürüyorsun"], reply:"😄 Diş hekimliğinde gülmek serbest, hatta önerilir! Başka bir konuda yardımcı olabilir miyim?" },
   { keys:["teşekkür","sağol","eyvallah"], reply:"Rica ederim! Başka bir sorun olursa buradayım. İyi günler dilerim 😊" },
-  { keys:["hassasiyet","hassas diş","soğuk sıcak"], reply:"Sıcak-soğuğa hassasiyet genelde mine aşınması, diş eti çekilmesi ya da çürükten kaynaklanır. Hassasiyet macunları geçici rahatlatır ama nedeni bulup tedavi etmek kalıcı çözümdür — bir muayene ile netleştirebiliriz." },
+  { keys:["hassasiyet","hassas diş","soğuk sıcak"], reply:"Sıcak-soğuğa hassasiyet genelde mine aşınması, diş eti çekilmesi ya da çürükten kaynaklanır. Hassasiyet macunları geçici rahatlatır ama nedeni bulup tedavi etmek kalıcı çözümdür — bir muayene ile netleştirebiliriz.", goto:"booking" },
   { keys:["diş eti","kanama","kanıyor"], reply:"Diş eti kanaması genelde diş eti iltihabının (gingivit) ilk belirtisidir. Erken fark edilirse detertraj (diş taşı temizliği) ile kolayca düzelir, ihmal edilirse periodontitise ilerleyebilir." },
   { keys:["hamile","hamilelik","gebelik"], reply:"Hamilelikte diş eti daha hassas olabilir, rutin kontrol ve diş temizliği güvenlidir. Röntgen ve bazı tedaviler genelde 2. trimestıra ertelenir, hekimin doktorunla koordineli çalışır." },
   { keys:["şeker hastası","diyabet"], reply:"Diyabet diş eti hastalıklarına yatkınlığı artırır, bu yüzden diyabet hastalarında düzenli diş kontrolü daha da önemlidir. Muayenede şeker durumunu hekimimizle paylaşman yeterli." },
@@ -207,29 +230,41 @@ const CHATBOT_KB = [
   { keys:["aft","yara","mouth ulser"], reply:"Ağız içi aftlar genelde 1-2 haftada kendiliğinden iyileşir. Sık tekrarlıyorsa ya da 2 haftadan uzun sürüyorsa mutlaka kontrol ettirmelisin." },
   { keys:["diş ipi","flos","nasıl kullan"], reply:"Diş ipini dişler arasına nazikçe kaydırıp her dişin yan yüzeyini C harfi şeklinde sararak temizle. Günde en az 1 kez, tercihen gece fırçalamadan önce kullanmalısın." },
   { keys:["elektrikli fırça","manuel fırça"], reply:"Elektrikli fırçalar genelde daha tutarlı ve etkili temizlik sağlar, özellikle diş eti hastalığı olanlarda faydalıdır. Ama doğru teknikle kullanılan manuel fırça da yeterli olabilir." },
-  { keys:["kaplama","veneer","kron farkı"], reply:"Veneer (laminate) dişin sadece ön yüzeyine ince bir kaplama yapar, estetik odaklıdır. Kron (kaplama) ise dişi tüm çevresiyle sarar, daha çok kırık/çürük büyük dişlerde kullanılır." },
-  { keys:["kırıldı","düştü","kaza","acil"], reply:"Diş kırılması ya da düşmesi acil bir durumdur! Düşen dişi (kökünden tutmadan) süt ya da tükürükte saklayıp en kısa sürede kliniğe gel — ilk 30-60 dakika çok kritik. Hemen İletişim sekmesinden bize ulaş." },
+  { keys:["kaplama","veneer","kron farkı","laminate"], reply:"Veneer (laminate) dişin sadece ön yüzeyine ince bir kaplama yapar, estetik odaklıdır. Kron (kaplama) ise dişi tüm çevresiyle sarar, daha çok kırık/çürük büyük dişlerde kullanılır." },
+  { keys:["kırıldı","düştü","kaza","acil"], reply:"Diş kırılması ya da düşmesi acil bir durumdur! Düşen dişi (kökünden tutmadan) süt ya da tükürükte saklayıp en kısa sürede kliniğe gel — ilk 30-60 dakika çok kritik. Hemen İletişim sekmesinden bize ulaş.", goto:"contact" },
   { keys:["sedasyon","uyutarak","narkoz"], reply:"Aşırı korku ya da uzun işlemlerde sedasyon (bilinç açık ama rahatlamış hal) seçeneğimiz mevcut. Detaylarını muayenede konuşabiliriz." },
   { keys:["taksit","kredi kartı","ödeme planı"], reply:"Tedavi tutarına göre taksit seçeneklerimiz olabilir, detayları resepsiyonumuzdan ya da muayene sırasında öğrenebilirsin." },
   { keys:["çalışma saat","kaçta açık","ne zaman açık"], reply:"Hafta içi 09:00–18:00, Cumartesi 10:00–14:00 arası hizmet veriyoruz. Pazar günleri kapalıyız." },
-  { keys:["doktor","hekim","ramazan dağ","kim bakıyor"], reply:"Kliniğimizin sorumlu hekimi Dt. Ramazan DAĞ, Çukurova Üniversitesi mezunu ve 5 yıllık klinik deneyime sahip. Kanal tedavisi, estetik diş hekimliği ve implantoloji alanlarında uzmanlaşmış." },
+  { keys:["doktor","hekim","ramazan dağ","kim bakıyor"], reply:"Kliniğimizin sorumlu hekimi Dt. Ramazan DAĞ, Çukurova Üniversitesi mezunu ve 5 yıllık klinik deneyime sahip. Kanal tedavisi, estetik diş hekimliği ve implantoloji alanlarında uzmanlaşmış.", goto:"doctors" },
   { keys:["diyet","beslenme","şekerli"], reply:"Asitli ve şekerli yiyecek/içecekler diş minesini aşındırır. Ana öğünlerle sınırlı tüketim, sonrasında su ile ağzı çalkalamak dişlerini korur." },
   { keys:["röntgen","radyasyon","zararlı mı"], reply:"Dijital diş röntgenleri çok düşük dozda radyasyon içerir, günlük hayattaki doğal radyasyona kıyasla oldukça güvenlidir. Gerekli olmadıkça sık çekilmez." },
-  { keys:["ikinci görüş","başka doktor","emin değilim"], reply:"Elbette, kararını rahat verebilmen için ikinci bir görüş almak tamamen normal. İstersen önce ücretsiz bir ön değerlendirme için gel, detaylı bilgi verelim." },
+  { keys:["ikinci görüş","başka doktor","emin değilim"], reply:"Elbette, kararını rahat verebilmen için ikinci bir görüş almak tamamen normal. Muayenemiz zaten ücretsiz, önce bir gel görüşelim." },
   { keys:["diş çekimi sonrası","çekim sonrası ne yapmalı"], reply:"Çekim sonrası ilk 24 saat sıcak/sert yiyecekten kaçın, çekim bölgesine dilinle/fırçayla dokunma, hafif tuzlu suyla nazikçe çalkala ve doktorun verdiği ilaçları düzenli kullan." },
   { keys:["implant sonrası","implant bakım"], reply:"İmplant sonrası ilk günlerde yumuşak gıdalarla beslenmen, sigaradan uzak durman ve düzenli ağız bakımı yapman iyileşmeyi hızlandırır. Kontrol randevularını aksatmaman önemli." },
   { keys:["sarımsı diş eti","diş eti çekilmesi"], reply:"Diş eti çekilmesi sert fırçalama, diş taşı ya da diş gıcırdatmadan kaynaklanabilir. İlerlemesini durdurmak için erken muayene önemli." },
   { keys:["ne zaman gelmeliyim","6 ayda bir","kontrole ne zaman"], reply:"Sorun olmasa bile 6 ayda bir rutin kontrol öneriyoruz — birçok problem erken evrede hiç belirti vermez." },
-  { keys:["ürün","macun","fırça satıyor musunuz"], reply:"Evet, Mağaza sekmesinden çocuk ve yetişkin diş fırçası, macun, gargara, diş ipi ve beyazlatma kiti gibi ürünleri inceleyip sipariş verebilirsin." },
-  { keys:["gülüşünü tasarla","ar","kamera"], reply:"Gülüşünü Tasarla sekmesinde kameranı açarak farklı gülüş stillerini (Hollywood, doğal, zirkonyum vb.) gerçek zamanlı önizleyebilirsin." },
-  { keys:["yorum","referans","değerlendirme"], reply:"Referanslar sekmesinde diğer hastalarımızın deneyimlerini okuyabilir, Google ile giriş yapıp kendi yorumunu da bırakabilirsin." },
+  { keys:["ürün","macun","fırça satıyor musunuz"], reply:"Evet, Mağaza sekmesinden çocuk ve yetişkin diş fırçası, macun, gargara, diş ipi ve beyazlatma kiti gibi ürünleri inceleyip sipariş verebilirsin.", goto:"store" },
+  { keys:["gülüşünü tasarla","ar","kamera"], reply:"Gülüşünü Tasarla sekmesinde kameranı açarak farklı gülüş stillerini gerçek zamanlı önizleyebilirsin.", goto:"smile" },
+  { keys:["yorum","değerlendirme"], reply:"Yorumlar sekmesinde diğer hastalarımızın deneyimlerini okuyabilir, Google ile giriş yapıp kendi yorumunu da bırakabilirsin.", goto:"reviews" },
   { keys:["kim", "sen kimsin", "asistan mısın"], reply:"Ben Nur Diş & Dental Klinik'in dijital asistanıyım — diş sağlığı sorularını yanıtlar, kliniğimiz hakkında bilgi veririm ve istersen randevunu da hemen oluşturabilirim." },
+  { keys:["dental turizm","yurt dışı","yabancı hasta"], reply:"Yurt dışından gelen hastalarımız da oluyor. Tedavi planını ve süreci muayeneden sonra netleştirip sana özel bir program çıkarabiliriz." },
+  { keys:["engelli","özel gereksinim"], reply:"Engelli bireyler ve özel gereksinimli hastalarımız için sabırlı ve esnek bir yaklaşımımız var, ihtiyacına göre randevu süresini ayarlayabiliriz." },
+  { keys:["protez bakım","takma diş bakımı"], reply:"Protezler her gün fırçalanmalı, gece ağızda unutulmadan çıkarılıp temiz suda bekletilmeli. Uyumsuzluk hissedilirse kontrol ettirilmesi önerilir." },
+  { keys:["apse","şişlik","kist"], reply:"Diş kökünde apse ya da kist, tedavi edilmeyen bir çürük veya enfeksiyonun ilerlemesiyle oluşabilir. Şişlik, zonklama ağrısı varsa beklemeden gelmelisin.", goto:"booking" },
+  { keys:["süt dişi implant","süt dişine implant"], reply:"Süt dişlerine implant yapılmaz — çene gelişimi tamamlanmadan implant uygulanamaz. Süt dişi erken kaybedilirse boşluk koruyucu gibi farklı çözümler kullanılır." },
+  { keys:["ağız kuruluğu","tükürük azlığı"], reply:"Ağız kuruluğu bazı ilaçların yan etkisi olabilir ve çürük riskini artırır. Bol su tüketimi ve şekersiz sakız çiğnemek tükürük akışını destekleyebilir." },
+  { keys:["diş renklenmesi","kahve","çay lekesi"], reply:"Çay, kahve ve sigara diş yüzeyinde zamanla renklenmeye yol açar. Düzenli diş taşı temizliği ve gerekirse profesyonel beyazlatma bu görünümü düzeltir." },
+  { keys:["gargara","ağız koruyucu spor"], reply:"Spor yaparken diş travmasına karşı ağız koruyucu (mouthguard) kullanılması önerilir, özellikle temaslı sporlarda diş kırılmalarını önemli ölçüde azaltır." },
 ];
 const CHATBOT_FALLBACK = "Bu soruyu tam karşılayamadım ama elimden geleni yapayım: diş ağrısı, tedaviler (kanal, implant, beyazlatma, zirkonyum, şeffaf plak vb.), randevu, fiyatlandırma mantığı, çalışma saatlerimiz veya genel ağız bakımı hakkında sorabilirsin. İstersen bu konuyu doğrudan Dr. Ramazan DAĞ'a sormak için hemen randevu oluşturabilirim — ister misin?";
 
 /* ---------------- STATE ---------------- */
 
 let state = {
+  updateAvailable: false,
+  expandedDoctor: null,
+  lightboxPhoto: null,
+  infoTab: "Bebekler",
   screen: "home",
   moreOpen: false,
   appointments: [],
@@ -425,10 +460,12 @@ function renderServices() {
 /* ---------------- DOKTORLAR ---------------- */
 
 function renderDoctors() {
-  const cards = DOCTORS.map(d => `
+  const cards = DOCTORS.map(d => {
+    const expanded = state.expandedDoctor === d.id;
+    return `
     <div class="card p5 mb3">
-      <div class="row-start">
-        <img src="${d.photo}" class="avatar-lg" alt="${d.name}" />
+      <div class="row-start" data-action="toggle-doctor" data-id="${d.id}" style="cursor:pointer;">
+        <img src="${d.photo}" class="avatar-lg" alt="${d.name}" data-action="open-lightbox" data-src="${d.photo}" style="cursor:zoom-in;" />
         <div>
           <p class="name" style="font-size:18px;">${d.name}</p>
           <p class="desc" style="color:var(--tealLight);font-weight:500;margin-top:2px;">${d.title}</p>
@@ -437,7 +474,9 @@ function renderDoctors() {
           <p class="desc">${d.focus}</p>
         </div>
       </div>
-    </div>`).join("");
+      ${expanded ? `<div class="service-detail"><p class="desc">${d.bio}</p></div>` : `<button class="linklike" style="margin-top:10px;" data-action="toggle-doctor" data-id="${d.id}">Daha fazla oku →</button>`}
+    </div>`;
+  }).join("");
   return `${topbar("Doktorlarımız","Kliniğimizde görev yapan uzman hekimler.", {back:"home"})}<div class="content">${cards}</div>`;
 }
 
@@ -529,11 +568,15 @@ function renderReviews() {
         ${stars(rv.rating)}
       </div>
       <p class="desc" style="margin-top:6px;">${escapeHtml(rv.text)}</p>
+      ${rv.adminReply ? `<div style="margin-top:10px;padding:10px 12px;background:var(--bg);border-radius:10px;border-left:3px solid var(--tealLight);">
+        <p class="footnote" style="margin:0 0 3px;color:var(--tealLight);font-weight:600;">Nur Diş & Dental Klinik yanıtı</p>
+        <p class="desc" style="margin:0;">${escapeHtml(rv.adminReply)}</p>
+      </div>` : ""}
     </div>`).join("") : `<p class="footnote">Henüz yorum yok — ilk yorumu sen yapabilirsin!</p>`;
 
   const ratingBtns = [1,2,3,4,5].map(n => `<button class="star-btn ${r.rating===n?'star-active':''}" data-action="pick-rating" data-n="${n}">★</button>`).join("");
 
-  return `${topbar("Referanslar","Müşterilerimizin deneyimleri.", {back:"home"})}
+  return `${topbar("Yorumlar","Müşterilerimizin deneyimleri.", {back:"home"})}
     <div class="content">
       ${authGate("Yorum yapmak için Google ile giriş yapman gerekiyor.")}
       ${state.user ? `<div class="card p5 mb5">
@@ -698,31 +741,53 @@ function renderContact() {
 /* ---------------- BİLGİ ---------------- */
 
 function renderInfo() {
-  const groups = ["Bebekler","Çocuklar","Yetişkinler"];
-  const articleHtml = groups.map(g => `
-    <p class="section-label">${g}</p>
-    <div class="mb4">
-      ${ARTICLES.filter(a=>a.group===g).map(a => `
-        <div class="card p4 mb3">
-          <p class="name" style="font-size:14px;">${a.title}</p>
-          <p class="desc" style="margin-top:6px;">${a.body}</p>
-        </div>`).join("")}
-    </div>`).join("");
+  const tabs = [
+    { id:"Bebekler", label:"Bebekler" },
+    { id:"Çocuklar", label:"Çocuklar" },
+    { id:"Yetişkinler", label:"Yetişkinler" },
+    { id:"Yanlışlar", label:"Doğru Bilinen Yanlışlar" },
+    { id:"Bitkiler", label:"Şifalı Bitkiler" },
+  ];
+  const active = state.infoTab || "Bebekler";
 
-  const myths = MYTHS.map(m => `
-    <div class="card p4 mb3">
-      <div class="row-start mb3"><div class="myth-x">✕</div><p class="desc" style="margin:0;">${m.wrong}</p></div>
-      <div class="row-start"><div class="myth-check">✓</div><p class="name" style="font-size:14px;">${m.right}</p></div>
-    </div>`).join("");
+  const tabBtns = tabs.map(t => `
+    <button class="chip ${active===t.id?'chip-active':''}" data-action="set-info-tab" data-id="${t.id}">${t.label}</button>`).join("");
 
-  return `${topbar("Diş Sağlığı Bilgileri","Bebeklerden yetişkinlere, doğru bilinen yanlışlar dahil.", {back:"home"})}
-    <div class="content">
-      <div class="card p4 mb4" style="padding:0;overflow:hidden;">
-        <img src="info-toothache.jpg" style="width:100%;display:block;" alt="Diş ağrısı bilgi kartı" />
+  let body = "";
+  if (active === "Yanlışlar") {
+    body = MYTHS.map(m => `
+      <div class="card p4 mb3">
+        <div class="row-start mb3"><div class="myth-x">✕</div><p class="desc" style="margin:0;">${m.wrong}</p></div>
+        <div class="row-start"><div class="myth-check">✓</div><p class="name" style="font-size:14px;">${m.right}</p></div>
+      </div>`).join("");
+  } else if (active === "Bitkiler") {
+    body = `
+      <div class="card p4 mb4" style="background:#FFF8E8;border-color:#F0DFAF;">
+        <p class="desc" style="margin:0;color:#8A6D1D;">⚠️ Bu bölüm yalnızca genel bilgi amaçlıdır, tıbbi tavsiye ya da tedavi önerisi değildir. Sorumluluk kullanıcıya aittir. Şikayetin devam etmesi veya şiddetlenmesi durumunda mutlaka diş hekimine başvurunuz.</p>
       </div>
-      ${articleHtml}
-      <p class="section-label">Doğru bilinen yanlışlar</p>
-      ${myths}
+      ${HERBS.map(h => `
+        <div class="card p4 mb3">
+          <p class="name" style="font-size:14px;">${h.name}</p>
+          <p class="desc" style="margin-top:6px;"><b>Ne için iyi gelir:</b> ${h.helps}</p>
+          <p class="desc"><b>Nasıl kullanılır:</b> ${h.how}</p>
+          <p class="desc"><b>Miktar:</b> ${h.amount}</p>
+          <p class="desc" style="color:var(--bad);"><b>Dikkat:</b> ${h.caution}</p>
+        </div>`).join("")}`;
+  } else {
+    body = ARTICLES.filter(a=>a.group===active).map(a => `
+      <div class="card p4 mb3">
+        <p class="name" style="font-size:14px;">${a.title}</p>
+        <p class="desc" style="margin-top:6px;">${a.body}</p>
+      </div>`).join("");
+    if (active === "Bebekler") {
+      body = `<div class="card p4 mb4" style="padding:0;overflow:hidden;"><img src="info-toothache.jpg" style="width:100%;display:block;" alt="Diş ağrısı bilgi kartı" /></div>` + body;
+    }
+  }
+
+  return `${topbar("Diş Sağlığı Bilgileri","Bebeklerden yetişkinlere, doğru bilinen yanlışlar ve şifalı bitkiler dahil.", {back:"home"})}
+    <div class="content">
+      <div class="chip-row mb4" style="flex-wrap:wrap;">${tabBtns}</div>
+      ${body}
     </div>`;
 }
 
@@ -731,9 +796,9 @@ function renderInfo() {
 function findChatReply(text) {
   const lower = text.toLocaleLowerCase("tr");
   for (const item of CHATBOT_KB) {
-    for (const k of item.keys) if (lower.includes(k)) return item.reply;
+    for (const k of item.keys) if (lower.includes(k)) return item;
   }
-  return CHATBOT_FALLBACK;
+  return { reply: CHATBOT_FALLBACK };
 }
 
 function renderChatbot() {
@@ -796,6 +861,16 @@ function renderAdminPanel() {
       </div>
     </div>`).join("");
 
+  const reviewRows = state.reviews.slice().reverse().map(rv => `
+    <div class="card p3 mb2">
+      <p class="desc" style="margin:0 0 2px;"><b>${escapeHtml(rv.name)}</b> ${stars(rv.rating)}</p>
+      <p class="desc" style="margin:0 0 6px;">${escapeHtml(rv.text)}</p>
+      <div style="display:flex;gap:6px;">
+        <input class="input" id="rvreply-${rv.id}" placeholder="Yanıt yaz (herkes görür)" value="${escapeAttr(rv.adminReply||"")}" style="flex:1;" />
+        <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-review-reply" data-id="${rv.id}">Kaydet</button>
+      </div>
+    </div>`).join("") || `<p class="footnote">Henüz yorum yok.</p>`;
+
   return `${topbar("Yönetici Paneli","Randevular ve ürün yönetimi.", {back:"home"})}
     <div class="content">
       <p class="section-label">Gelen randevular (canlı)</p>
@@ -817,6 +892,9 @@ function renderAdminPanel() {
       <p class="section-label">Cihaz tanıtım videoları</p>
       <p class="footnote" style="margin-top:-4px;">Cihazın nasıl çalıştığını gösteren YouTube videosunun linkini yapıştır.</p>
       <div class="mb4">${deviceVideoRows}</div>
+      <p class="section-label">Yorumlara yanıt ver</p>
+      <p class="footnote" style="margin-top:-4px;">Yazdığın yanıt, o yorumun altında tüm kullanıcılara görünür.</p>
+      <div class="mb4">${reviewRows}</div>
       <button class="linklike" data-action="admin-logout">Çıkış yap</button>
       <p class="footnote" style="margin-top:14px;">${state.fbReady ? "✓ Firebase'e bağlı — bu liste tüm cihazlarda anlık günceldir." : "⚠ Firebase bağlantısı bekleniyor, geçici olarak yalnızca bu cihazdaki veriler görünüyor."}</p>
     </div>`;
@@ -866,6 +944,18 @@ function render() {
   screenEl.innerHTML = fn();
   document.getElementById("navbar").innerHTML = renderNav();
   document.getElementById("more-sheet").innerHTML = renderMoreSheet();
+  const updateBar = document.getElementById("update-bar");
+  if (updateBar) {
+    updateBar.innerHTML = state.updateAvailable
+      ? `<button data-action="reload-update" style="width:100%;border:none;background:var(--teal);color:#fff;padding:10px;font-size:13px;">🔄 Yeni sürüm hazır — yenilemek için dokun</button>`
+      : "";
+  }
+  const lightbox = document.getElementById("lightbox");
+  if (lightbox) {
+    lightbox.innerHTML = state.lightboxPhoto
+      ? `<div class="lightbox-overlay" data-action="close-lightbox"><img src="${state.lightboxPhoto}" class="lightbox-img" /></div>`
+      : "";
+  }
   bindFieldEvents();
   if (state.screen === "smile" && state.smileCameraOn) startCamera();
   if (state.screen === "chatbot") { const log = document.getElementById("chat-log"); if (log) log.scrollTop = log.scrollHeight; }
@@ -932,19 +1022,32 @@ function sendChat() {
   state.chatLog.push({ from:"user", text });
   state.chatInput = "";
   render();
+  playSound("click");
   setTimeout(() => {
-    const reply = findChatReply(text);
-    state.chatLog.push({ from:"bot", text: reply });
+    const item = findChatReply(text);
+    state.chatLog.push({ from:"bot", text: item.reply });
     render();
+    if (item.goto) {
+      setTimeout(() => {
+        state.screen = item.goto;
+        if (item.expand) state.expandedService = item.expand;
+        window.scrollTo(0,0);
+        render();
+      }, 900);
+    }
   }, 350);
 }
 
 /* ---------------- TIKLAMA OLAYLARI ---------------- */
 
+let _entrySoundPlayed = false;
 document.addEventListener("click", (e) => {
   const el = e.target.closest("[data-action]");
   if (!el) return;
   const action = el.dataset.action;
+
+  if (!_entrySoundPlayed) { _entrySoundPlayed = true; playSound("login"); }
+  else if (action !== "send-chat") playSound("click"); // sendChat kendi tık sesini zaten çalıyor
 
   if (action === "goto") {
     state.screen = el.dataset.screen;
@@ -983,7 +1086,8 @@ document.addEventListener("click", (e) => {
         state.myAppointments.push({ id:Date.now(), ...entry });
         state.bookingStatus = "done";
         state.bookingForm = { date:"", time:"", name:"", phone:"" };
-      } catch (e) { state.bookingStatus = "error"; }
+        playSound("success");
+      } catch (e) { state.bookingStatus = "error"; playSound("error"); }
       render();
     })();
   }
@@ -1001,7 +1105,8 @@ document.addEventListener("click", (e) => {
         }
         state.contactStatus = "done";
         state.contactForm = { name:"", phone:"", msg:"" };
-      } catch (e) { state.contactStatus = "error"; }
+        playSound("success");
+      } catch (e) { state.contactStatus = "error"; playSound("error"); }
       render();
     })();
   }
@@ -1014,6 +1119,7 @@ document.addEventListener("click", (e) => {
       try {
         if (window.fb && state.fbReady) await window.fb.addReview(entry);
         else { state.reviews.push({ id:Date.now(), ...entry }); persist("nurdis_reviews", state.reviews); }
+        playSound("success");
       } catch (e) { /* sessiz geç, kullanıcıyı engellemeyelim */ }
       state.reviewForm = { name:"", rating:5, text:"" };
       render();
@@ -1042,8 +1148,9 @@ document.addEventListener("click", (e) => {
         state.checkoutStatus = "idle";
         state.screen = "home";
         render();
+        playSound("success");
         alert("Siparişiniz alındı! Ödeme ve kargo bilgileri için sizinle iletişime geçilecektir.");
-      } catch (e) { alert("Sipariş kaydedilemedi, lütfen tekrar dene."); }
+      } catch (e) { playSound("error"); alert("Sipariş kaydedilemedi, lütfen tekrar dene."); }
     })();
   }
   if (action === "send-chat") sendChat();
@@ -1057,12 +1164,32 @@ document.addEventListener("click", (e) => {
     state.authBusy = true; render();
     window.fb.signInGoogle().then((res) => {
       state.authBusy = false;
-      if (!res.ok) alert("Giriş yapılamadı: " + (res.error||""));
+      if (!res.ok) { playSound("error"); alert("Giriş yapılamadı: " + (res.error||"")); }
+      else playSound("login");
       render();
     });
   }
   if (action === "sign-out") {
     if (window.fb) window.fb.signOutUser();
+  }
+  if (action === "reload-update") {
+    window.location.reload();
+  }
+  if (action === "toggle-doctor") {
+    state.expandedDoctor = state.expandedDoctor === el.dataset.id ? null : el.dataset.id;
+    render();
+  }
+  if (action === "open-lightbox") {
+    state.lightboxPhoto = el.dataset.src;
+    render();
+  }
+  if (action === "close-lightbox") {
+    state.lightboxPhoto = null;
+    render();
+  }
+  if (action === "set-info-tab") {
+    state.infoTab = el.dataset.id;
+    render();
   }
   if (action === "admin-login") {
     if (!window.fb) { state.adminError = "Giriş sistemi henüz hazır değil, birkaç saniye sonra tekrar dene."; render(); return; }
@@ -1072,8 +1199,10 @@ document.addEventListener("click", (e) => {
       if (res.ok) {
         state.adminLoggedIn = true; state.adminError = ""; state.screen = "admin-panel";
         startAdminSubscriptions();
+        playSound("login");
       } else {
         state.adminError = res.error || "Giriş başarısız.";
+        playSound("error");
       }
       render();
     });
@@ -1112,6 +1241,12 @@ document.addEventListener("click", (e) => {
     const val = document.getElementById(`dvid-${id}`)?.value || "";
     if (!window.fb || !state.fbReady) { alert("Firebase bağlantısı hazır değil."); return; }
     window.fb.setDeviceVideo(id, val).then(() => alert("Cihaz videosu kaydedildi.")).catch(() => alert("Kaydedilemedi."));
+  }
+  if (action === "save-review-reply") {
+    const id = el.dataset.id;
+    const val = document.getElementById(`rvreply-${id}`)?.value || "";
+    if (!window.fb || !state.fbReady) { alert("Firebase bağlantısı hazır değil."); return; }
+    window.fb.replyToReview(id, val).then(() => alert("Yanıt kaydedildi.")).catch(() => alert("Kaydedilemedi."));
   }
 });
 
@@ -1271,8 +1406,58 @@ window.addEventListener("fb-ready", wireFirebase);
 // firebase-init.js modülü app.js'ten önce yüklenip olayı kaçırmış olabilir ihtimaline karşı:
 if (window.fb && window.fb.ready) wireFirebase();
 
-/* ---------------- BAŞLAT ---------------- */
-loadAll();
+/* ---------------- SES EFEKTLERİ ----------------
+   Dışarıdan ses dosyası yüklemeden, Web Audio API ile anlık
+   üretilen kısa efektler. İlk çalma bir kullanıcı etkileşimi
+   (tıklama) içinden tetiklenmeli — tarayıcı kuralı budur, tüm
+   playSound() çağrılarımız zaten click handler'ları içinde. */
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    audioCtx = new AC();
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+function tone(ctx, freq, start, dur, type="sine", peakGain=0.09) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+  gain.gain.setValueAtTime(0, ctx.currentTime + start);
+  gain.gain.linearRampToValueAtTime(peakGain, ctx.currentTime + start + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + dur);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(ctx.currentTime + start);
+  osc.stop(ctx.currentTime + start + dur + 0.02);
+}
+
+function playSound(kind) {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  try {
+    if (kind === "click") {
+      tone(ctx, 720, 0, 0.05, "sine", 0.05);
+    } else if (kind === "success") {
+      // "healing" tarzı yükselen üçlü — oyunlardaki can yenileme sesi gibi
+      tone(ctx, 523.25, 0.00, 0.16, "sine", 0.08);   // Do
+      tone(ctx, 659.25, 0.08, 0.16, "sine", 0.08);   // Mi
+      tone(ctx, 783.99, 0.16, 0.28, "sine", 0.09);   // Sol
+    } else if (kind === "error") {
+      tone(ctx, 300, 0.00, 0.16, "sawtooth", 0.05);
+      tone(ctx, 220, 0.10, 0.22, "sawtooth", 0.05);
+    } else if (kind === "login") {
+      tone(ctx, 440.00, 0.00, 0.14, "sine", 0.07);
+      tone(ctx, 554.37, 0.07, 0.14, "sine", 0.07);
+      tone(ctx, 659.25, 0.14, 0.30, "sine", 0.08);
+    }
+  } catch (e) { /* ses çalınamazsa sessizce geç */ }
+}
+
+
 const validScreens = Object.keys(SCREEN_MAP);
 const hash = window.location.hash.replace("#","");
 if (validScreens.includes(hash)) state.screen = hash;
@@ -1280,4 +1465,10 @@ render();
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => { navigator.serviceWorker.register("sw.js").catch(()=>{}); });
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data && event.data.type === "NURDIS_UPDATED") {
+      state.updateAvailable = true;
+      render();
+    }
+  });
 }

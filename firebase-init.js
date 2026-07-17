@@ -13,7 +13,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp,
-  doc, setDoc
+  doc, setDoc, updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -101,6 +101,10 @@ function setMapValue(colName, id, url) {
   return setDoc(doc(db, colName, id), { url, updatedAt: serverTimestamp() });
 }
 
+function replyToReview(reviewId, replyText) {
+  return updateDoc(doc(db, "reviews", reviewId), { adminReply: replyText, adminReplyAt: serverTimestamp() });
+}
+
 /* ---------------- window.fb üzerinden dışa aç ---------------- */
 
 window.fb = {
@@ -121,6 +125,7 @@ window.fb = {
   setProductImage: (id, url) => setMapValue("product_images", id, url),
   subscribeDeviceVideos: (cb) => subscribeMap("device_videos", cb),
   setDeviceVideo: (id, url) => setMapValue("device_videos", id, url),
+  replyToReview: (id, text) => replyToReview(id, text),
 };
 
 window.dispatchEvent(new Event("fb-ready"));
