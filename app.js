@@ -257,7 +257,13 @@ const CHATBOT_KB = [
   { keys:["diş renklenmesi","kahve","çay lekesi"], reply:"Çay, kahve ve sigara diş yüzeyinde zamanla renklenmeye yol açar. Düzenli diş taşı temizliği ve gerekirse profesyonel beyazlatma bu görünümü düzeltir." },
   { keys:["gargara","ağız koruyucu spor"], reply:"Spor yaparken diş travmasına karşı ağız koruyucu (mouthguard) kullanılması önerilir, özellikle temaslı sporlarda diş kırılmalarını önemli ölçüde azaltır." },
 ];
-const CHATBOT_FALLBACK = "Bu soruyu tam karşılayamadım ama elimden geleni yapayım: diş ağrısı, tedaviler (kanal, implant, beyazlatma, zirkonyum, şeffaf plak vb.), randevu, fiyatlandırma mantığı, çalışma saatlerimiz veya genel ağız bakımı hakkında sorabilirsin. İstersen bu konuyu doğrudan Dr. Ramazan DAĞ'a sormak için hemen randevu oluşturabilirim — ister misin?";
+/* Cloudflare Worker'ı kurduktan sonra aldığın adresi (örn.
+   https://nurdis-ai.SENIN-ADIN.workers.dev) aşağıya yapıştır. Boş kaldığı
+   sürece asistan otomatik olarak yerel bilgi tabanını kullanır. */
+const AI_ENDPOINT_URL = "";
+const AI_ENDPOINT_READY = !!AI_ENDPOINT_URL;https://lively-rice-58e1.nurdisdentalklinik.workers.dev
+
+const CHATBOT_FALLBACK = "Bu soruyu tam karşılayamadım ama elimden geleni yapayım: diş ağrısı, tedaviler (kanal, implant, beyazlatma, zirkonyum, şeffaf plak vb.), randevu, fiyatlandırma mantığı, çalışma saatlerimiz veya genel ağız bakımı hakkında sorabilirsin. İstersen bu konuyu doğrudan Dt. Ramazan DAĞ'ın Dijitali'ne sormak için hemen randevu oluşturabilirim — ister misin?";
 
 /* ---------------- STATE ---------------- */
 
@@ -364,7 +370,7 @@ function stars(n) {
 function renderHome() {
   const grid = MORE_ITEMS.map(i => `
     <button class="grid-item" data-action="goto" data-screen="${i.id}">
-      <span class="grid-icon">${icon(i.icon,22)}</span><span class="grid-label">${i.label}</span>
+      <span class="grid-icon">${icon(i.icon,22)}</span><span class="grid-label">${t(i.id)}</span>
     </button>`).join("");
 
   const stats = [
@@ -594,6 +600,36 @@ const LANGS = [
   { id:"tr", label:"Türkçe" }, { id:"en", label:"English" }, { id:"ar", label:"العربية" },
   { id:"de", label:"Deutsch" }, { id:"es", label:"Español" },
 ];
+
+/* Arayüz (menü/başlık/buton) çevirileri. İçerik (makaleler, asistan
+   cevapları) şimdilik yalnızca Türkçedir — bu ayrı, çok daha büyük bir iştir. */
+const I18N = {
+  tr: { home:"Ana Sayfa", services:"Hizmetler", booking:"Randevu", chatbot:"Sohbet", more:"Diğer",
+    account:"Hesabım", doctors:"Doktorlarımız", devices:"Cihazlarımız", smile:"Gülüşünü Tasarla",
+    reviews:"Yorumlar", store:"Mağaza", address:"Adresimiz", contact:"İletişim", info:"Diş Sağlığı Bilgileri",
+    "admin-login":"Yönetici Girişi", settings:"Ayarlar", campaigns:"Kampanyalar", save:"Kaydet", send:"Gönder" },
+  en: { home:"Home", services:"Services", booking:"Appointment", chatbot:"Chat", more:"More",
+    account:"My Account", doctors:"Our Doctors", devices:"Our Devices", smile:"Design Your Smile",
+    reviews:"Reviews", store:"Store", address:"Our Address", contact:"Contact", info:"Dental Health Info",
+    "admin-login":"Admin Login", settings:"Settings", campaigns:"Campaigns", save:"Save", send:"Send" },
+  ar: { home:"الرئيسية", services:"الخدمات", booking:"موعد", chatbot:"محادثة", more:"المزيد",
+    account:"حسابي", doctors:"أطباؤنا", devices:"أجهزتنا", smile:"صمم ابتسامتك",
+    reviews:"التقييمات", store:"المتجر", address:"عنواننا", contact:"تواصل معنا", info:"معلومات صحة الأسنان",
+    "admin-login":"دخول المدير", settings:"الإعدادات", campaigns:"العروض", save:"حفظ", send:"إرسال" },
+  de: { home:"Start", services:"Leistungen", booking:"Termin", chatbot:"Chat", more:"Mehr",
+    account:"Mein Konto", doctors:"Unsere Ärzte", devices:"Unsere Geräte", smile:"Lächeln gestalten",
+    reviews:"Bewertungen", store:"Shop", address:"Unsere Adresse", contact:"Kontakt", info:"Zahngesundheit",
+    "admin-login":"Admin-Login", settings:"Einstellungen", campaigns:"Aktionen", save:"Speichern", send:"Senden" },
+  es: { home:"Inicio", services:"Servicios", booking:"Cita", chatbot:"Chat", more:"Más",
+    account:"Mi Cuenta", doctors:"Nuestros Doctores", devices:"Nuestros Equipos", smile:"Diseña tu Sonrisa",
+    reviews:"Reseñas", store:"Tienda", address:"Nuestra Dirección", contact:"Contacto", info:"Salud Dental",
+    "admin-login":"Acceso Admin", settings:"Ajustes", campaigns:"Promociones", save:"Guardar", send:"Enviar" },
+};
+function t(key) {
+  const lang = (state.settings && state.settings.lang) || "tr";
+  return (I18N[lang] && I18N[lang][key]) || I18N.tr[key] || key;
+}
+
 function renderSettings() {
   const s = state.settings;
   return `${topbar("Ayarlar","Uygulama tercihlerini buradan yönetebilirsin.", {back:"home"})}
@@ -869,12 +905,15 @@ function findChatReply(text) {
 
 function renderChatbot() {
   const msgs = state.chatLog.map(m => `
-    <div class="chat-msg ${m.from==='user' ? 'chat-user':'chat-bot'}">${escapeHtml(m.text)}</div>`).join("");
-  return `${topbar("Uzman Asistan","Diş sağlığı hakkında soru sor, sana yardımcı olayım.")}
+    <div class="chat-msg ${m.from==='user' ? 'chat-user':'chat-bot'}">${m.image ? `<img src="${m.image}" style="width:100%;border-radius:10px;margin-bottom:6px;display:block;" />` : ""}${escapeHtml(m.text)}</div>`).join("");
+  return `${topbar("Dt. Ramazan DAĞ'ın Dijitali","Diş sağlığı hakkında soru sor, dişinin fotoğrafını da gönderebilirsin.")}
     <div class="content" style="padding-bottom:100px;">
+      ${!AI_ENDPOINT_READY ? `<p class="footnote" style="margin-bottom:10px;">ℹ️ Şu an genişletilmiş bilgi tabanıyla cevap veriyorum. Yapay zeka bağlantısı aktif olunca (yönetici tarafından kurulacak) her konuya cevap verebileceğim.</p>` : ""}
       <div class="chat-log" id="chat-log">${msgs}</div>
     </div>
     <div class="chat-input-bar">
+      <input type="file" accept="image/*" id="chat-photo-input" style="display:none;" data-action-change="chat-photo" />
+      <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="chat-photo-pick">📷</button>
       <input class="input" id="chat-input" placeholder="Bir şey sor..." value="${escapeAttr(state.chatInput)}" />
       <button class="btn-primary" style="width:auto;padding:10px 16px;" data-action="send-chat">Gönder</button>
     </div>`;
@@ -981,9 +1020,9 @@ const SCREEN_MAP = {
 };
 
 function renderNav() {
-  return NAV_TABS.map(t => `
-    <button class="navbtn ${state.screen===t.id || (t.id==='more' && state.moreOpen) ?'active':''}" data-action="${t.id==='more'?'toggle-more':'goto'}" data-screen="${t.id}">
-      <span class="icon">${icon(t.icon,20)}</span><span>${t.label}</span>
+  return NAV_TABS.map(tab => `
+    <button class="navbtn ${state.screen===tab.id || (tab.id==='more' && state.moreOpen) ?'active':''}" data-action="${tab.id==='more'?'toggle-more':'goto'}" data-screen="${tab.id}">
+      <span class="icon">${icon(tab.icon,20)}</span><span>${t(tab.id)}</span>
     </button>`).join("");
 }
 
@@ -991,12 +1030,12 @@ function renderMoreSheet() {
   if (!state.moreOpen) return "";
   const items = MORE_ITEMS.map(i => `
     <button class="grid-item" data-action="goto" data-screen="${i.id}">
-      <span class="grid-icon">${icon(i.icon,22)}</span><span class="grid-label">${i.label}</span>
+      <span class="grid-icon">${icon(i.icon,22)}</span><span class="grid-label">${t(i.id)}</span>
     </button>`).join("");
   return `<div class="sheet-overlay" data-action="toggle-more">
     <div class="sheet">
       <div class="sheet-handle"></div>
-      <p class="section-label" style="margin-top:4px;">Diğer</p>
+      <p class="section-label" style="margin-top:4px;">${t("more")}</p>
       <div class="menu-grid">${items}</div>
     </div>
   </div>`;
@@ -1075,9 +1114,29 @@ function bindFieldEvents() {
     if (p) p.oninput = e => { state._newProdPrice = e.target.value; };
   }
   if (state.screen === "chatbot") {
-    const i=$("chat-input");
+    const i=$("chat-input"), photo=$("chat-photo-input");
     if (i) { i.oninput = e => { state.chatInput = e.target.value; };
       i.onkeydown = e => { if (e.key==="Enter") sendChat(); }; }
+    if (photo) photo.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const maxW = 700;
+          const ratio = Math.min(1, maxW/img.width);
+          canvas.width = img.width*ratio; canvas.height = img.height*ratio;
+          canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+          const base64 = dataUrl.split(",")[1];
+          sendChat(base64);
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
   }
   if (state.screen === "store" && state.checkoutStatus === "form") {
     const n=$("ck-name"), p=$("ck-phone"), a=$("ck-address");
@@ -1087,15 +1146,35 @@ function bindFieldEvents() {
   }
 }
 
-function sendChat() {
+function sendChat(imageBase64) {
   const text = (state.chatInput||"").trim();
-  if (!text) return;
-  state.chatLog.push({ from:"user", text });
+  if (!text && !imageBase64) return;
+  state.chatLog.push({ from:"user", text: text || "📷 Fotoğraf gönderildi", image: imageBase64 ? ("data:image/jpeg;base64,"+imageBase64) : null });
   state.chatInput = "";
   render();
   playSound("click");
+
+  if (AI_ENDPOINT_READY) {
+    fetch(AI_ENDPOINT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text, image: imageBase64 || null }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        state.chatLog.push({ from:"bot", text: data.reply || CHATBOT_FALLBACK });
+        render();
+      })
+      .catch(() => {
+        const item = findChatReply(text || "diş");
+        state.chatLog.push({ from:"bot", text: item.reply });
+        render();
+      });
+    return;
+  }
+
   setTimeout(() => {
-    const item = findChatReply(text);
+    const item = findChatReply(text || "diş");
     state.chatLog.push({ from:"bot", text: item.reply });
     render();
     if (item.goto) {
@@ -1226,6 +1305,7 @@ document.addEventListener("click", (e) => {
     })();
   }
   if (action === "send-chat") sendChat();
+  if (action === "chat-photo-pick") { document.getElementById("chat-photo-input")?.click(); }
   if (action === "pick-smile-style") { state.smileStyle = el.dataset.id; render(); }
   if (action === "toggle-camera") {
     state.smileCameraOn = !state.smileCameraOn;
