@@ -364,7 +364,7 @@ function stars(n) {
   for (let i=1;i<=5;i++) s += i<=n ? "★" : "☆";
   return `<span class="stars">${s}</span>`;
 }
-
+"const AI_ENDPOINT_URL = "https://lively-rice-58e1.nurdisdentalklinik.workers.dev";"
 /* ---------------- HOME ---------------- */
 
 function renderHome() {
