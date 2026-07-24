@@ -209,11 +209,11 @@ const CHATBOT_KB = [
   { keys:["zirkonyum"], reply:"Zirkonyum kaplama doğal diş görünümüne çok yakın, dayanıklı ve estetik bir çözümdür. Gülüşünü Tasarla sekmesinden kamerayla nasıl görüneceğini önizleyebilirsin.", goto:"services", expand:"zirkonyum" },
   { keys:["şeffaf plak","plak","invisalign"], reply:"Şeffaf plaklar görünmez şekilde diş düzeltir, günde 20-22 saat takılması gerekir. Tel tedavisine göre daha konforlu bir alternatiftir.", goto:"services", expand:"seffafplak" },
   { keys:["ortodonti","diş teli","tel tedavisi"], reply:"Ortodonti, diş sıralaması ve kapanış bozukluklarını düzeltir; tel ya da şeffaf plak ile uygulanabilir. Hem çocuk hem yetişkinlerde uygulanabilir, yaş sınırı yoktur.", goto:"services", expand:"ortodonti" },
-  { keys:["merhaba","selam","iyi günler","günaydın","hey","selamun"], reply:"Merhaba! Nur Diş & Dental Klinik asistanınızım. Diş ağrısı, tedaviler, randevu ya da merak ettiğin herhangi bir konuda sorabilirsin." },
+  { keys:["merhaba","selam","iyi günler","günaydın","hey","selamun"], reply:"Merhaba! Nur Diş & Dental Klinik DİJİ RAMO'yum. Diş ağrısı, tedaviler, randevu ya da merak ettiğin herhangi bir konuda sorabilirsin." },
   { keys:["nasılsın","naber","ne haber","iyi misin"], reply:"Ben bir yazılımım, o yüzden günüm falan yok ama hazır ve nazırım 😊 Sen nasılsın, dişlerinle ilgili bir şey mi merak ediyorsun?" },
   { keys:["iyiyim","ben de iyi","güzel","süper","harika"], reply:"Duymak güzel! Diş sağlığınla ilgili merak ettiğin bir şey varsa ya da randevu almak istersen buradayım." },
-  { keys:["adın ne","ismin ne","adin"], reply:"Benim özel bir adım yok, Nur Diş & Dental Klinik'in dijital asistanıyım. Bana istediğin şeyi sorabilirsin." },
-  { keys:["kaç yaşındasın","yaşın kaç"], reply:"Ben bir yapay zeka asistanıyım, yaşım yok 😄 Ama sana yardımcı olmak için buradayım." },
+  { keys:["adın ne","ismin ne","adin"], reply:"Ben DİJİ RAMO, Nur Diş & Dental Klinik'in yapay zeka asistanıyım 😊 Bana diş sağlığın hakkında her şeyi sorabilirsin." },
+  { keys:["kaç yaşındasın","yaşın kaç"], reply:"Ben DİJİ RAMO, bir yapay zeka asistanıyım, yaşım yok 😄 Ama sana yardımcı olmak için buradayım." },
   { keys:["görüşürüz","hoşça kal","bay bay","kapat"], reply:"Görüşmek üzere! İhtiyacın olursa yine buradayım. İyi günler 👋" },
   { keys:["evet"], reply:"Harika, o zaman seni Randevu sekmesine yönlendiriyorum.", goto:"booking" },
   { keys:["hayır","yok"], reply:"Tamam, sorun değil. Başka merak ettiğin bir şey olursa buradayım." },
@@ -247,7 +247,7 @@ const CHATBOT_KB = [
   { keys:["ürün","macun","fırça satıyor musunuz"], reply:"Evet, Mağaza sekmesinden çocuk ve yetişkin diş fırçası, macun, gargara, diş ipi ve beyazlatma kiti gibi ürünleri inceleyip sipariş verebilirsin.", goto:"store" },
   { keys:["gülüşünü tasarla","ar","kamera"], reply:"Gülüşünü Tasarla sekmesinde kameranı açarak farklı gülüş stillerini gerçek zamanlı önizleyebilirsin.", goto:"smile" },
   { keys:["yorum","değerlendirme"], reply:"Yorumlar sekmesinde diğer hastalarımızın deneyimlerini okuyabilir, Google ile giriş yapıp kendi yorumunu da bırakabilirsin.", goto:"reviews" },
-  { keys:["kim", "sen kimsin", "asistan mısın"], reply:"Ben Nur Diş & Dental Klinik'in dijital asistanıyım — diş sağlığı sorularını yanıtlar, kliniğimiz hakkında bilgi veririm ve istersen randevunu da hemen oluşturabilirim." },
+  { keys:["kim", "sen kimsin", "asistan mısın"], reply:"Ben DİJİ RAMO, Nur Diş & Dental Klinik'in yapay zeka asistanıyım — diş sağlığı sorularını yanıtlar, kliniğimiz hakkında bilgi veririm ve istersen randevunu da hemen oluşturabilirim." },
   { keys:["dental turizm","yurt dışı","yabancı hasta"], reply:"Yurt dışından gelen hastalarımız da oluyor. Tedavi planını ve süreci muayeneden sonra netleştirip sana özel bir program çıkarabiliriz." },
   { keys:["engelli","özel gereksinim"], reply:"Engelli bireyler ve özel gereksinimli hastalarımız için sabırlı ve esnek bir yaklaşımımız var, ihtiyacına göre randevu süresini ayarlayabiliriz." },
   { keys:["protez bakım","takma diş bakımı"], reply:"Protezler her gün fırçalanmalı, gece ağızda unutulmadan çıkarılıp temiz suda bekletilmeli. Uyumsuzluk hissedilirse kontrol ettirilmesi önerilir." },
@@ -263,7 +263,7 @@ const CHATBOT_KB = [
 const AI_ENDPOINT_URL = "https://lively-rice-58e1.nurdisdentalklinik.workers.dev";
 const AI_ENDPOINT_READY = !!AI_ENDPOINT_URL;
 
-const CHATBOT_FALLBACK = "Bu soruyu tam karşılayamadım ama elimden geleni yapayım: diş ağrısı, tedaviler (kanal, implant, beyazlatma, zirkonyum, şeffaf plak vb.), randevu, fiyatlandırma mantığı, çalışma saatlerimiz veya genel ağız bakımı hakkında sorabilirsin. İstersen bu konuyu doğrudan Dt. Ramazan DAĞ'ın Dijitali'ne sormak için hemen randevu oluşturabilirim — ister misin?";
+const CHATBOT_FALLBACK = "Bu soruyu tam karşılayamadım ama elimden geleni yapayım: diş ağrısı, tedaviler (kanal, implant, beyazlatma, zirkonyum, şeffaf plak vb.), randevu, fiyatlandırma mantığı, çalışma saatlerimiz veya genel ağız bakımı hakkında sorabilirsin. İstersen bu konuyu doğrudan DİJİ RAMO'ya sormak için hemen randevu oluşturabilirim — ister misin?";
 
 /* ---------------- STATE ---------------- */
 
@@ -285,7 +285,7 @@ let state = {
   cart: {}, // productId -> qty
   checkoutForm: { name:"", phone:"", address:"" },
   checkoutStatus: "idle",
-  chatLog: [{ from:"bot", text:"Merhaba! Nur Diş & Dental Klinik asistanıyım 😊 Diş ağrısı, fiyatlar, randevu ya da aklına takılan her şeyi sorabilirsin." }],
+  chatLog: [{ from:"bot", text:"Merhaba! Ben DİJİ RAMO 😊 Nur Diş & Dental Klinik yapay zeka asistanınım. Diş ağrısı, fiyatlar, randevu ya da aklına takılan her şeyi sorabilirsin." }],
   chatInput: "",
   smileStyle: SMILE_STYLES[0].id,
   smileCameraOn: false,
@@ -906,7 +906,7 @@ function findChatReply(text) {
 function renderChatbot() {
   const msgs = state.chatLog.map(m => `
     <div class="chat-msg ${m.from==='user' ? 'chat-user':'chat-bot'}">${m.image ? `<img src="${m.image}" style="width:100%;border-radius:10px;margin-bottom:6px;display:block;" />` : ""}${escapeHtml(m.text)}</div>`).join("");
-  return `${topbar("Dt. Ramazan DAĞ'ın Dijitali","Diş sağlığı hakkında soru sor, dişinin fotoğrafını da gönderebilirsin.")}
+  return `${topbar("DİJİ RAMO","Diş sağlığı hakkında soru sor, dişinin fotoğrafını da gönderebilirsin.")}
     <div class="content" style="padding-bottom:100px;">
       ${!AI_ENDPOINT_READY ? `<p class="footnote" style="margin-bottom:10px;">ℹ️ Şu an genişletilmiş bilgi tabanıyla cevap veriyorum. Yapay zeka bağlantısı aktif olunca (yönetici tarafından kurulacak) her konuya cevap verebileceğim.</p>` : ""}
       <div class="chat-log" id="chat-log">${msgs}</div>
