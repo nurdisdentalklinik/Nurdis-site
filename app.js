@@ -260,12 +260,7 @@ const CHATBOT_KB = [
 /* Cloudflare Worker'ı kurduktan sonra aldığın adresi (örn.
    https://nurdis-ai.SENIN-ADIN.workers.dev) aşağıya yapıştır. Boş kaldığı
    sürece asistan otomatik olarak yerel bilgi tabanını kullanır. */
-/* NOT: Worker adresi hazır ama Gemini API anahtarı henüz geçerli değil.
-   Geçerli bir anahtar eklenene kadar bunu boş bırakıyoruz ki asistan
-   hatasız şekilde yerel bilgi tabanını kullanmaya devam etsin. Geçerli
-   anahtar eklenince aşağıdaki satırı eski haline getir:
-   const AI_ENDPOINT_URL = "https://lively-rice-58e1.nurdisdentalklinik.workers.dev"; */
-const AI_ENDPOINT_URL = "";
+const AI_ENDPOINT_URL = "https://lively-rice-58e1.nurdisdentalklinik.workers.dev";
 const AI_ENDPOINT_READY = !!AI_ENDPOINT_URL;
 
 const CHATBOT_FALLBACK = "Bu soruyu tam karşılayamadım ama elimden geleni yapayım: diş ağrısı, tedaviler (kanal, implant, beyazlatma, zirkonyum, şeffaf plak vb.), randevu, fiyatlandırma mantığı, çalışma saatlerimiz veya genel ağız bakımı hakkında sorabilirsin. İstersen bu konuyu doğrudan Dt. Ramazan DAĞ'ın Dijitali'ne sormak için hemen randevu oluşturabilirim — ister misin?";
