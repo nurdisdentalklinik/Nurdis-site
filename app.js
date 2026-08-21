@@ -9,27 +9,27 @@
 /* ---------------- VERİ ---------------- */
 
 const SERVICES = [
-  { id:"muayene", name:"Diş Muayenesi & Kontrol", price:"500 ₺", desc:"Genel ağız sağlığı kontrolü ve yönlendirme.", icon:"stethoscope", tone:"teal",
+  { id:"muayene", name:"Diş Muayenesi & Kontrol", price:"Ücretsiz", desc:"Genel ağız sağlığı kontrolü ve yönlendirme.", img:"icon-muayene.png", tone:"teal",
     info:"İlk muayenede ağız içi kontrol edilir, gerekiyorsa röntgen çekilir ve size özel tedavi planı çıkarılır.", before:null, after:null, video:null },
-  { id:"temizlik", name:"Diş Temizliği (Detertraj)", price:"900 ₺", desc:"Diş taşı ve leke temizliği, parlatma.", icon:"sparkle", tone:"teal",
+  { id:"temizlik", name:"Diş Temizliği (Detertraj)", price:"900 ₺", desc:"Diş taşı ve leke temizliği, parlatma.", img:"icon-temizlik.png", tone:"teal",
     info:"Ultrasonik cihazla diş taşları temizlenir, ardından parlatma işlemi yapılır. Ortalama 20-30 dakika sürer, ağrısızdır.", before:null, after:null, video:null },
-  { id:"dolgu", name:"Dolgu", price:"700–1.500 ₺", desc:"Estetik kompozit dolgu uygulamaları.", icon:"tooth", tone:"teal",
-    info:"Çürük temizlenir, diş rengiyle uyumlu kompozit malzeme ile doldurulur. Tek seansta tamamlanır.", before:null, after:"treatment-process.jpg", video:null },
-  { id:"kanal", name:"Kanal Tedavisi", price:"2.500–4.000 ₺", desc:"Ağrısız kanal tedavisi, tek/çok seans.", icon:"spiral", tone:"teal",
-    info:"Lokal anestezi ile ağrısız şekilde uygulanır. Diş içindeki iltihaplı doku temizlenir, kanallar doldurulur.", before:null, after:"treatment-process.jpg", video:"placeholder" },
-  { id:"cekim", name:"Diş Çekimi", price:"800–2.000 ₺", desc:"Basit ve cerrahi çekim işlemleri.", icon:"extract", tone:"teal",
+  { id:"dolgu", name:"Dolgu", price:"700–1.500 ₺", desc:"Estetik kompozit dolgu uygulamaları.", img:"icon-dolgu.png", tone:"teal",
+    info:"Çürük temizlenir, diş rengiyle uyumlu kompozit malzeme ile doldurulur. Tek seansta tamamlanır.", before:null, after:null, video:null },
+  { id:"kanal", name:"Kanal Tedavisi", price:"2.500–4.000 ₺", desc:"Ağrısız kanal tedavisi, tek/çok seans.", img:"icon-kanal.png", tone:"teal",
+    info:"Lokal anestezi ile ağrısız şekilde uygulanır. Diş içindeki iltihaplı doku temizlenir, kanallar doldurulur.", before:null, after:null, video:"placeholder" },
+  { id:"cekim", name:"Diş Çekimi", price:"800–2.000 ₺", desc:"Basit ve cerrahi çekim işlemleri.", img:"icon-cekim.png", tone:"teal",
     info:"Lokal anestezi altında yapılır. Gömülü/yirmilik diş gibi zor vakalarda cerrahi yöntem uygulanabilir.", before:null, after:null, video:null },
-  { id:"beyazlatma", name:"Diş Beyazlatma", price:"3.000 ₺", desc:"Ofis tipi profesyonel beyazlatma.", icon:"sun", tone:"teal",
-    info:"Diş minesine zarar vermeyen özel jel ve ışık sistemi ile 1 seansta belirgin fark elde edilir.", before:"whitening-before-after.jpg", after:null, video:null },
-  { id:"implant", name:"İmplant", price:"12.000–18.000 ₺", desc:"Tek dişten tam çeneye implant çözümleri.", icon:"implant", tone:"teal",
+  { id:"beyazlatma", name:"Diş Beyazlatma", price:"3.000 ₺", desc:"Ofis tipi profesyonel beyazlatma.", img:"icon-beyazlatma.png", tone:"teal",
+    info:"Diş minesine zarar vermeyen özel jel ve ışık sistemi ile 1 seansta belirgin fark elde edilir.", before:null, after:null, video:null },
+  { id:"implant", name:"İmplant", price:"12.000–18.000 ₺", desc:"Tek dişten tam çeneye implant çözümleri.", img:"icon-implant.png", tone:"teal",
     info:"Eksik diş kökünün yerine titanyum vida yerleştirilir, üzerine kalıcı diş yapılır. Süreç ortalama 3-6 ay sürer, ara dönemde geçici diş kullanılır.", before:null, after:null, video:"placeholder" },
-  { id:"zirkonyum", name:"Zirkonyum Kaplama", price:"4.500–7.000 ₺ / diş", desc:"Doğal görünümlü, dayanıklı diş kaplaması.", icon:"gem", tone:"blue",
+  { id:"zirkonyum", name:"Zirkonyum Kaplama", price:"4.500–7.000 ₺ / diş", desc:"Doğal görünümlü, dayanıklı diş kaplaması.", img:"icon-zirkonyum.png", tone:"blue",
     info:"Diş az miktarda küçültülür, ölçü alınır, zirkonyum kaplama üretilip yapıştırılır. Işığı doğal diş gibi yansıtır.", before:null, after:null, video:"placeholder" },
-  { id:"ortodonti", name:"Ortodonti (Tel Tedavisi)", price:"Muayene sonrası", desc:"Şeffaf plak ve metal braket seçenekleri.", icon:"brace", tone:"blue",
+  { id:"ortodonti", name:"Ortodonti (Tel Tedavisi)", price:"Muayene sonrası", desc:"Şeffaf plak ve metal braket seçenekleri.", img:"icon-ortodonti.png", tone:"blue",
     info:"Diş sıralaması ve kapanış bozukluklarını düzeltmek için tel veya şeffaf plak kullanılır. Süreç 6 ay - 2 yıl arasında değişir.", before:null, after:null, video:"placeholder" },
-  { id:"seffafplak", name:"Şeffaf Plak", price:"Muayene sonrası", desc:"Görünmez, çıkarılabilir diş düzeltme plakları.", icon:"tray", tone:"blue",
+  { id:"seffafplak", name:"Şeffaf Plak", price:"Muayene sonrası", desc:"Görünmez, çıkarılabilir diş düzeltme plakları.", img:"icon-seffafplak.png", tone:"blue",
     info:"Şeffaf, çıkarılabilir plaklar ile fark edilmeden diş düzeltme yapılır. Günde 20-22 saat takılması önerilir.", before:null, after:null, video:null },
-  { id:"kopru", name:"Köprü", price:"4.000–9.000 ₺ / diş", desc:"Eksik dişler için sabit köprü protezi.", icon:"link", tone:"blue",
+  { id:"kopru", name:"Köprü", price:"4.000–9.000 ₺ / diş", desc:"Eksik dişler için sabit köprü protezi.", img:"icon-kopru.png", tone:"blue",
     info:"Eksik dişin iki yanındaki dişler destek alınarak köprü protezi yapılır, sabittir ve çıkarılmaz.", before:null, after:null, video:null },
 ];
 
@@ -42,26 +42,21 @@ const DOCTORS = [
 ];
 
 const DEVICES = [
-  { id:"cbct", name:"CBCT (Konik Işınlı Bilgisayarlı Tomografi)", icon:"scan3d",
+  { id:"cbct", name:"CBCT (Konik Işınlı Bilgisayarlı Tomografi)", img:"icon-cbct.png",
     desc:"Çene ve diş yapısını 3 boyutlu olarak, milimetrik hassasiyetle görüntüler. Özellikle implant planlamasında sinir kanalı, kemik yoğunluğu ve yapının tam konumunu görmemizi sağlar — bu da işlemi çok daha öngörülebilir ve güvenli hale getirir." },
-  { id:"scanner", name:"Ağız İçi 3D Tarayıcı (İntraoral Scanner)", icon:"wand",
+  { id:"scanner", name:"Ağız İçi 3D Tarayıcı (İntraoral Scanner)", img:"icon-scanner.png",
     desc:"Klasik ölçü kaşığı ve ölçü maddesi yerine ağız içini birkaç dakikada dijital olarak tarar. Kusma hissi ya da rahatsızlık olmadan, çok daha konforlu ve hassas bir ölçü alma deneyimi sunar." },
-  { id:"printer3d", name:"3D Yazıcı", icon:"printer",
+  { id:"printer3d", name:"3D Yazıcı", img:"icon-printer3d.png",
     desc:"Şeffaf plak, cerrahi rehber ve geçici protez modellerini dijital tasarımdan doğrudan üretir. Bu sayede üretim süresi kısalır ve hassasiyet artar." },
-  { id:"panoramic", name:"Dijital Panoramik Röntgen", icon:"jaw",
+  { id:"panoramic", name:"Dijital Panoramik Röntgen", img:"icon-panoramic.png",
     desc:"Tüm ağız yapısını, çeneleri ve diş köklerini tek karede, klasik filme göre çok daha düşük radyasyon dozuyla görüntüler. Sonuç saniyeler içinde ekranda incelenebilir." },
-  { id:"scaler", name:"Diş Taşı Temizleme Ünitesi (Ultrasonik Scaler)", icon:"sparkle",
+  { id:"scaler", name:"Diş Taşı Temizleme Ünitesi (Ultrasonik Scaler)", img:"icon-scaler.png",
     desc:"Diş taşı ve renklenmeleri diş minesine zarar vermeden, ultrasonik titreşimle nazikçe temizler." },
-  { id:"ledwhite", name:"LED Beyazlatma Sistemi", icon:"sun",
+  { id:"ledwhite", name:"LED Beyazlatma Sistemi", img:"icon-ledwhite.png",
     desc:"Özel jel ile birlikte kullanılan LED ışık sistemi, tek seansta belirgin ve güvenli bir beyazlatma sonucu sağlar." },
 ];
 
-const SMILE_STYLES = [
-  { id:"hollywood", name:"Hollywood Gülüşü", desc:"Parlak, maksimum beyazlık, simetrik kesim.", icon:"sun", tint:"rgba(255,255,255,0.92)", glow:"rgba(255,255,255,0.35)" },
-  { id:"dogal", name:"Doğal Gülüş", desc:"Hafif fildişi tonu, doğal diş dokusu hissi.", icon:"tooth", tint:"rgba(250,244,225,0.55)", glow:"rgba(255,250,235,0.15)" },
-  { id:"zirkonyum", name:"Zirkonyum Estetik", desc:"Parlak yüzey, hafif mavi-beyaz yansıma.", icon:"gem", tint:"rgba(235,248,255,0.85)", glow:"rgba(180,230,255,0.4)" },
-  { id:"plak", name:"Şeffaf Plak Önizleme", desc:"Diş sıralamasının nasıl düzeleceğine dair kaba önizleme.", icon:"tray", tint:"rgba(255,255,255,0.5)", glow:"rgba(160,255,220,0.25)" },
-];
+/* SMILE_STYLES kaldırıldı - Dişini Tasarla yeni kod bekleniyor */
 
 const PRODUCT_CATEGORIES = [
   { id:"cocuk", name:"Çocuk Ürünleri", items:[
@@ -131,25 +126,26 @@ const HERBS = [
 const TIME_SLOTS = ["09:00","10:00","11:00","12:00","14:00","15:00","16:00","17:00"];
 
 const NAV_TABS = [
-  { id:"home", label:"Ana Sayfa", icon:"home" },
-  { id:"services", label:"Hizmetler", icon:"sparkle" },
-  { id:"booking", label:"Randevu", icon:"calendar" },
-  { id:"chatbot", label:"DİJİ RAMO", icon:"chat" },
-  { id:"more", label:"Diğer", icon:"dots" },
+  { id:"home", label:"Ana Sayfa", icon:"home", img:"tab-home.png" },
+  { id:"services", label:"Hizmetler", icon:"sparkle", img:"tab-services.png" },
+  { id:"booking", label:"Randevu", icon:"calendar", img:"tab-booking.png" },
+  { id:"chatbot", label:"DİJİ RAMO", icon:"chat", img:"tab-chatbot.png" },
+  { id:"more", label:"Diğer", icon:"dots", img:"tab-more.png" },
 ];
 
 const MORE_ITEMS = [
-  { id:"account", label:"Hesabım", icon:"login" },
-  { id:"doctors", label:"Doktorlarımız", icon:"user" },
-  { id:"devices", label:"Cihazlarımız", icon:"monitor" },
-  { id:"smile", label:"Gülüşünü Tasarla", icon:"smile" },
-  { id:"reviews", label:"Yorumlar", icon:"star" },
-  { id:"store", label:"Mağaza", icon:"box" },
-  { id:"address", label:"Adresimiz", icon:"pin" },
-  { id:"contact", label:"İletişim", icon:"mail" },
-  { id:"info", label:"Diş Sağlığı Bilgileri", icon:"book" },
-  { id:"admin-login", label:"Yönetici Girişi", icon:"lock" },
-  { id:"settings", label:"Ayarlar", icon:"dots" },
+  { id:"account", label:"Hesabım", img:"icon-account.png" },
+  { id:"doctors", label:"Doktorlarımız", img:"icon-doctors.png" },
+  { id:"devices", label:"Cihazlarımız", img:"icon-devices.png" },
+
+  { id:"reviews", label:"Yorumlar", img:"icon-reviews.png" },
+  { id:"store", label:"Mağaza", img:"icon-store.png" },
+  { id:"address", label:"Adresimiz", img:"icon-address.png" },
+  { id:"contact", label:"İletişim", img:"icon-contact.png" },
+  { id:"info", label:"Diş Sağlığı Bilgileri", img:"icon-info.png" },
+  { id:"dentist-game", label:"🎮 Diş Doktoru Oyunu", icon:"game" },
+  { id:"admin-login", label:"Yönetici Girişi", img:"icon-admin.png" },
+  { id:"settings", label:"Ayarlar", img:"icon-settings.png" },
 ];
 
 /* Basit chatbot bilgi tabanı (kural bazlı, gerçek LLM değil — bkz. yorum en altta) */
@@ -206,7 +202,7 @@ const CHATBOT_KB = [
   { keys:["korku","korkuyorum","panik","kaygı"], reply:"Diş hekimi korkusu çok yaygın, yalnız değilsin. Kliniğimizde adım adım anlatarak, acele etmeden ilerliyoruz. İstersen önce sadece tanışma/muayene için gel, hiçbir işlem baskısı olmadan." },
   { keys:["adres","nerede","konum"], reply:"Kliniğimiz Mardin, Kızıltepe, TOKİ'de. Adresimiz sekmesinden QR kodla harita konumuna direkt ulaşabilirsin.", goto:"address" },
   { keys:["telefon","iletişim","numara"], reply:"Bize 0505 105 03 02 numarasından ulaşabilirsin, ya da İletişim sekmesinden mesaj bırakabilirsin.", goto:"contact" },
-  { keys:["zirkonyum"], reply:"Zirkonyum kaplama doğal diş görünümüne çok yakın, dayanıklı ve estetik bir çözümdür. Gülüşünü Tasarla sekmesinden kamerayla nasıl görüneceğini önizleyebilirsin.", goto:"services", expand:"zirkonyum" },
+  { keys:["zirkonyum"], reply:"Zirkonyum kaplama doğal diş görünümüne çok yakın, dayanıklı ve estetik bir çözümdür. Detaylı bilgi için randevu alabilirsin.", goto:"services", expand:"zirkonyum" },
   { keys:["şeffaf plak","plak","invisalign"], reply:"Şeffaf plaklar görünmez şekilde diş düzeltir, günde 20-22 saat takılması gerekir. Tel tedavisine göre daha konforlu bir alternatiftir.", goto:"services", expand:"seffafplak" },
   { keys:["ortodonti","diş teli","tel tedavisi"], reply:"Ortodonti, diş sıralaması ve kapanış bozukluklarını düzeltir; tel ya da şeffaf plak ile uygulanabilir. Hem çocuk hem yetişkinlerde uygulanabilir, yaş sınırı yoktur.", goto:"services", expand:"ortodonti" },
   { keys:["merhaba","selam","iyi günler","günaydın","hey","selamun"], reply:"Merhaba! Nur Diş & Dental Klinik DİJİ RAMO'yum. Diş ağrısı, tedaviler, randevu ya da merak ettiğin herhangi bir konuda sorabilirsin." },
@@ -245,7 +241,7 @@ const CHATBOT_KB = [
   { keys:["sarımsı diş eti","diş eti çekilmesi"], reply:"Diş eti çekilmesi sert fırçalama, diş taşı ya da diş gıcırdatmadan kaynaklanabilir. İlerlemesini durdurmak için erken muayene önemli." },
   { keys:["ne zaman gelmeliyim","6 ayda bir","kontrole ne zaman"], reply:"Sorun olmasa bile 6 ayda bir rutin kontrol öneriyoruz — birçok problem erken evrede hiç belirti vermez." },
   { keys:["ürün","macun","fırça satıyor musunuz"], reply:"Evet, Mağaza sekmesinden çocuk ve yetişkin diş fırçası, macun, gargara, diş ipi ve beyazlatma kiti gibi ürünleri inceleyip sipariş verebilirsin.", goto:"store" },
-  { keys:["gülüşünü tasarla","ar","kamera"], reply:"Gülüşünü Tasarla sekmesinde kameranı açarak farklı gülüş stillerini gerçek zamanlı önizleyebilirsin.", goto:"smile" },
+  { keys:["diş tasarımı","gülüş tasarımı"], reply:"Gülüş tasarımı hakkında detaylı bilgi için kliniğimizi ziyaret edebilirsin. Muayene ücretsizdir!", goto:"services" },
   { keys:["yorum","değerlendirme"], reply:"Yorumlar sekmesinde diğer hastalarımızın deneyimlerini okuyabilir, Google ile giriş yapıp kendi yorumunu da bırakabilirsin.", goto:"reviews" },
   { keys:["kim", "sen kimsin", "asistan mısın"], reply:"Ben DİJİ RAMO, Nur Diş & Dental Klinik'in yapay zeka asistanıyım — diş sağlığı sorularını yanıtlar, kliniğimiz hakkında bilgi veririm ve istersen randevunu da hemen oluşturabilirim." },
   { keys:["dental turizm","yurt dışı","yabancı hasta"], reply:"Yurt dışından gelen hastalarımız da oluyor. Tedavi planını ve süreci muayeneden sonra netleştirip sana özel bir program çıkarabiliriz." },
@@ -260,12 +256,27 @@ const CHATBOT_KB = [
 /* Cloudflare Worker'ı kurduktan sonra aldığın adresi (örn.
    https://nurdis-ai.SENIN-ADIN.workers.dev) aşağıya yapıştır. Boş kaldığı
    sürece asistan otomatik olarak yerel bilgi tabanını kullanır. */
-const AI_ENDPOINT_URL = "https://lively-rice-58e1.nurdisdentalklinik.workers.dev";
+const AI_ENDPOINT_URL = "https://nurdis-worker.nurdisdentalklinik.workers.dev";
 const AI_ENDPOINT_READY = !!AI_ENDPOINT_URL;
 
 const CHATBOT_FALLBACK = "Bu soruyu tam karşılayamadım ama elimden geleni yapayım: diş ağrısı, tedaviler (kanal, implant, beyazlatma, zirkonyum, şeffaf plak vb.), randevu, fiyatlandırma mantığı, çalışma saatlerimiz veya genel ağız bakımı hakkında sorabilirsin. İstersen bu konuyu doğrudan DİJİ RAMO'ya sormak için hemen randevu oluşturabilirim — ister misin?";
 
 /* ---------------- STATE ---------------- */
+
+// Küfürlü/argo/ahlaksız kelimeler listesi
+const BLOCKED_WORDS = [
+  // Küfürler
+  "amk", "aq", "amına", "amına koyayım", "sikerim", "sikeyim", "sikim", "sikik",
+  "orospu", "orospu çocuğu", "piç", "piç kurusu", "pezevenk", "ibne", "göt",
+  "götveren", "yarrak", "yarrak yemek", "am", "amcık", "döl", "döle",
+  // Argo
+  "lan", "ulan", "oç", "oçocuğu", "pezevenk", "şerefsiz", "namussuz",
+  "haysiyetsiz", "alçak", "kaltak", "kaşar", "sürtük", "fahişe",
+  // Ahlaksız
+  "sikiş", "seks", "porno", "porn", "çingene", "çingene çocuğu",
+  "aptal", "gerizekalı", "salak", "mal", "dangalak", "beyinsiz",
+  "bok", "bok yemek", "boktan", "pislik", "iğrenç", "rezil"
+];
 
 let state = {
   updateAvailable: false,
@@ -276,6 +287,10 @@ let state = {
   moreOpen: false,
   appointments: [],
   myAppointments: [],
+  announcements: [],
+  accounting: { incomes: [], expenses: [], firms: [], bankAccounts: [], invoices: [] },
+  treatmentPrices: {},
+  autoExpenses: { kira:50000, elektrik:3000, su:1500, dogalgaz:2000, sgk:8000, vergi:5000 },
   bookingForm: { date:"", time:"", name:"", phone:"" },
   bookingStatus: "idle",
   contactForm: { name:"", phone:"", msg:"" },
@@ -287,14 +302,14 @@ let state = {
   checkoutStatus: "idle",
   chatLog: [{ from:"bot", text:"Merhaba! Ben DİJİ RAMO 😊 Nur Diş & Dental Klinik'in yapay zeka asistanıyım. Diş ağrısı, fiyatlar, randevu ya da aklına takılan her şeyi sorabilirsin." }],
   chatInput: "",
-  smileStyle: SMILE_STYLES[0].id,
-  smileCameraOn: false,
-  smileScale: 1,
-  smileCapturedPhoto: null,
+  /* smile state kaldırıldı - Dişini Tasarla yeni kod bekleniyor */
   settings: { muted: false, lang: "tr" },
   adminLoggedIn: false,
   adminForm: { email:"", pass:"" },
   adminError: "",
+  blockedUsers: [],  // Engellenen kullanıcı e-postaları
+  blockedChatUsers: [],  // DİJİ RAMO'da engellenen kullanıcılar (anonymous ID)
+  socialMedia: {},  // Sosyal medya linkleri (youtube, instagram, twitter vb.)
   customProducts: [],
   orders: [],
   serviceVideos: {},   // { serviceId: youtubeUrl }
@@ -304,7 +319,18 @@ let state = {
   expandedService: null,
   user: null,        // Firebase Google ile giriş yapan kullanıcı (null = giriş yapılmamış)
   fbReady: false,     // firebase-init.js yüklenip window.fb hazır olunca true olur
+  adminTab: "appointments", // Yönetici paneli aktif sekme
   authBusy: false,
+  // Kullanıcı profili
+  userProfile: null,  // { firstName, lastName, age, weight, height, brushReminderTime, notificationsEnabled }
+  familyMembers: [],  // [{id, name, relation, age, brushReminderTime, streak, lastBrushDate}]
+  treatments: [],     // [{id, uid, treatmentName, date, notes, addedBy}]
+  badges: [],         // ["first_review", "7_day_streak", ...]
+  healthTips: [],     // [{id, text}] - Firebase'den
+  dailyTip: "",       // Bugünün ipucu
+  brushStreak: 0,     // Diş fırçalama serisi (gün)
+  lastBrushDate: null, // Son fırçalama tarihi
+  brushingVideoUrl: "", // Çocuklar için diş fırçalama videosu (yönetici ekler)
 };
 
 /* ---------------- STORAGE ---------------- */
@@ -314,10 +340,24 @@ let state = {
    gerçek zamanlı gelir — bkz. initFirebaseSync() en alttaki başlatma
    bölümünde. */
 function loadAll() {
+  // Anonymous chat ID oluştur (eğer yoksa)
+  if (!localStorage.getItem('nurdis_chat_id')) {
+    localStorage.setItem('nurdis_chat_id', 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9));
+  }
+  
   try { state.appointments = JSON.parse(localStorage.getItem("nurdis_appointments") || "[]"); } catch(e){ state.appointments = []; }
   try { state.reviews = JSON.parse(localStorage.getItem("nurdis_reviews") || "[]"); } catch(e){ state.reviews = []; }
+  try { state.blockedUsers = JSON.parse(localStorage.getItem("nurdis_blocked_users") || "[]"); } catch(e){ state.blockedUsers = []; }
+  try { state.blockedChatUsers = JSON.parse(localStorage.getItem("nurdis_blocked_chat_users") || "[]"); } catch(e){ state.blockedChatUsers = []; }
+  try { state.socialMedia = JSON.parse(localStorage.getItem("nurdis_social_media") || "{}"); } catch(e){ state.socialMedia = {}; }
+  try { state.accounting = JSON.parse(localStorage.getItem("nurdis_accounting") || '{"incomes":[],"expenses":[],"firms":[],"bankAccounts":[],"invoices":[]}'); } catch(e){ state.accounting = {incomes:[],expenses:[],firms:[],bankAccounts:[],invoices:[]}; }
+  try { state.treatmentPrices = JSON.parse(localStorage.getItem("nurdis_treatment_prices") || '{}'); } catch(e){ state.treatmentPrices = {}; }
+  try { state.autoExpenses = JSON.parse(localStorage.getItem("nurdis_auto_expenses") || '{"kira":50000,"elektrik":3000,"su":1500,"dogalgaz":2000,"sgk":8000,"vergi":5000}'); } catch(e){}
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}
+  
+  // Kullanıcı profili ve streak
+  loadUserProfile();
 }
 function persist(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
 
@@ -370,7 +410,7 @@ function stars(n) {
 function renderHome() {
   const grid = MORE_ITEMS.map(i => `
     <button class="grid-item" data-action="goto" data-screen="${i.id}">
-      <span class="grid-icon">${icon(i.icon,22)}</span><span class="grid-label">${t(i.id)}</span>
+      ${i.img ? `<img src="${i.img}" class="grid-icon" style="width:52px;height:52px;border-radius:12px;object-fit:cover;" />` : `<span class="grid-icon">${icon(i.icon,22)}</span>`}<span class="grid-label">${t(i.id)}</span>
     </button>`).join("");
 
   const stats = [
@@ -401,7 +441,7 @@ function renderHome() {
     <div class="content">
       <div class="card p5 mb4" style="border-color:var(--cta);">
         <div class="row-start">
-          <div class="badge badge-teal">${icon("sparkle",20)}</div>
+          <img src="tab-quickbook.png" style="width:48px;height:48px;border-radius:12px;object-fit:contain;" />
           <div>
             <p class="name" style="font-size:17px;">Hızlı randevu</p>
             <p class="desc">60 saniyede muayene randevusu oluştur, biz seni arayalım.</p>
@@ -422,6 +462,21 @@ function renderHome() {
         ${stats.map(s => `<div class="stat-cell"><p class="stat-num">${s.n}</p><p class="stat-tr">${s.tr}</p><p class="stat-en">${s.en}</p></div>`).join("")}
       </div>
 
+      ${(state.announcements || []).length > 0 ? `
+      <p class="section-label">📢 Duyurular</p>
+      <div class="mb5">
+        ${(state.announcements || []).slice(0,3).map(a => `
+          <div class="card p4 mb3" style="border-left:3px solid var(--cta);">
+            <p class="name" style="font-size:14px;margin:0;">📢 ${escapeHtml(a.title || "")}</p>
+            <p class="desc" style="margin:6px 0;line-height:1.5;">${escapeHtml(a.text || "")}</p>
+            ${a.imageUrl ? `<img src="${a.imageUrl}" style="width:100%;border-radius:12px;margin-top:8px;display:block;" />` : ''}
+            ${a.videoUrl ? `<div style="margin-top:8px;"><a href="${escapeAttr(a.videoUrl)}" target="_blank" class="btn-primary" style="text-decoration:none;display:flex;padding:10px;font-size:13px;">🎥 Videoyu İzle</a></div>` : ''}
+            <p class="footnote" style="margin-top:6px;">${a.createdAt ? new Date(a.createdAt).toLocaleDateString("tr-TR", {day:'numeric',month:'long',year:'numeric'}) : ''}</p>
+          </div>
+        `).join("")}
+      </div>
+      ` : ''}
+
       <p class="section-label">Hızlı erişim</p>
       <div class="menu-grid mb5">${grid}</div>
 
@@ -429,7 +484,7 @@ function renderHome() {
       <div class="hscroll mb5">
         ${SERVICES.slice(0,6).map(s => `
           <div class="mini-card" data-action="goto-service" data-id="${s.id}">
-            <div>${icon(s.icon,18)}</div>
+            ${s.img ? `<img src="${s.img}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;" />` : `<div>${icon(s.icon,18)}</div>`}
             <p class="name">${s.name}</p>
           </div>`).join("")}
       </div>
@@ -480,7 +535,7 @@ function renderServices() {
     return `
     <div class="card p4 mb3">
       <div class="row" data-action="toggle-service" data-id="${s.id}" style="cursor:pointer;">
-        <div class="badge ${s.tone==='blue'?'badge-blue':'badge-teal'}">${icon(s.icon,20)}</div>
+        ${s.img ? `<img src="${s.img}" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;" />` : `<div class="badge ${s.tone==='blue'?'badge-blue':'badge-teal'}">${icon(s.icon,20)}</div>`}
         <div style="flex:1;padding-right:8px;">
           <p class="name">${s.name}</p>
           <p class="desc">${s.desc}</p>
@@ -534,7 +589,7 @@ function renderDevices() {
     return `
     <div class="card p4 mb3">
       <div class="row" data-action="toggle-device" data-id="${d.id}" style="cursor:pointer;">
-        <div class="badge badge-blue">${icon(d.icon,22)}</div>
+        ${d.img ? `<img src="${d.img}" style="width:52px;height:52px;border-radius:12px;object-fit:cover;flex-shrink:0;" />` : `<div class="badge badge-blue">${icon(d.icon,22)}</div>`}
         <div><p class="name" style="font-size:15px;">${d.name}</p><p class="desc">${d.desc}</p></div>
       </div>
       ${detail}
@@ -545,45 +600,6 @@ function renderDevices() {
 }
 
 /* ---------------- GÜLÜŞÜNÜ TASARLA (kamera + yüz takibi) ---------------- */
-
-function renderSmile() {
-  if (state.smileCapturedPhoto) {
-    return `${topbar("Gülüşünü Tasarla","Fotoğrafın hazır!", {back:"home"})}
-      <div class="content">
-        <div class="card p4 mb4" style="text-align:center;">
-          <img src="${state.smileCapturedPhoto}" style="width:100%;border-radius:14px;display:block;" />
-        </div>
-        <a class="btn-primary" style="text-decoration:none;display:flex;margin-bottom:10px;" href="${state.smileCapturedPhoto}" download="gulusum.jpg">${icon("box",16)} Fotoğrafı İndir</a>
-        <button class="btn-primary" style="background:var(--tealLight);" data-action="smile-retake">${icon("monitor",16)} Tekrar Dene</button>
-      </div>`;
-  }
-
-  const styleBtns = SMILE_STYLES.map(s => `
-    <button class="chip ${state.smileStyle===s.id?'chip-active':''}" data-action="pick-smile-style" data-id="${s.id}">${icon(s.icon,15)} ${s.name}</button>`).join("");
-  const activeDesc = SMILE_STYLES.find(s=>s.id===state.smileStyle)?.desc || "";
-
-  return `${topbar("Gülüşünü Tasarla","Kameranı aç, gülümse ve farklı gülüş stillerini gerçek zamanlı önizle.", {back:"home"})}
-    <div class="content">
-      <div class="card p4 mb4">
-        <p class="desc" style="margin-bottom:10px;">Bu özellik yüz takibi teknolojisiyle (gerçek zamanlı yüz/ağız algılama) çalışır — kameran cihazında işlenir, hiçbir görüntü sunucuya gönderilmez.</p>
-        <div class="chip-row mb3">${styleBtns}</div>
-        <p class="footnote" style="margin-bottom:10px;">${activeDesc}</p>
-        <div class="field mb3">
-          <label>Diş boyutu (küçült / büyüt)</label>
-          <input type="range" min="80" max="130" value="${Math.round(state.smileScale*100)}" data-action-input="smile-scale" id="smile-scale-slider" style="width:100%;" />
-        </div>
-        <div id="smile-cam-wrap" class="cam-wrap">
-          <video id="smile-video" playsinline muted style="display:none;"></video>
-          <canvas id="smile-canvas"></canvas>
-          <div id="smile-status" class="cam-status">Kamerayı başlatmak için butona bas</div>
-        </div>
-        <button class="btn-primary" data-action="toggle-camera" style="margin-top:12px;">
-          ${state.smileCameraOn ? icon("monitor",16)+" Kamerayı Kapat" : icon("monitor",16)+" Kamerayı Aç ve Gülüşünü Gör"}
-        </button>
-        ${state.smileCameraOn ? `<button class="btn-primary" style="margin-top:10px;background:var(--tealLight);" data-action="smile-capture">📸 Fotoğrafını Çek</button>` : ""}
-      </div>
-    </div>`;
-}
 
 /* ---------------- REFERANSLAR ---------------- */
 
@@ -605,7 +621,7 @@ const LANGS = [
    cevapları) şimdilik yalnızca Türkçedir — bu ayrı, çok daha büyük bir iştir. */
 const I18N = {
   tr: { home:"Ana Sayfa", services:"Hizmetler", booking:"Randevu", chatbot:"DİJİ RAMO", more:"Diğer",
-    account:"Hesabım", doctors:"Doktorlarımız", devices:"Cihazlarımız", smile:"Gülüşünü Tasarla",
+    account:"Hesabım", doctors:"Doktorlarımız", devices:"Cihazlarımız",
     reviews:"Yorumlar", store:"Mağaza", address:"Adresimiz", contact:"İletişim", info:"Diş Sağlığı Bilgileri",
     "admin-login":"Yönetici Girişi", settings:"Ayarlar", campaigns:"Kampanyalar", save:"Kaydet", send:"Gönder" },
   en: { home:"Home", services:"Services", booking:"Appointment", chatbot:"DİJİ RAMO", more:"More",
@@ -646,24 +662,294 @@ function renderSettings() {
     </div>`;
 }
 
+/* ============ ROZET TANIMLARI ============ */
+const BADGE_DEFS = [
+  { id: "first_review", name: "İlk Yorum", icon: "⭐", desc: "İlk yorumunu yazdı" },
+  { id: "first_appointment", name: "İlk Randevu", icon: "📅", desc: "İlk randevusunu aldı" },
+  { id: "7_day_streak", name: "7 Gün", icon: "🔥", desc: "7 gün üst üste fırçaladı" },
+  { id: "14_day_streak", name: "14 Gün", icon: "💪", desc: "14 gün üst üste fırçaladı" },
+  { id: "30_day_streak", name: "30 Gün", icon: "🏅", desc: "30 gün üst üste fırçaladı" },
+  { id: "60_day_streak", name: "60 Gün", icon: "🥇", desc: "60 gün üst üste fırçaladı" },
+  { id: "100_day_streak", name: "100 Gün", icon: "👑", desc: "100 gün üst üste fırçaladı" },
+  { id: "365_day_streak", name: "365 Gün", icon: "🏆", desc: "Bir yıl üst üste fırçaladı!" },
+  { id: "family_member", name: "Aile", icon: "👨‍👩‍👧", desc: "Aile üyesi ekledi" },
+  { id: "profile_complete", name: "Tam Profil", icon: "✅", desc: "Tüm profil bilgilerini doldurdu" },
+];
+
+const DEFAULT_HEALTH_TIPS = [
+  "Günde en az 2 kez, 2 dakika diş fırçalamak diş sağlığınız için en önemli adımdır.",
+  "Diş ipi kullanmak diş eti hastalıklarını %40 oranında azaltır.",
+  "Şekerli yiyeceklerden sonra ağzınızı su ile çalkalamak çürük riskini azaltır.",
+  "Diş fırçanızı her 3 ayda bir değiştirmeyi unutmayın.",
+  "Florürlü diş macunu kullanmak diş minesini güçlendirir.",
+  "Düzenli diş kontrolü, sorunları erken teşhis etmenin en iyi yoludur.",
+  "Çay ve kahve dişlerde lekelenmeye neden olabilir, ardından su için.",
+  "Sert kıllı diş fırçası diş etlerine zarar verebilir, yumuşak kıllı tercih edin.",
+  "Dil temizliği ağız kokusunu %70 oranında azaltır.",
+  "Süt ürünleri kalsiyum açısından zengindir ve dişleri güçlendirir.",
+  "Çocuklarda diş fırçalama alışkanlığı 2 yaşından itibaren kazandırılmalıdır.",
+  "Diş sıkma ve gıcırdatma, dişlere ciddi zarar verebilir — farkında olun.",
+  "Elma ve havuç gibi sert meyveler doğal diş temizleyici görevi görür.",
+  "Sigara diş eti hastalıklarının en büyük nedenlerinden biridir.",
+  "Ağız gargarası, fırçalamanın ulaşamadığı bölgeleri temizlemeye yardımcı olur.",
+];
+
 function renderAccount() {
   if (!state.user) {
     return `${topbar("Hesabım","Randevu almak, yorum yapmak ve sipariş vermek için giriş yap.", {back:"home"})}
-      <div class="content">${authGate("Henüz giriş yapmadın.")}</div>`;
+      <div class="content">
+        <div class="card p5" style="text-align:center;">
+          <div style="font-size:64px;margin-bottom:16px;">👤</div>
+          <p class="name" style="font-size:18px;margin-bottom:8px;">Hoş Geldiniz!</p>
+          <p class="desc" style="margin-bottom:24px;">Randevu almak, yorum yapmak ve profilinizi yönetmek için Google ile giriş yapın.</p>
+          <button class="btn-primary" data-action="sign-in-google" style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;font-size:16px;">
+            <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            Google ile Giriş Yap
+          </button>
+        </div>
+      </div>`;
   }
-  return `${topbar("Hesabım","", {back:"home"})}
+
+  const p = state.userProfile || {};
+  const bmi = (p.weight && p.height) ? (p.weight / Math.pow(p.height/100, 2)).toFixed(1) : null;
+  const bmiLabel = bmi ? (bmi < 18.5 ? "Zayıf" : bmi < 25 ? "Normal" : bmi < 30 ? "Fazla Kilolu" : "Obez") : "";
+  const bmiColor = bmi ? (bmi < 18.5 ? "#3498db" : bmi < 25 ? "#27ae60" : bmi < 30 ? "#f39c12" : "#e74c3c") : "";
+  const streak = state.brushStreak || 0;
+  const todayBrushed = state.lastBrushDate === new Date().toDateString();
+
+  // 6 aylık kontrol hatırlatma
+  const lastCheckup = p.lastCheckup ? new Date(p.lastCheckup) : null;
+  const nextCheckup = lastCheckup ? new Date(lastCheckup.getTime() + 180*24*60*60*1000) : null;
+  const daysUntilCheckup = nextCheckup ? Math.ceil((nextCheckup - new Date()) / (24*60*60*1000)) : null;
+
+  return `${topbar("Profilim","Kişisel bilgileriniz ve diş sağlığı araçlarınız.", {back:"home"})}
     <div class="content">
-      <div class="card p4 mb4 row">
-        <div class="badge badge-teal">${icon("user",20)}</div>
-        <div><p class="name" style="font-size:14px;">${escapeHtml(state.user.name || "")}</p><p class="desc">${escapeHtml(state.user.email || "")}</p></div>
+      
+      <!-- Profil Kartı -->
+      <div class="card p4 mb4">
+        <div class="row" style="justify-content:space-between;align-items:center;">
+          <div class="row" style="gap:12px;">
+            <div class="badge badge-teal">${icon("user",22)}</div>
+            <div>
+              <p class="name" style="font-size:16px;">${escapeHtml(p.firstName && p.lastName ? p.firstName + " " + p.lastName : (state.user.name || "Kullanıcı"))}</p>
+              <p class="desc">${escapeHtml(state.user.email || "")}</p>
+            </div>
+          </div>
+          <button class="qty-btn" style="width:auto;padding:8px 16px;" data-action="edit-profile">✏️ Düzenle</button>
+        </div>
       </div>
-      <button class="btn-primary" style="background:var(--bad);" data-action="sign-out">Çıkış Yap</button>
+
+      <!-- Diş Fırçalama Serisi -->
+      <div class="card p4 mb4" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;">
+        <div style="text-align:center;">
+          <div style="font-size:48px;margin-bottom:8px;">🔥</div>
+          <p style="font-size:32px;font-weight:700;margin:0;">${streak} Gün</p>
+          <p style="font-size:14px;opacity:0.9;margin:4px 0 16px;">Diş Fırçalama Serisi</p>
+          ${todayBrushed 
+            ? `<button class="btn-primary" style="background:rgba(255,255,255,0.2);color:white;border:2px solid white;" disabled>✅ Bugün Fırçaladın!</button>`
+            : `<button class="btn-primary" style="background:white;color:#764ba2;" data-action="brush-teeth">🪥 Fırçaladım!</button>`
+          }
+        </div>
+      </div>
+
+      <!-- BMI Hesaplama -->
+      ${p.weight && p.height ? `
+      <div class="card p4 mb4">
+        <p class="section-label" style="margin:0 0 12px;">⚖️ Vücut Kitle İndeksi</p>
+        <div style="text-align:center;">
+          <p style="font-size:42px;font-weight:700;color:${bmiColor};margin:0;">${bmi}</p>
+          <p style="font-size:16px;color:${bmiColor};font-weight:600;margin:4px 0;">${bmiLabel}</p>
+          <p class="footnote" style="margin:8px 0 0;">${p.weight} kg · ${p.height} cm${p.age ? " · " + p.age + " yaş" : ""}</p>
+        </div>
+      </div>` : `
+      <div class="card p4 mb4" style="border:2px dashed var(--border);">
+        <p class="desc" style="text-align:center;margin:0;">⚖️ BMI hesaplama için profilinizi düzenleyip kilo ve boy bilgilerinizi girin.</p>
+      </div>`}
+
+      <!-- Diş Fırçalama Videosu (Çocuklar İçin) -->
+      ${state.brushingVideoUrl ? `
+      <div class="card p4 mb4">
+        <p class="section-label" style="margin:0 0 12px;">🎬 Eğlenceli Diş Fırçalama (2 dk)</p>
+        <p class="footnote" style="margin:0 0 12px;">Çocuklar için eğlenceli 2 dakikalık diş fırçalama videosu. Videoyu izlerken dişlerini fırçala!</p>
+        <button class="btn-primary" data-action="watch-brush-video" style="width:100%;">▶️ Videoyu İzle</button>
+      </div>` : ""}
+
+      <!-- Günlük İpucu -->
+      ${state.dailyTip ? `
+      <div class="card p4 mb4" style="background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);color:white;">
+        <p style="font-size:12px;font-weight:600;opacity:0.9;margin:0 0 6px;">💡 GÜNÜN DİŞ SAĞLIĞI İPUCU</p>
+        <p style="font-size:15px;margin:0;line-height:1.5;">${escapeHtml(state.dailyTip)}</p>
+      </div>` : ""}
+
+      <!-- Rozetler -->
+      ${state.badges.length > 0 ? `
+      <div class="card p4 mb4">
+        <p class="section-label" style="margin:0 0 12px;">🏆 Rozetlerim</p>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          ${state.badges.map(b => {
+            const badgeDef = BADGE_DEFS.find(d => d.id === b);
+            return badgeDef ? `<div style="background:var(--bg);border-radius:12px;padding:8px 12px;text-align:center;min-width:80px;">
+              <div style="font-size:24px;">${badgeDef.icon}</div>
+              <p style="font-size:11px;margin:4px 0 0;font-weight:500;">${badgeDef.name}</p>
+            </div>` : "";
+          }).join("")}
+        </div>
+      </div>` : ""}
+
+      <!-- Aile Üyeleri -->
+      <div class="card p4 mb4">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <p class="section-label" style="margin:0;">👨‍👩‍👧‍👦 Aile Üyeleri</p>
+          <button class="qty-btn" style="width:auto;padding:6px 14px;" data-action="add-family-member">+ Ekle</button>
+        </div>
+        ${(state.familyMembers || []).length > 0 ? state.familyMembers.map(fm => `
+          <div class="card p3 mb2" style="background:var(--bg);">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <p class="desc" style="margin:0;font-weight:600;">${escapeHtml(fm.name)} <span style="font-weight:400;opacity:0.7;">(${escapeHtml(fm.relation || "")})</span></p>
+                <p class="footnote" style="margin:2px 0 0;">${fm.age ? fm.age + " yaş" : ""} · 🔥 ${fm.streak || 0} gün seri</p>
+              </div>
+              <div style="display:flex;gap:6px;">
+                <button class="qty-btn" style="padding:4px 8px;" data-action="edit-family-member" data-id="${fm.id}">✏️</button>
+                <button class="qty-btn" style="padding:4px 8px;background:var(--bad);color:#fff;" data-action="remove-family-member" data-id="${fm.id}">🗑️</button>
+              </div>
+            </div>
+          </div>
+        `).join("") : `<p class="footnote">Henüz aile üyesi eklenmedi. Çocuklarınızın diş fırçalama takibini buradan yapabilirsiniz.</p>`}
+      </div>
+
+      <!-- Tedavi Geçmişi -->
+      <div class="card p4 mb4">
+        <p class="section-label" style="margin:0 0 12px;">🦷 Tedavi Geçmişim</p>
+        ${(() => {
+          const email = state.user?.email || "";
+          const fullName = ((p.firstName || "") + " " + (p.lastName || "")).trim();
+          const myTreatments = (state.treatments || []).filter(t => 
+            t.userName === email || t.userName === fullName || t.userName === (p.firstName || "") || t.uid === state.user?.uid
+          );
+          return myTreatments.length > 0 ? myTreatments.slice().reverse().map(t => `
+            <div class="card p3 mb2" style="background:var(--bg);">
+              <p class="desc" style="margin:0;font-weight:600;">${escapeHtml(t.treatmentName)}</p>
+              <p class="footnote" style="margin:2px 0 0;">📅 ${escapeHtml(t.date || "")} ${t.notes ? "· " + escapeHtml(t.notes) : ""}</p>
+            </div>
+          `).join("") : `<p class="footnote">Henüz tedavi kaydı yok. Yönetici tarafından eklendiğinde burada görünecek.</p>`;
+        })()}
+      </div>
+
+      <!-- Randevu Geçmişi -->
+      <div class="card p4 mb4">
+        <p class="section-label" style="margin:0 0 12px;">📅 Randevu Geçmişim</p>
+        ${(state.appointments || []).filter(a => a.uid === state.user?.uid).slice().reverse().map(a => `
+          <div class="card p3 mb2" style="background:var(--bg);">
+            <p class="desc" style="margin:0;">${escapeHtml(a.date || "")} ${escapeHtml(a.time || "")}</p>
+          </div>
+        `).join("") || `<p class="footnote">Henüz randevu geçmişiniz yok.</p>`}
+      </div>
+
+      <!-- Hatırlatmalar -->
+      <div class="card p4 mb4">
+        <p class="section-label" style="margin:0 0 16px;">🔔 Hatırlatmalar</p>
+        
+        <div style="margin-bottom:16px;">
+          <p class="desc" style="margin:0 0 8px;font-weight:500;">🪥 Diş Fırçalama Hatırlatması</p>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="time" class="input" id="brush-time" value="${escapeAttr(p.brushReminderTime || "21:00")}" style="flex:1;" />
+            <button class="qty-btn" style="width:auto;padding:8px 16px;" data-action="save-brush-time">Kaydet</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <p class="desc" style="margin:0 0 8px;font-weight:500;">🏥 6 Aylık Diş Kontrolü</p>
+          ${daysUntilCheckup !== null ? `
+            <p class="desc" style="margin:0;color:${daysUntilCheckup <= 30 ? 'var(--bad)' : 'var(--teal)'};">
+              ${daysUntilCheckup > 0 ? `📅 ${daysUntilCheckup} gün sonra (${nextCheckup.toLocaleDateString("tr-TR")})` : "⚠️ Kontrol zamanı geldi! Randevu alın."}
+            </p>
+            <button class="qty-btn" style="margin-top:8px;width:auto;padding:8px 16px;" data-action="mark-checkup-done">✓ Kontrolü Yapıldı İşaretle</button>
+          ` : `
+            <p class="footnote" style="margin:0;">Henüz kontrol tarihi kaydedilmedi.</p>
+            <button class="qty-btn" style="margin-top:8px;width:auto;padding:8px 16px;" data-action="mark-checkup-done">📅 Bugün Kontrol Vardı</button>
+          `}
+        </div>
+
+        <div>
+          <p class="desc" style="margin:0 0 8px;font-weight:500;">🔕 Bildirim Ayarları</p>
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" ${p.notificationsEnabled !== false ? 'checked' : ''} data-action="toggle-notifications" style="width:20px;height:20px;" />
+            <span class="desc" style="margin:0;">Bildirimleri etkinleştir</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Çıkış -->
+      <button class="btn-primary" style="background:var(--bad);width:100%;" data-action="sign-out">Çıkış Yap</button>
+    </div>`;
+}
+
+function renderProfileEdit() {
+  const p = state.userProfile || {};
+  return `${topbar("Profili Düzenle","Kişisel bilgilerinizi güncelleyin.", {back:"account"})}
+    <div class="content">
+      <div class="card p5">
+        <div class="field"><label>Ad</label><input class="input" id="pf-first" placeholder="Adınız" value="${escapeAttr(p.firstName||"")}" /></div>
+        <div class="field"><label>Soyad</label><input class="input" id="pf-last" placeholder="Soyadınız" value="${escapeAttr(p.lastName||"")}" /></div>
+        <div class="field"><label>Yaş</label><input class="input" id="pf-age" type="number" placeholder="Yaşınız" value="${escapeAttr(p.age||"")}" /></div>
+        <div class="field"><label>Kilo (kg)</label><input class="input" id="pf-weight" type="number" placeholder="Kilonuz" value="${escapeAttr(p.weight||"")}" /></div>
+        <div class="field"><label>Boy (cm)</label><input class="input" id="pf-height" type="number" placeholder="Boyunuz" value="${escapeAttr(p.height||"")}" /></div>
+        <button class="btn-primary" data-action="save-profile" style="width:100%;margin-top:12px;">💾 Kaydet</button>
+      </div>
+    </div>`;
+}
+
+function renderBrushingVideo() {
+  if (!state.brushingVideoUrl) {
+    return `${topbar("Diş Fırçalama","Video bulunamadı.", {back:"account"})}
+      <div class="content"><p class="footnote">Henüz diş fırçalama videosu eklenmemiş.</p></div>`;
+  }
+  // YouTube embed
+  let embedUrl = state.brushingVideoUrl;
+  const ytMatch = state.brushingVideoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+  if (ytMatch) embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1`;
+
+  return `${topbar("🪥 Diş Fırçala!","Videoyu izle, dişlerini fırçala!", {back:"account"})}
+    <div class="content">
+      <div class="card p4" style="text-align:center;">
+        <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;">
+          <iframe src="${embedUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allow="autoplay;encrypted-media" allowfullscreen></iframe>
+        </div>
+        <p class="desc" style="margin:16px 0 8px;">🎵 Müzik eşliğinde 2 dakika dişlerini fırçala!</p>
+        <button class="btn-primary" data-action="brush-teeth" style="margin-top:8px;">✅ Fırçalamayı Bitirdim!</button>
+      </div>
+    </div>`;
+}
+
+function renderFamilyAdd() {
+  const editingId = state._editingFamilyMember;
+  const member = editingId ? (state.familyMembers || []).find(m => m.id === editingId) : null;
+  return `${topbar(editingId ? "Üyeyi Düzenle" : "Aile Üyesi Ekle", editingId ? "Bilgileri güncelleyin." : "Çocuğunuz veya aile üyenizi ekleyin.", {back:"account"})}
+    <div class="content">
+      <div class="card p5">
+        <div class="field"><label>Ad Soyad</label><input class="input" id="fm-name" placeholder="Ad soyad" value="${escapeAttr(member?.name || "")}" /></div>
+        <div class="field"><label>Yakınlık</label>
+          <select class="input" id="fm-relation">
+            <option value="Çocuğum" ${member?.relation === "Çocuğum" ? "selected" : ""}>Çocuğum</option>
+            <option value="Eşim" ${member?.relation === "Eşim" ? "selected" : ""}>Eşim</option>
+            <option value="Kardeşim" ${member?.relation === "Kardeşim" ? "selected" : ""}>Kardeşim</option>
+            <option value="Annem/Babam" ${member?.relation === "Annem/Babam" ? "selected" : ""}>Annem/Babam</option>
+            <option value="Diğer" ${member?.relation === "Diğer" ? "selected" : ""}>Diğer</option>
+          </select>
+        </div>
+        <div class="field"><label>Yaş</label><input class="input" id="fm-age" type="number" placeholder="Yaş" value="${escapeAttr(member?.age || "")}" /></div>
+        <div class="field"><label>Fırçalama Hatırlatma Saati</label><input type="time" class="input" id="fm-brush-time" value="${escapeAttr(member?.brushReminderTime || "20:00")}" /></div>
+        <button class="btn-primary" data-action="save-family-member" style="width:100%;margin-top:12px;">💾 Kaydet</button>
+      </div>
     </div>`;
 }
 
 function renderReviews() {
   const r = state.reviewForm;
-  const list = state.reviews.length ? state.reviews.slice().reverse().map(rv => `
+  // Engellenen kullanıcıların yorumlarını gizle
+  const filteredReviews = state.reviews.filter(rv => !rv.uid || !state.blockedUsers.includes(rv.uid));
+  const list = filteredReviews.length ? filteredReviews.slice().reverse().map(rv => `
     <div class="card p4 mb3">
       <div class="row" style="justify-content:space-between;">
         <p class="name" style="font-size:14px;">${escapeHtml(rv.name)}</p>
@@ -827,6 +1113,16 @@ function renderContact() {
         <div class="card p4 mb3 row"><div>${icon("calendar",18)}</div><p style="margin:0;font-size:14px;">Hafta içi 09:00–18:00, Cumartesi 10:00–14:00</p></div>
         <div class="card p4 row"><div>${icon("user",18)}</div><p style="margin:0;font-size:14px;">Dt. Ramazan DAĞ</p></div>
       </div>
+      
+      ${Object.keys(state.socialMedia).length > 0 ? `
+      <div class="card p4 mb5">
+        <p class="name" style="font-size:16px;margin-bottom:12px;">📱 Bizi Takip Edin</p>
+        ${state.socialMedia.youtube ? `<a href="${state.socialMedia.youtube}" target="_blank" class="card p3 mb2 row" style="text-decoration:none;color:var(--ink);"><div>📺</div><p style="margin:0;font-size:14px;">YouTube</p></a>` : ''}
+        ${state.socialMedia.instagram ? `<a href="${state.socialMedia.instagram}" target="_blank" class="card p3 mb2 row" style="text-decoration:none;color:var(--ink);"><div>📷</div><p style="margin:0;font-size:14px;">Instagram</p></a>` : ''}
+        ${state.socialMedia.twitter ? `<a href="${state.socialMedia.twitter}" target="_blank" class="card p3 mb2 row" style="text-decoration:none;color:var(--ink);"><div>🐦</div><p style="margin:0;font-size:14px;">Twitter / X</p></a>` : ''}
+        ${state.socialMedia.facebook ? `<a href="${state.socialMedia.facebook}" target="_blank" class="card p3 mb2 row" style="text-decoration:none;color:var(--ink);"><div>📘</div><p style="margin:0;font-size:14px;">Facebook</p></a>` : ''}
+        ${state.socialMedia.whatsapp ? `<a href="${state.socialMedia.whatsapp.startsWith('http') ? escapeAttr(state.socialMedia.whatsapp) : 'https://wa.me/' + state.socialMedia.whatsapp.replace(/\D/g, '')}" target="_blank" class="card p3 mb2 row" style="text-decoration:none;color:var(--ink);"><div>📱</div><p style="margin:0;font-size:14px;">WhatsApp</p></a>` : ''}
+      </div>` : ''}
       <div class="card p5">
         <p class="name" style="font-size:17px;margin-bottom:12px;">Mesaj bırak</p>
         <div class="field"><label>Ad Soyad</label><input class="input" id="c-name" value="${escapeAttr(c.name)}" /></div>
@@ -904,8 +1200,22 @@ function findChatReply(text) {
 }
 
 function renderChatbot() {
+  if (!state.user) {
+    return `${topbar("DİJİ RAMO","Diş sağlığı asistanınız.")}
+      <div class="content">
+        <div class="card p5" style="text-align:center;">
+          <div style="font-size:64px;margin-bottom:16px;">🤖</div>
+          <p class="name" style="font-size:18px;margin-bottom:8px;">DİJİ RAMO ile Sohbet</p>
+          <p class="desc" style="margin-bottom:24px;">Diş sağlığı hakkında soru sormak ve fotoğraf göndermek için önce giriş yapmanız gerekiyor.</p>
+          <button class="btn-primary" data-action="sign-in-google" style="display:inline-flex;align-items:center;gap:10px;padding:14px 28px;font-size:16px;">
+            <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            Google ile Giriş Yap
+          </button>
+        </div>
+      </div>`;
+  }
   const msgs = state.chatLog.map(m => `
-    <div class="chat-msg ${m.from==='user' ? 'chat-user':'chat-bot'}">${m.image ? `<img src="${m.image}" style="width:100%;border-radius:10px;margin-bottom:6px;display:block;" />` : ""}${escapeHtml(m.text)}</div>`).join("");
+    <div class="chat-msg ${m.from==='user' ? 'chat-user':'chat-bot'}">${m.image ? `<img src="${m.image}" style="width:100%;border-radius:10px;margin-bottom:6px;display:block;" />` : ""}${escapeHtml(m.text)}${m.bookingBtn ? `<br><button class="btn-primary" style="margin-top:10px;padding:10px 16px;font-size:13px;" data-action="goto" data-screen="booking">📅 Randevu Al</button>` : ""}</div>`).join("");
   return `${topbar("DİJİ RAMO","Diş sağlığı hakkında soru sor, dişinin fotoğrafını da gönderebilirsin.")}
     <div class="content" style="padding-bottom:100px;">
       ${!AI_ENDPOINT_READY ? `<p class="footnote" style="margin-bottom:10px;">ℹ️ Şu an genişletilmiş bilgi tabanıyla cevap veriyorum. Yapay zeka bağlantısı aktif olunca (yönetici tarafından kurulacak) her konuya cevap verebileceğim.</p>` : ""}
@@ -936,52 +1246,54 @@ function renderAdminLogin() {
 }
 
 function renderAdminPanel() {
-  const apps = state.appointments.slice().reverse().map(a=>`<div class="card p3 mb2"><p class="desc" style="margin:0;">${a.date||""} ${a.time||""} · ${escapeHtml(a.name)} · ${escapeHtml(a.phone)}</p></div>`).join("") || `<p class="footnote">Henüz randevu yok.</p>`;
-  const ords = state.orders.slice().reverse().map(o=>`<div class="card p3 mb2"><p class="desc" style="margin:0;">${escapeHtml(o.name)} · ${escapeHtml(o.phone)} · ${o.total} ₺</p><p class="footnote" style="margin:2px 0 0;">${escapeHtml(o.address||"")}</p></div>`).join("") || `<p class="footnote">Henüz sipariş yok.</p>`;
+  const tabs = [
+    { id: "appointments", label: "📅 Randevular", count: state.appointments.length },
+    { id: "orders", label: "📦 Siparişler", count: state.orders.length },
+    { id: "products", label: "🛍️ Ürünler", count: 0 },
+    { id: "videos", label: "🎥 Videolar", count: 0 },
+    { id: "social", label: "📱 Sosyal Medya", count: 0 },
+    { id: "reviews", label: "⭐ Yorumlar", count: state.reviews.length },
+    { id: "treatments", label: "🦷 Tedaviler", count: state.treatments.length },
+    { id: "tips", label: "💡 İpuçları", count: state.healthTips.length },
+    { id: "announcements", label: "📢 Duyurular", count: state.announcements.length },
+    { id: "accounting", label: "💰 Muhasebe", count: 0 }
+  ];
 
-  const videoRows = SERVICES.map(s => `
-    <div class="card p3 mb2">
-      <p class="desc" style="margin:0 0 6px;font-weight:500;color:var(--ink);">${s.name}</p>
-      <div style="display:flex;gap:6px;">
-        <input class="input" id="vid-${s.id}" placeholder="YouTube linki" value="${escapeAttr(state.serviceVideos[s.id]||"")}" style="flex:1;" />
-        <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-video" data-id="${s.id}">Kaydet</button>
-      </div>
-    </div>`).join("");
+  const tabButtons = tabs.map(t => `
+    <button class="admin-tab ${state.adminTab === t.id ? 'active' : ''}" data-action="admin-tab" data-tab="${t.id}">
+      ${t.label}${t.count > 0 ? ` <span class="tab-badge">${t.count}</span>` : ''}
+    </button>
+  `).join("");
 
-  const imgRows = allProducts().flatMap(cat => cat.items).map(p => `
-    <div class="card p3 mb2">
-      <p class="desc" style="margin:0 0 6px;font-weight:500;color:var(--ink);">${p.name}</p>
-      <div style="display:flex;gap:6px;">
-        <input class="input" id="img-${p.id}" placeholder="Görsel URL'si" value="${escapeAttr(state.productImages[p.id]||"")}" style="flex:1;" />
-        <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-product-image" data-id="${p.id}">Kaydet</button>
-      </div>
-    </div>`).join("");
+  let tabContent = "";
 
-  const deviceVideoRows = DEVICES.map(d => `
-    <div class="card p3 mb2">
-      <p class="desc" style="margin:0 0 6px;font-weight:500;color:var(--ink);">${d.name}</p>
-      <div style="display:flex;gap:6px;">
-        <input class="input" id="dvid-${d.id}" placeholder="YouTube linki" value="${escapeAttr(state.deviceVideos[d.id]||"")}" style="flex:1;" />
-        <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-device-video" data-id="${d.id}">Kaydet</button>
-      </div>
-    </div>`).join("");
-
-  const reviewRows = state.reviews.slice().reverse().map(rv => `
-    <div class="card p3 mb2">
-      <p class="desc" style="margin:0 0 2px;"><b>${escapeHtml(rv.name)}</b> ${stars(rv.rating)}</p>
-      <p class="desc" style="margin:0 0 6px;">${escapeHtml(rv.text)}</p>
-      <div style="display:flex;gap:6px;">
-        <input class="input" id="rvreply-${rv.id}" placeholder="Yanıt yaz (herkes görür)" value="${escapeAttr(rv.adminReply||"")}" style="flex:1;" />
-        <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-review-reply" data-id="${rv.id}">Kaydet</button>
-      </div>
-    </div>`).join("") || `<p class="footnote">Henüz yorum yok.</p>`;
-
-  return `${topbar("Yönetici Paneli","Randevular ve ürün yönetimi.", {back:"home"})}
-    <div class="content">
+  if (state.adminTab === "appointments") {
+    const apps = state.appointments.slice().reverse().map(a=>`<div class="card p3 mb2"><p class="desc" style="margin:0;">${a.date||""} ${a.time||""} · ${escapeHtml(a.name)} · ${escapeHtml(a.phone)}</p></div>`).join("") || `<p class="footnote">Henüz randevu yok.</p>`;
+    tabContent = `
       <p class="section-label">Gelen randevular (canlı)</p>
       <div class="mb4">${apps}</div>
+    `;
+  }
+
+  if (state.adminTab === "orders") {
+    const ords = state.orders.slice().reverse().map(o=>`<div class="card p3 mb2"><p class="desc" style="margin:0;">${escapeHtml(o.name)} · ${escapeHtml(o.phone)} · ${o.total} ₺</p><p class="footnote" style="margin:2px 0 0;">${escapeHtml(o.address||"")}</p></div>`).join("") || `<p class="footnote">Henüz sipariş yok.</p>`;
+    tabContent = `
       <p class="section-label">Gelen siparişler (canlı)</p>
       <div class="mb4">${ords}</div>
+    `;
+  }
+
+  if (state.adminTab === "products") {
+    const imgRows = allProducts().flatMap(cat => cat.items).map(p => `
+      <div class="card p3 mb2">
+        <p class="desc" style="margin:0 0 6px;font-weight:500;color:var(--ink);">${p.name}</p>
+        <div style="display:flex;gap:6px;">
+          <input class="input" id="img-${p.id}" placeholder="Görsel URL'si" value="${escapeAttr(state.productImages[p.id]||"")}" style="flex:1;" />
+          <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-product-image" data-id="${p.id}">Kaydet</button>
+        </div>
+      </div>`).join("");
+
+    tabContent = `
       <p class="section-label">Yeni ürün ekle</p>
       <div class="card p5 mb4">
         <div class="field"><label>Ürün adı</label><input class="input" id="np-name" /></div>
@@ -991,15 +1303,431 @@ function renderAdminPanel() {
       <p class="section-label">Ürün görselleri</p>
       <p class="footnote" style="margin-top:-4px;">Görseli bir yere yükleyip (ör. Google Drive'da "herkese açık" paylaşım linki, Imgur vb.) buraya linkini yapıştır.</p>
       <div class="mb4">${imgRows}</div>
+    `;
+  }
+
+  if (state.adminTab === "videos") {
+    const videoRows = SERVICES.map(s => `
+      <div class="card p3 mb2">
+        <p class="desc" style="margin:0 0 6px;font-weight:500;color:var(--ink);">${s.name}</p>
+        <div style="display:flex;gap:6px;">
+          <input class="input" id="vid-${s.id}" placeholder="YouTube linki" value="${escapeAttr(state.serviceVideos[s.id]||"")}" style="flex:1;" />
+          <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-video" data-id="${s.id}">Kaydet</button>
+        </div>
+      </div>`).join("");
+
+    const deviceVideoRows = DEVICES.map(d => `
+      <div class="card p3 mb2">
+        <p class="desc" style="margin:0 0 6px;font-weight:500;color:var(--ink);">${d.name}</p>
+        <div style="display:flex;gap:6px;">
+          <input class="input" id="dvid-${d.id}" placeholder="YouTube linki" value="${escapeAttr(state.deviceVideos[d.id]||"")}" style="flex:1;" />
+          <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-device-video" data-id="${d.id}">Kaydet</button>
+        </div>
+      </div>`).join("");
+
+    tabContent = `
+      <p class="section-label">🪥 Çocuklar İçin Diş Fırçalama Videosu</p>
+      <p class="footnote" style="margin-top:-4px;">Çocukların izleyerek diş fırçalayacağı eğlenceli 2 dakikalık YouTube videosu. Boş bırakılırsa profil sayfasında görünmez.</p>
+      <div class="card p3 mb4">
+        <div style="display:flex;gap:6px;">
+          <input class="input" id="brush-video-url" placeholder="YouTube linki (örn: https://youtube.com/watch?v=...)" value="${escapeAttr(state.brushingVideoUrl||"")}" style="flex:1;" />
+          <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-brush-video">Kaydet</button>
+        </div>
+      </div>
       <p class="section-label">Hizmet tanıtım videoları</p>
       <p class="footnote" style="margin-top:-4px;">YouTube'a yüklediğin videonun linkini ilgili hizmetin yanına yapıştır.</p>
       <div class="mb4">${videoRows}</div>
       <p class="section-label">Cihaz tanıtım videoları</p>
       <p class="footnote" style="margin-top:-4px;">Cihazın nasıl çalıştığını gösteren YouTube videosunun linkini yapıştır.</p>
       <div class="mb4">${deviceVideoRows}</div>
+    `;
+  }
+
+  if (state.adminTab === "social") {
+    const socialMediaRows = `
+      <div class="card p3 mb2">
+        <p class="desc" style="margin:0 0 6px;font-weight:500;color:var(--ink);">📺 YouTube</p>
+        <div style="display:flex;gap:6px;">
+          <input class="input" id="sm-youtube" placeholder="YouTube kanal linki" value="${escapeAttr(state.socialMedia.youtube||"")}" style="flex:1;" />
+          <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-social" data-id="youtube">Kaydet</button>
+        </div>
+      </div>
+      <div class="card p3 mb2">
+        <p class="desc" style="margin:0 0 6px;font-weight:500;color:var(--ink);">📷 Instagram</p>
+        <div style="display:flex;gap:6px;">
+          <input class="input" id="sm-instagram" placeholder="Instagram profil linki" value="${escapeAttr(state.socialMedia.instagram||"")}" style="flex:1;" />
+          <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-social" data-id="instagram">Kaydet</button>
+        </div>
+      </div>
+      <div class="card p3 mb2">
+        <p class="desc" style="margin:0 0 6px;font-weight:500;color:var(--ink);">🐦 Twitter / X</p>
+        <div style="display:flex;gap:6px;">
+          <input class="input" id="sm-twitter" placeholder="Twitter/X profil linki" value="${escapeAttr(state.socialMedia.twitter||"")}" style="flex:1;" />
+          <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-social" data-id="twitter">Kaydet</button>
+        </div>
+      </div>
+      <div class="card p3 mb2">
+        <p class="desc" style="margin:0 0 6px;font-weight:500;color:var(--ink);">📘 Facebook</p>
+        <div style="display:flex;gap:6px;">
+          <input class="input" id="sm-facebook" placeholder="Facebook sayfa linki" value="${escapeAttr(state.socialMedia.facebook||"")}" style="flex:1;" />
+          <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-social" data-id="facebook">Kaydet</button>
+        </div>
+      </div>
+      <div class="card p3 mb2">
+        <p class="desc" style="margin:0 0 6px;font-weight:500;color:var(--ink);">📱 WhatsApp</p>
+        <div style="display:flex;gap:6px;">
+          <input class="input" id="sm-whatsapp" placeholder="WhatsApp linki (https://chat.whatsapp.com/... veya numara)" value="${escapeAttr(state.socialMedia.whatsapp||"")}" style="flex:1;" />
+          <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-social" data-id="whatsapp">Kaydet</button>
+        </div>
+      </div>`;
+
+    tabContent = `
+      <p class="section-label">Sosyal Medya Linkleri</p>
+      <p class="footnote" style="margin-top:-4px;">İletişim sayfasında görünecek sosyal medya hesaplarınızın linklerini girin.</p>
+      <div class="mb4">${socialMediaRows}</div>
+    `;
+  }
+
+  if (state.adminTab === "reviews") {
+    const reviewRows = state.reviews.slice().reverse().map(rv => {
+      const isBlocked = rv.uid && state.blockedUsers.includes(rv.uid);
+      return `
+      <div class="card p3 mb2" style="${isBlocked ? 'opacity:0.5;' : ''}">
+        <p class="desc" style="margin:0 0 2px;"><b>${escapeHtml(rv.name)}</b> ${stars(rv.rating)} ${isBlocked ? '<span style="color:var(--bad);font-size:11px;">(ENGELLİ)</span>' : ''}</p>
+        <p class="desc" style="margin:0 0 6px;">${escapeHtml(rv.text)}</p>
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <input class="input" id="rvreply-${rv.id}" placeholder="Yanıt yaz (herkes görür)" value="${escapeAttr(rv.adminReply||"")}" style="flex:1;" />
+          <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-review-reply" data-id="${rv.id}">Kaydet</button>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="qty-btn" style="width:auto;padding:0 12px;background:var(--bad);color:#fff;" data-action="delete-review" data-id="${rv.id}">🗑️ Sil</button>
+          ${rv.uid ? `<button class="qty-btn" style="width:auto;padding:0 12px;background:${isBlocked ? 'var(--teal)' : 'var(--bad)'};color:#fff;" data-action="${isBlocked ? 'unblock-user' : 'block-user'}" data-uid="${rv.uid}">${isBlocked ? '✓ Engeli Kaldır' : '🚫 Kullanıcıyı Engelle'}</button>` : ''}
+        </div>
+      </div>`;
+    }).join("") || `<p class="footnote">Henüz yorum yok.</p>`;
+
+    tabContent = `
       <p class="section-label">Yorumlara yanıt ver</p>
       <p class="footnote" style="margin-top:-4px;">Yazdığın yanıt, o yorumun altında tüm kullanıcılara görünür.</p>
       <div class="mb4">${reviewRows}</div>
+    `;
+  }
+
+  if (state.adminTab === "treatments") {
+    // Tedavi fiyat listesi
+    const priceList = state.treatmentPrices || {};
+    const defaultPrices = {
+      "Muayene": 0, "Dolgu": 2000, "Kanal Tedavisi": 4000, "İmplant": 15000,
+      "Zirkonyum Kaplama": 5000, "Diş Beyazlatma": 3000, "Ortodonti": 25000,
+      "Protez": 12000, "Diş Taşı Temizliği": 1000, "Diş Çekimi": 1500,
+      "Köprü": 8000, "Lamine Veneer": 6000, "Şeffaf Plak": 20000, "Cerrahi Çekim": 3000
+    };
+    const allPrices = { ...defaultPrices, ...priceList };
+
+    // Mevcut tedavi kayıtları
+    const treatmentRows = (state.treatments || []).slice().reverse().map(t => `
+      <div class="card p3 mb2">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <p style="font-size:13px;font-weight:600;margin:0;">🦷 ${escapeHtml(t.treatmentName)} — ${escapeHtml(t.userName || "Bilinmeyen")}</p>
+            <p style="font-size:11px;color:var(--muted);margin:2px 0 0;">📅 ${escapeHtml(t.date || "")} ${t.notes ? "· " + escapeHtml(t.notes) : ""}</p>
+            ${t.amount ? `<p style="font-size:12px;font-weight:700;color:#2E7D32;margin:4px 0 0;">💰 ₺${parseFloat(t.amount).toLocaleString('tr-TR')} ${t.invoiceNo ? "· F: " + escapeHtml(t.invoiceNo) : ""}</p>` : ""}
+          </div>
+          <button data-action="delete-treatment" data-id="${t.id}" style="background:#FFEBEE;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:#C62828;">🗑️</button>
+        </div>
+      </div>
+    `).join("") || '<p class="footnote">Henüz tedavi kaydı yok.</p>';
+
+    // Otomatik giderler durumu
+    const now = new Date();
+    const autoExpenses = state.autoExpenses || { kira:50000, elektrik:3000, su:1500, dogalgaz:2000, sgk:8000, vergi:5000 };
+
+    tabContent = `
+      <!-- Tedavi Fiyat Listesi -->
+      <div class="card p4 mb3">
+        <p style="font-size:14px;font-weight:700;margin:0 0 10px;">💲 Tedavi Fiyat Listesi</p>
+        <p style="font-size:11px;color:var(--muted);margin:0 0 10px;">Her tedavi için fiyat belirleyin. Tedavi kaydedildiğinde otomatik faturalanır.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          ${Object.entries(allPrices).map(([name, price]) => `
+            <div style="display:flex;align-items:center;gap:4px;padding:4px 0;border-bottom:1px solid var(--line);">
+              <span style="font-size:11px;flex:1;">${name}</span>
+              <input class="input" style="width:80px;padding:4px 6px;font-size:11px;text-align:right;" type="number" value="${price}" data-price-name="${name}" data-action-blur="update-price" />
+              <span style="font-size:10px;color:var(--muted);">₺</span>
+            </div>
+          `).join("")}
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px;">
+          <input class="input" id="new-price-name" placeholder="Yeni tedavi adı" style="flex:1;font-size:11px;" />
+          <input class="input" id="new-price-amount" type="number" placeholder="Fiyat" style="width:80px;font-size:11px;" />
+          <button class="btn-primary" style="width:auto;padding:6px 12px;font-size:11px;" data-action="add-price">+ Ekle</button>
+        </div>
+      </div>
+
+      <!-- Tedavi Kaydet (Hasta + Otomatik Fatura) -->
+      <div class="card p4 mb3" style="background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border:1px solid #A5D6A7;">
+        <p style="font-size:14px;font-weight:700;margin:0 0 10px;color:#1B5E20;">🦷 Hasta Tedavi Kaydet</p>
+        <p style="font-size:11px;color:#2E7D32;margin:0 0 10px;">Tedavi seçildiğinde otomatik fiyatlandırma + fatura + muhasebe kaydı yapılır.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <input class="input" id="tr-user" placeholder="Hasta adı" />
+          <select class="input" id="tr-name">
+            ${Object.entries(allPrices).map(([name, price]) => `<option value="${name}" data-price="${price}">${name} — ₺${price.toLocaleString('tr-TR')}</option>`).join("")}
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;">
+          <input class="input" id="tr-date" type="date" value="${now.toISOString().split('T')[0]}" style="font-size:11px;" />
+          <select class="input" id="tr-payment" style="font-size:11px;">
+            <option>Nakit</option><option>Kredi Kartı</option><option>POS</option><option>Havale/EFT</option>
+          </select>
+          <select class="input" id="tr-patient-type" style="font-size:11px;">
+            <option value="kisi">Şahıs</option><option value="mukellef">Vergi Mükellefi</option>
+          </select>
+        </div>
+        <input class="input" id="tr-notes" placeholder="Not (isteğe bağlı)" style="margin-top:8px;font-size:11px;" />
+        <button class="btn-primary" style="margin-top:10px;background:linear-gradient(135deg,#2E7D32,#43A047);" data-action="add-treatment">🦷 Tedavi Kaydet & Fatura Kes</button>
+      </div>
+
+      <!-- Mevcut Tedaviler -->
+      <div class="card p4 mb3">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <p style="font-size:13px;font-weight:700;margin:0;">📋 Tedavi Kayıtları</p>
+          <button class="btn-primary" style="width:auto;padding:4px 10px;font-size:10px;" data-action="print-treatments">🖨️ Çıktı Al</button>
+        </div>
+        ${treatmentRows}
+      </div>
+    `;
+  }
+  if (state.adminTab === "tips") {
+    const tipRows = (state.healthTips || []).map(t => `
+      <div class="card p3 mb2">
+        <p class="desc" style="margin:0;">💡 ${escapeHtml(t.text || "")}</p>
+        <button class="qty-btn" style="margin-top:8px;width:auto;padding:4px 12px;background:var(--bad);color:#fff;" data-action="delete-tip" data-id="${t.id}">🗑️ Sil</button>
+      </div>
+    `).join("") || `<p class="footnote">Henüz ipucu eklenmedi. Varsayılan ipuçları kullanılıyor.</p>`;
+
+    tabContent = `
+      <p class="section-label">Yeni İpucu Ekle</p>
+      <p class="footnote" style="margin-top:-4px;">Kullanıcıların profilinde günlük olarak gösterilecek diş sağlığı ipuçları.</p>
+      <div class="card p5 mb4">
+        <div class="field"><label>İpucu Metni</label><textarea id="tip-text" placeholder="Örn: Günde 2 kez 2 dakika diş fırçalamak idealdir." style="min-height:60px;"></textarea></div>
+        <button class="btn-primary" data-action="add-tip">💾 İpucu Ekle</button>
+      </div>
+      <p class="section-label">Mevcut İpuçları (${(state.healthTips || []).length})</p>
+      <div class="mb4">${tipRows}</div>
+    `;
+  }
+
+  if (state.adminTab === "announcements") {
+    const annRows = (state.announcements || []).slice().reverse().map(a => `
+      <div class="card p3 mb2">
+        <p class="name" style="font-size:14px;margin:0;">📢 ${escapeHtml(a.title || "")}</p>
+        <p class="desc" style="margin:4px 0;">${escapeHtml((a.text || "").substring(0,100))}${(a.text||"").length > 100 ? '...' : ''}</p>
+        ${a.imageUrl ? `<img src="${a.imageUrl}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;margin-top:4px;" />` : ''}
+        ${a.videoUrl ? `<p class="footnote" style="margin:4px 0;">🎥 Video: ${escapeHtml(a.videoUrl.substring(0,40))}...</p>` : ''}
+        <p class="footnote" style="margin:4px 0;">${a.createdAt ? new Date(a.createdAt).toLocaleString("tr-TR") : ''}</p>
+        <button class="qty-btn" style="margin-top:6px;width:auto;padding:4px 12px;background:var(--bad);color:#fff;" data-action="delete-announcement" data-id="${a.id}">🗑️ Sil</button>
+      </div>
+    `).join("") || `<p class="footnote">Henüz duyuru yok.</p>`;
+
+    tabContent = `
+      <p class="section-label">Yeni Duyuru Oluştur</p>
+      <p class="footnote" style="margin-top:-4px;">Duyuru yayınlandığında tüm kullanıcılara bildirim gönderilir.</p>
+      <div class="card p5 mb4">
+        <div class="field"><label>Duyuru Başlığı</label><input class="input" id="ann-title" placeholder="Örn: Klinik bayramda kapalı" /></div>
+        <div class="field"><label>Duyuru Metni</label><textarea id="ann-text" placeholder="Detaylı açıklama..." style="min-height:80px;"></textarea></div>
+        <div class="field"><label>Görsel (isteğe bağlı)</label><input type="file" id="ann-image" accept="image/*" style="font-size:12px;" /></div>
+        <div class="field"><label>Video Linki (isteğe bağlı - YouTube)</label><input class="input" id="ann-video" placeholder="https://youtube.com/watch?v=..." /></div>
+        <button class="btn-primary" data-action="add-announcement">📢 Duyuru Yayınla</button>
+      </div>
+      <p class="section-label">Mevcut Duyurular (${(state.announcements || []).length})</p>
+      <div class="mb4">${annRows}</div>
+    `;
+  }
+
+  if (state.adminTab === "accounting") {
+    const acc = state.accounting || { incomes:[], expenses:[], firms:[], bankAccounts:[], invoices:[] };
+    const now = new Date();
+    const thisMonth = now.getMonth();
+    const thisYear = now.getFullYear();
+    const monthIncomes = (acc.incomes||[]).filter(i => { const d = new Date(i.date); return d.getMonth()===thisMonth && d.getFullYear()===thisYear; });
+    const monthExpenses = (acc.expenses||[]).filter(e => { const d = new Date(e.date); return d.getMonth()===thisMonth && d.getFullYear()===thisYear; });
+    const yearIncomes = (acc.incomes||[]).filter(i => { const d = new Date(i.date); return d.getFullYear()===thisYear; });
+    const yearExpenses = (acc.expenses||[]).filter(e => { const d = new Date(e.date); return d.getFullYear()===thisYear; });
+    const totalIncome = monthIncomes.reduce((s,i) => s + (parseFloat(i.amount)||0), 0);
+    const totalExpense = monthExpenses.reduce((s,e) => s + (parseFloat(e.amount)||0), 0);
+    const totalKDV = monthIncomes.reduce((s,i) => s + (parseFloat(i.kdv)||0), 0);
+    const totalStopaj = monthIncomes.reduce((s,i) => s + (parseFloat(i.stopaj)||0), 0);
+    const profit = totalIncome - totalExpense;
+    const yearIncome = yearIncomes.reduce((s,i) => s + (parseFloat(i.amount)||0), 0);
+    const yearExpense = yearExpenses.reduce((s,e) => s + (parseFloat(e.amount)||0), 0);
+    const yearProfit = yearIncome - yearExpense;
+
+    // Yıllık gelir vergisi hesaplama (2026 dilimleri)
+    let vergi = 0;
+    if (yearProfit > 0) {
+      if (yearProfit <= 190000) vergi = yearProfit * 0.15;
+      else if (yearProfit <= 400000) vergi = 28500 + (yearProfit - 190000) * 0.20;
+      else if (yearProfit <= 1000000) vergi = 70500 + (yearProfit - 400000) * 0.27;
+      else if (yearProfit <= 5300000) vergi = 232500 + (yearProfit - 1000000) * 0.35;
+      else vergi = 1737500 + (yearProfit - 5300000) * 0.40;
+    }
+
+    // Otomatik fatura no oluştur
+    const monthStr = String(now.getMonth()+1).padStart(2,'0');
+    const yearStr = String(now.getFullYear());
+    const thisMonthInvoices = (acc.invoices||[]).filter(inv => inv.no && inv.no.startsWith(yearStr + '-' + monthStr));
+    const nextInvoiceNo = yearStr + '-' + monthStr + '-' + String((thisMonthInvoices.length || 0) + 1).padStart(5, '0');
+
+    // Son işlemler
+    const recentTx = [...(acc.incomes||[]).map(i=>({...i,txType:'income'})), ...(acc.expenses||[]).map(e=>({...e,txType:'expense'}))]
+      .sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0,15);
+
+    // POS modal (göster/gizle)
+    const showPOS = state._showPOS || false;
+
+    tabContent = `
+      <!-- Dashboard -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+        <div class="card p3" style="text-align:center;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border:1px solid #A5D6A7;">
+          <p style="font-size:10px;color:#2E7D32;margin:0;font-weight:600;">GELİR (Bu Ay)</p>
+          <p style="font-size:16px;font-weight:800;color:#1B5E20;margin:2px 0;">₺${totalIncome.toLocaleString('tr-TR',{minimumFractionDigits:2})}</p>
+        </div>
+        <div class="card p3" style="text-align:center;background:linear-gradient(135deg,#FFEBEE,#FFCDD2);border:1px solid #EF9A9A;">
+          <p style="font-size:10px;color:#C62828;margin:0;font-weight:600;">GİDER (Bu Ay)</p>
+          <p style="font-size:16px;font-weight:800;color:#B71C1C;margin:2px 0;">₺${totalExpense.toLocaleString('tr-TR',{minimumFractionDigits:2})}</p>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px;">
+        <div class="card p2" style="text-align:center;">
+          <p style="font-size:9px;color:#666;margin:0;">KDV (%10)</p>
+          <p style="font-size:13px;font-weight:700;color:#E65100;margin:2px 0;">₺${totalKDV.toLocaleString('tr-TR',{minimumFractionDigits:2})}</p>
+        </div>
+        <div class="card p2" style="text-align:center;">
+          <p style="font-size:9px;color:#666;margin:0;">Stopaj (%20)</p>
+          <p style="font-size:13px;font-weight:700;color:#1565C0;margin:2px 0;">₺${totalStopaj.toLocaleString('tr-TR',{minimumFractionDigits:2})}</p>
+        </div>
+        <div class="card p2" style="text-align:center;background:${profit>=0?'#E3F2FD':'#FFF3E0'};">
+          <p style="font-size:9px;color:#666;margin:0;">${profit>=0?'NET KÂR':'ZARAR'}</p>
+          <p style="font-size:13px;font-weight:700;color:${profit>=0?'#0D47A1':'#BF360C'};margin:2px 0;">₺${Math.abs(profit).toLocaleString('tr-TR',{minimumFractionDigits:2})}</p>
+        </div>
+      </div>
+
+      <!-- Yıllık Vergi Özeti -->
+      <div class="card p3 mb3" style="background:linear-gradient(135deg,#FFF8E1,#FFECB3);border:1px solid #FFD54F;">
+        <p style="font-size:11px;font-weight:700;color:#E65100;margin:0 0 4px;">📊 YILLIK VERGİ TAHMİNİ (${yearStr})</p>
+        <div style="display:flex;justify-content:space-between;font-size:12px;">
+          <span>Yıllık Gelir: <b>₺${yearIncome.toLocaleString('tr-TR')}</b></span>
+          <span>Gider: <b>₺${yearExpense.toLocaleString('tr-TR')}</b></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:4px;">
+          <span>Net Kâr: <b style="color:${yearProfit>=0?'#2E7D32':'#C62828'};">₺${yearProfit.toLocaleString('tr-TR')}</b></span>
+          <span>Tahmini GV: <b style="color:#E65100;">₺${vergi.toLocaleString('tr-TR',{maximumFractionDigits:0})}</b></span>
+        </div>
+      </div>
+
+      <!-- POS / Ödeme Al -->
+      <div class="card p4 mb3" style="background:linear-gradient(135deg,#1A237E,#283593);color:white;border:none;">
+        <p style="font-size:14px;font-weight:700;margin:0 0 8px;">💳 POS - Ödeme Al</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <input class="input" id="pos-desc" placeholder="Açıklama / Hasta" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);" />
+          <input class="input" id="pos-amount" type="number" placeholder="Tutar (₺)" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);" />
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;">
+          <select class="input" id="pos-category" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;">
+            <option>Muayene</option><option>Dolgu</option><option>Kanal Tedavisi</option><option>İmplant</option><option>Zirkonyum</option><option>Beyazlatma</option><option>Ortodonti</option><option>Protez</option><option>Diş Taşı Temizliği</option><option>Diğer</option>
+          </select>
+          <select class="input" id="pos-payment" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;">
+            <option>Kredi Kartı</option><option>Temassız</option><option>Karekod</option><option>Nakit</option><option>Havale/EFT</option>
+          </select>
+          <select class="input" id="pos-patient-type" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;">
+            <option value="kisi">Şahıs (Stopaj Yok)</option><option value="mukellef">Vergi Mükellefi (Stopaj %20)</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+          <input class="input" id="pos-firm" placeholder="Firma (isteğe bağlı)" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;" />
+          <input class="input" id="pos-tc" placeholder="TC / Vergi No (isteğe bağlı)" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;" />
+        </div>
+        <button class="btn-primary" style="margin-top:10px;background:linear-gradient(135deg,#4CAF50,#66BB6A);font-size:15px;font-weight:700;" data-action="pos-pay">💳 Ödeme Al & Fatura Kes</button>
+        <p style="font-size:10px;margin:6px 0 0;opacity:0.7;">Fatura No: ${nextInvoiceNo} | KDV: %10 | Otomatik vergi hesaplama</p>
+      </div>
+
+      <!-- Gider Ekle -->
+      <div class="card p4 mb3">
+        <p style="font-size:13px;font-weight:700;color:var(--bad);margin:0 0 8px;">📉 Gider Ekle</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <input class="input" id="acc-exp-desc" placeholder="Açıklama" />
+          <input class="input" id="acc-exp-amount" type="number" placeholder="Tutar (₺)" />
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;">
+          <select class="input" id="acc-exp-cat" style="font-size:11px;">
+            <option>Kira</option><option>Personel Maaş</option><option>SGK Primi</option><option>Malzeme</option><option>Vergi</option><option>Damga Vergisi</option><option>Sigorta</option><option>Elektrik/Su/İnternet</option><option>Cihaz Bakım</option><option>Muhasebeci</option><option>Bağ-Kur</option><option>İade</option><option>Diğer</option>
+          </select>
+          <input class="input" id="acc-exp-firm" placeholder="Firma" style="font-size:11px;" />
+          <input class="input" id="acc-exp-invoice" placeholder="Fatura No" style="font-size:11px;" />
+        </div>
+        <div style="margin-top:8px;">
+          <label style="font-size:11px;display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" id="acc-exp-stopaj" /> Kira ödemesi (Stopaj %20 otomatik)
+          </label>
+        </div>
+        <button class="btn-primary" style="margin-top:10px;background:var(--bad);" data-action="acc-add-expense">📉 Gider Kaydet</button>
+      </div>
+
+      <!-- Son İşlemler -->
+      <div class="card p4 mb3">
+        <p style="font-size:13px;font-weight:700;margin:0 0 10px;">📋 Son İşlemler (${recentTx.length})</p>
+        ${recentTx.length === 0 ? '<p class="footnote">Henüz kayıt yok.</p>' : recentTx.map(tx => {
+          const kdv = tx.kdv ? parseFloat(tx.kdv) : 0;
+          const stopaj = tx.stopaj ? parseFloat(tx.stopaj) : 0;
+          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">' +
+            '<div style="flex:1;">' +
+              '<p style="font-size:12px;margin:0;font-weight:600;">' + (tx.txType==='income'?'💰':'📉') + ' ' + escapeHtml(tx.description||'') + '</p>' +
+              '<p style="font-size:10px;color:var(--muted);margin:2px 0 0;">' + escapeHtml(tx.category||'') + (tx.firm ? ' · '+escapeHtml(tx.firm) : '') + ' · ' + tx.date + (tx.invoiceNo ? ' · F:'+escapeHtml(tx.invoiceNo) : '') + '</p>' +
+              (kdv || stopaj ? '<p style="font-size:9px;color:#888;margin:1px 0 0;">KDV: ₺'+kdv.toFixed(2)+' | Stopaj: ₺'+stopaj.toFixed(2)+'</p>' : '') +
+            '</div>' +
+            '<div style="text-align:right;display:flex;align-items:center;gap:6px;">' +
+              '<p style="font-size:13px;font-weight:700;color:' + (tx.txType==='income'?'#2E7D32':'#C62828') + ';margin:0;">' + (tx.txType==='income'?'+':'-') + '₺' + (parseFloat(tx.amount)||0).toLocaleString('tr-TR') + '</p>' +
+              '<button data-action="acc-delete" data-id="' + tx.id + '" data-type="' + tx.txType + '" style="background:#FFEBEE;border:none;border-radius:6px;padding:4px 6px;cursor:pointer;font-size:10px;color:#C62828;">🗑️</button>' +
+            '</div>' +
+          '</div>';
+        }).join('')}
+      </div>
+
+      <!-- Aylık Vergi Detayı -->
+      <div class="card p4 mb3">
+        <p style="font-size:13px;font-weight:700;margin:0 0 8px;">🧾 ${monthStr}/${yearStr} Vergi Özeti</p>
+        <table style="width:100%;font-size:11px;border-collapse:collapse;">
+          <tr style="border-bottom:1px solid var(--line);"><td style="padding:4px 0;">Brüt Gelir</td><td style="text-align:right;font-weight:600;">₺${monthIncomes.reduce((s,i)=>s+(parseFloat(i.grossAmount||i.amount)||0),0).toLocaleString('tr-TR',{minimumFractionDigits:2})}</td></tr>
+          <tr style="border-bottom:1px solid var(--line);"><td style="padding:4px 0;">Hesaplanan KDV (%10)</td><td style="text-align:right;color:#E65100;font-weight:600;">₺${totalKDV.toLocaleString('tr-TR',{minimumFractionDigits:2})}</td></tr>
+          <tr style="border-bottom:1px solid var(--line);"><td style="padding:4px 0;">Kesilen Stopaj (%20)</td><td style="text-align:right;color:#1565C0;font-weight:600;">₺${totalStopaj.toLocaleString('tr-TR',{minimumFractionDigits:2})}</td></tr>
+          <tr style="border-bottom:1px solid var(--line);"><td style="padding:4px 0;">Damga Vergisi (‰9.48)</td><td style="text-align:right;color:#7B1FA2;font-weight:600;">₺${(monthIncomes.reduce((s,i)=>s+(parseFloat(i.damga||0)||0),0)).toLocaleString('tr-TR',{minimumFractionDigits:2})}</td></tr>
+          <tr><td style="padding:4px 0;font-weight:700;">Net Kâr/Zarar</td><td style="text-align:right;font-weight:800;color:${profit>=0?'#2E7D32':'#C62828'};">₺${profit.toLocaleString('tr-TR',{minimumFractionDigits:2})}</td></tr>
+        </table>
+      </div>
+
+      <!-- Otomatik Aylık Giderler -->
+      <div class="card p4 mb3" style="background:linear-gradient(135deg,#FFF3E0,#FFE0B2);border:1px solid #FFB74D;">
+        <p style="font-size:14px;font-weight:700;margin:0 0 8px;color:#E65100;">🔄 Otomatik Aylık Giderler</p>
+        <p style="font-size:11px;color:#BF360C;margin:0 0 10px;">Her ayın 5'inde otomatik muhasebeleştirilir. Tutarları ayarlayın.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:11px;flex:1;">🏠 Kira</span><input class="input" style="width:80px;padding:4px 6px;font-size:11px;text-align:right;" type="number" value="${(state.autoExpenses||{}).kira||50000}" data-auto="kira" /></div>
+          <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:11px;flex:1;">⚡ Elektrik</span><input class="input" style="width:80px;padding:4px 6px;font-size:11px;text-align:right;" type="number" value="${(state.autoExpenses||{}).elektrik||3000}" data-auto="elektrik" /></div>
+          <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:11px;flex:1;">💧 Su</span><input class="input" style="width:80px;padding:4px 6px;font-size:11px;text-align:right;" type="number" value="${(state.autoExpenses||{}).su||1500}" data-auto="su" /></div>
+          <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:11px;flex:1;">🔥 Doğalgaz</span><input class="input" style="width:80px;padding:4px 6px;font-size:11px;text-align:right;" type="number" value="${(state.autoExpenses||{}).dogalgaz||2000}" data-auto="dogalgaz" /></div>
+          <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:11px;flex:1;">🏥 SGK/Prim</span><input class="input" style="width:80px;padding:4px 6px;font-size:11px;text-align:right;" type="number" value="${(state.autoExpenses||{}).sgk||8000}" data-auto="sgk" /></div>
+          <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:11px;flex:1;">📋 Vergi/Beyanname</span><input class="input" style="width:80px;padding:4px 6px;font-size:11px;text-align:right;" type="number" value="${(state.autoExpenses||{}).vergi||5000}" data-auto="vergi" /></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="btn-primary" style="flex:1;font-size:12px;background:var(--bad);" data-action="save-auto-expenses">💾 Tutarları Kaydet</button>
+          <button class="btn-primary" style="flex:1;font-size:12px;background:#E65100;" data-action="run-auto-expenses">⚡ Şimdi Uygula (Bu Ay)</button>
+        </div>
+        <p style="font-size:10px;color:#888;margin:6px 0 0;">Toplam aylık otomatik gider: ₺${Object.values(state.autoExpenses||{kira:50000,elektrik:3000,su:1500,dogalgaz:2000,sgk:8000,vergi:5000}).reduce((s,v) => s + (parseFloat(v)||0), 0).toLocaleString('tr-TR')}</p>
+      </div>
+    `;
+  }
+  return `${topbar("Yönetici Paneli","Menüden istediğiniz bölümü seçin.", {back:"home"})}
+    <div class="content">
+      <div class="admin-tabs">${tabButtons}</div>
+      ${tabContent}
       <button class="linklike" data-action="admin-logout">Çıkış yap</button>
       <p class="footnote" style="margin-top:14px;">${state.fbReady ? "✓ Firebase'e bağlı — bu liste tüm cihazlarda anlık günceldir." : "⚠ Firebase bağlantısı bekleniyor, geçici olarak yalnızca bu cihazdaki veriler görünüyor."}</p>
     </div>`;
@@ -1013,16 +1741,18 @@ function escapeAttr(s){ return escapeHtml(s); }
 
 const SCREEN_MAP = {
   home: renderHome, services: renderServices, doctors: renderDoctors, devices: renderDevices,
-  smile: renderSmile, reviews: renderReviews, booking: renderBooking, store: renderStore,
+  "dentist-game": renderDentistGame,
+  reviews: renderReviews, booking: renderBooking, store: renderStore,
   address: renderAddress, contact: renderContact, info: renderInfo, chatbot: renderChatbot,
   "admin-login": renderAdminLogin, "admin-panel": renderAdminPanel, account: renderAccount,
+  "profile-edit": renderProfileEdit, "brushing-video": renderBrushingVideo, "family-add": renderFamilyAdd,
   settings: renderSettings,
 };
 
 function renderNav() {
   return NAV_TABS.map(tab => `
     <button class="navbtn ${state.screen===tab.id || (tab.id==='more' && state.moreOpen) ?'active':''}" data-action="${tab.id==='more'?'toggle-more':'goto'}" data-screen="${tab.id}">
-      <span class="icon">${icon(tab.icon,20)}</span><span>${t(tab.id)}</span>
+      <span class="icon">${tab.img ? `<img src="${tab.img}" style="width:30px;height:30px;border-radius:6px;object-fit:contain;" />` : icon(tab.icon,20)}</span><span>${t(tab.id)}</span>
     </button>`).join("");
 }
 
@@ -1030,7 +1760,7 @@ function renderMoreSheet() {
   if (!state.moreOpen) return "";
   const items = MORE_ITEMS.map(i => `
     <button class="grid-item" data-action="goto" data-screen="${i.id}">
-      <span class="grid-icon">${icon(i.icon,22)}</span><span class="grid-label">${t(i.id)}</span>
+      ${i.img ? `<img src="${i.img}" class="grid-icon" style="width:52px;height:52px;border-radius:12px;object-fit:cover;" />` : `<span class="grid-icon">${icon(i.icon,22)}</span>`}<span class="grid-label">${t(i.id)}</span>
     </button>`).join("");
   return `<div class="sheet-overlay" data-action="toggle-more">
     <div class="sheet">
@@ -1063,7 +1793,7 @@ function render() {
       : "";
   }
   bindFieldEvents();
-  if (state.screen === "smile" && state.smileCameraOn) startCamera();
+  /* smile kamera init kaldırıldı */
   if (state.screen === "chatbot") { const log = document.getElementById("chat-log"); if (log) log.scrollTop = log.scrollHeight; }
 }
 
@@ -1082,10 +1812,7 @@ function refreshDisabled() {
 
 function bindFieldEvents() {
   const $ = id => document.getElementById(id);
-  if (state.screen === "smile") {
-    const sl = $("smile-scale-slider");
-    if (sl) sl.oninput = e => { state.smileScale = parseInt(e.target.value,10)/100; };
-  }
+  /* smile scale slider kaldırıldı */
   if (state.screen === "booking") {
     const d=$("f-date"), n=$("f-name"), p=$("f-phone");
     if (d) d.onchange = e => { state.bookingForm.date = e.target.value; state.bookingStatus="idle"; render(); };
@@ -1147,22 +1874,95 @@ function bindFieldEvents() {
 }
 
 function sendChat(imageBase64) {
+  if (!state.user) {
+    state.chatLog.push({ from:"bot", text:"⚠️ DİJİ RAMO ile konuşmak için önce Google ile giriş yapmanız gerekiyor." });
+    render();
+    return;
+  }
   const text = (state.chatInput||"").trim();
   if (!text && !imageBase64) return;
+  
+  // Engellenen kullanıcı kontrolü
+  const userChatId = state.user.uid;
+  if (state.blockedChatUsers.includes(userChatId)) {
+    state.chatLog.push({ from:"bot", text:"⚠️ Hesabınız engellenmiştir. DİJİ RAMO ile konuşamazsınız. Lütfen yönetici ile iletişime geçin." });
+    state.chatInput = "";
+    render();
+    return;
+  }
+  
+  // Küfürlü/argo/ahlaksız kelime kontrolü
+  if (text) {
+    const lowerText = text.toLowerCase();
+    const hasBlockedWord = BLOCKED_WORDS.some(word => {
+      // Kısa kelimeler (3 harf ve altı) için kelime sınırı kontrolü
+      if (word.length <= 3) {
+        const regex = new RegExp('(^|[^a-züöçşığİÜÖÇŞIĞ])' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^a-züöçşığİÜÖÇŞIĞ])', 'i');
+        return regex.test(lowerText);
+      }
+      // Uzun kelimeler için normal includes
+      return lowerText.includes(word);
+    });
+    
+    if (hasBlockedWord) {
+      // Uyarı ver ve engelle
+      state.chatLog.push({ from:"bot", text:"⚠️ Küfürlü, argo veya ahlaksız içerik tespit edildi. Bu tür mesajlar kabul edilmez. Tekrarlanması durumunda hesabınız engellenecektir." });
+      
+      // İlk ihlal: Uyarı
+      const warnings = parseInt(localStorage.getItem('nurdis_chat_warnings_' + userChatId) || '0') + 1;
+      localStorage.setItem('nurdis_chat_warnings_' + userChatId, warnings.toString());
+      
+      // 3. ihlal: Otomatik engelle
+      if (warnings >= 3) {
+        if (!state.blockedChatUsers.includes(userChatId)) {
+          state.blockedChatUsers.push(userChatId);
+          localStorage.setItem('nurdis_blocked_chat_users', JSON.stringify(state.blockedChatUsers));
+          state.chatLog.push({ from:"bot", text:"🚫 Hesabınız küfürlü/argo/ahlaksız içerik nedeniyle engellenmiştir. Lütfen yönetici ile iletişime geçin." });
+        }
+      }
+      
+      state.chatInput = "";
+      render();
+      return;
+    }
+  }
+  
   state.chatLog.push({ from:"user", text: text || "📷 Fotoğraf gönderildi", image: imageBase64 ? ("data:image/jpeg;base64,"+imageBase64) : null });
   state.chatInput = "";
   render();
   playSound("click");
 
   if (AI_ENDPOINT_READY) {
-    fetch(AI_ENDPOINT_URL, {
+    // Chat geçmişi oluştur (son 10 mesaj)
+    const recentMessages = state.chatLog.slice(-10).map(m => ({
+      role: m.from === "user" ? "user" : "assistant",
+      content: m.text
+    }));
+    if (text) recentMessages.push({ role: "user", content: text });
+
+    const DIJI_RAMO_SYSTEM = `Sen "DİJİ RAMO" adında, Nur Diş & Dental Klinik'in uzman yapay zeka asistanısın. Kızıltepe/Mardin'deki bu klinik adına çalışıyorsun. Sıcak, samimi, bilgili ve yardımcı bir asistansın.
+Diş sağlığı hakkında detaylı bilgi ver, tedaviler hakkında açıkla, diş ağrısı nedenlerini açıkla. Fiyat aralıkları hakkında genel bilgi ver (muayene sonrası kesin fiyat belirlenir).
+MUAYENE ÜCRETSİZDİR. Asla muayene ücreti söyleme. Kesin teşhis koyma, ilaç önerme, evde tedavi önerme.
+Randevu almak isteyenlere mesajının sonuna [RANDEVU_BUTONU] ekle. Ağrı/acil durumlarda da [RANDEVU_BUTONU] ekle.
+KLİNİK: Mardin, Kızıltepe, TOKİ | Tel: 0505 105 03 02 | Hekim: Dt. Ramazan DAĞ | Hafta içi 09:00-18:00, Cumartesi 10:00-14:00, Pazar kapalı.
+Cevapların 2-5 cümle, samimi, emoji kullan. Türkçe konuş.`;
+
+    const groqMessages = [{ role: "system", content: DIJI_RAMO_SYSTEM }, ...recentMessages];
+
+    fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text, image: imageBase64 || null }),
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer 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" },
+      body: JSON.stringify({ model: "groq/compound", messages: groqMessages, max_tokens: 500, temperature: 0.7 }),
     })
       .then(r => r.json())
       .then(data => {
-        state.chatLog.push({ from:"bot", text: data.reply || CHATBOT_FALLBACK });
+        let replyText = (data.choices && data.choices[0]) ? data.choices[0].message.content : (data.reply || CHATBOT_FALLBACK);
+        let showBookingBtn = false;
+        if (replyText.includes("[RANDEVU_BUTONU]")) {
+          replyText = replyText.replace("[RANDEVU_BUTONU]", "").trim();
+          showBookingBtn = true;
+        }
+        state.chatLog.push({ from:"bot", text: replyText, bookingBtn: showBookingBtn });
         render();
       })
       .catch(() => {
@@ -1265,6 +2065,13 @@ document.addEventListener("click", (e) => {
   if (action === "submit-review") {
     const r = state.reviewForm;
     if (!(r.name && r.text) || !state.user) return;
+    
+    // Engellenen kullanıcı kontrolü
+    if (state.blockedUsers.includes(state.user.uid)) {
+      alert("Hesabınız engellenmiştir. Yorum yapamazsınız.");
+      return;
+    }
+    
     const entry = { name:r.name, rating:r.rating, text:r.text, uid: state.user.uid };
     (async () => {
       try {
@@ -1306,19 +2113,7 @@ document.addEventListener("click", (e) => {
   }
   if (action === "send-chat") sendChat();
   if (action === "chat-photo-pick") { document.getElementById("chat-photo-input")?.click(); }
-  if (action === "pick-smile-style") { state.smileStyle = el.dataset.id; render(); }
-  if (action === "toggle-camera") {
-    state.smileCameraOn = !state.smileCameraOn;
-    render();
-  }
-  if (action === "smile-capture") {
-    captureSmilePhoto();
-  }
-  if (action === "smile-retake") {
-    state.smileCapturedPhoto = null;
-    state.smileCameraOn = false;
-    render();
-  }
+  /* smile handler'lar kaldırıldı - Dişini Tasarla yeni kod bekleniyor */
   if (action === "toggle-mute") {
     state.settings.muted = !state.settings.muted;
     persist("nurdis_settings", state.settings);
@@ -1329,7 +2124,7 @@ document.addEventListener("click", (e) => {
     persist("nurdis_settings", state.settings);
     render();
   }
-  if (action === "google-signin") {
+  if (action === "sign-in-google") {
     if (!window.fb) { alert("Giriş sistemi henüz hazır değil, birkaç saniye sonra tekrar dene."); return; }
     state.authBusy = true; render();
     window.fb.signInGoogle().then((res) => {
@@ -1341,7 +2136,379 @@ document.addEventListener("click", (e) => {
   }
   if (action === "sign-out") {
     if (window.fb) window.fb.signOutUser();
+    state.userProfile = null;
+    state.brushStreak = 0;
+    state.lastBrushDate = null;
+    localStorage.removeItem("nurdis_user_profile");
+    localStorage.removeItem("nurdis_brush_streak");
+    localStorage.removeItem("nurdis_last_brush");
+    state.screen = "home";
+    render();
   }
+
+  /* ===== PROFİL SİSTEMİ ===== */
+  if (action === "edit-profile") {
+    state.screen = "profile-edit";
+    render();
+  }
+
+  if (action === "save-profile") {
+    const profile = {
+      firstName: (document.getElementById("pf-first")?.value || "").trim(),
+      lastName: (document.getElementById("pf-last")?.value || "").trim(),
+      age: parseInt(document.getElementById("pf-age")?.value) || null,
+      weight: parseFloat(document.getElementById("pf-weight")?.value) || null,
+      height: parseFloat(document.getElementById("pf-height")?.value) || null,
+      brushReminderTime: state.userProfile?.brushReminderTime || "21:00",
+      notificationsEnabled: state.userProfile?.notificationsEnabled !== false,
+      lastCheckup: state.userProfile?.lastCheckup || null,
+    };
+    state.userProfile = profile;
+    localStorage.setItem("nurdis_user_profile", JSON.stringify(profile));
+    // Firebase'e kaydet
+    if (window.fb && state.fbReady && state.user) {
+      window.fb.saveUserProfile(state.user.uid, profile).catch(e => console.error("Profil kaydedilemedi:", e));
+    }
+    state.screen = "account";
+    render();
+    showNotif("✅ Profil Kaydedildi", "Bilgileriniz güncellendi.");
+  }
+
+  if (action === "brush-teeth") {
+    const today = new Date().toDateString();
+    if (state.lastBrushDate === today) return; // Zaten bugün fırçalamış
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (state.lastBrushDate === yesterday) {
+      state.brushStreak = (state.brushStreak || 0) + 1;
+    } else {
+      state.brushStreak = 1; // Seri kırılmış, yeniden başla
+    }
+    state.lastBrushDate = today;
+    localStorage.setItem("nurdis_brush_streak", state.brushStreak);
+    localStorage.setItem("nurdis_last_brush", today);
+    // Firebase'e kaydet
+    if (window.fb && state.fbReady && state.user) {
+      window.fb.saveBrushStreak(state.user.uid, { streak: state.brushStreak, lastDate: today }).catch(() => {});
+    }
+    render();
+    const milestones = [7, 14, 30, 60, 100, 365];
+    const milestone = milestones.find(m => state.brushStreak === m);
+    checkBadges();
+    if (milestone) {
+      showNotif("🏆 Tebrikler!", `${milestone} günlük diş fırçalama serisine ulaştın!`);
+    } else {
+      showNotif("🪥 Harika!", `${state.brushStreak} günlük seri! Devam et!`);
+    }
+  }
+
+  if (action === "save-brush-time") {
+    const time = document.getElementById("brush-time")?.value || "21:00";
+    if (!state.userProfile) state.userProfile = {};
+    state.userProfile.brushReminderTime = time;
+    localStorage.setItem("nurdis_user_profile", JSON.stringify(state.userProfile));
+    if (window.fb && state.fbReady && state.user) {
+      window.fb.saveUserProfile(state.user.uid, state.userProfile).catch(() => {});
+    }
+    // Bildirim planla
+    scheduleBrushReminder(time);
+    render();
+    showNotif("⏰ Hatırlatma Ayarlandı", `Her gün saat ${time}'de diş fırçalama hatırlatması alacaksınız.`);
+  }
+
+  if (action === "mark-checkup-done") {
+    if (!state.userProfile) state.userProfile = {};
+    state.userProfile.lastCheckup = new Date().toISOString();
+    localStorage.setItem("nurdis_user_profile", JSON.stringify(state.userProfile));
+    if (window.fb && state.fbReady && state.user) {
+      window.fb.saveUserProfile(state.user.uid, state.userProfile).catch(() => {});
+    }
+    // 6 ay sonrası için bildirim planla
+    scheduleCheckupReminder();
+    render();
+    showNotif("🏥 Kontrol Kaydedildi", "6 ay sonra bir sonraki kontrol hatırlatması alacaksınız.");
+  }
+
+  if (action === "toggle-notifications") {
+    if (!state.userProfile) state.userProfile = {};
+    state.userProfile.notificationsEnabled = el.checked;
+    localStorage.setItem("nurdis_user_profile", JSON.stringify(state.userProfile));
+    if (window.fb && state.fbReady && state.user) {
+      window.fb.saveUserProfile(state.user.uid, state.userProfile).catch(() => {});
+    }
+    if (el.checked) requestNotifPermission();
+  }
+
+  if (action === "watch-brush-video") {
+    state.screen = "brushing-video";
+    render();
+  }
+
+  /* ===== AİLE ÜYESİ SİSTEMİ ===== */
+  if (action === "add-family-member") {
+    state._editingFamilyMember = null;
+    state.screen = "family-add";
+    render();
+  }
+
+  if (action === "edit-family-member") {
+    state._editingFamilyMember = el.dataset.id;
+    state.screen = "family-add";
+    render();
+  }
+
+  if (action === "save-family-member") {
+    const name = (document.getElementById("fm-name")?.value || "").trim();
+    const relation = document.getElementById("fm-relation")?.value || "";
+    const age = parseInt(document.getElementById("fm-age")?.value) || null;
+    const brushReminderTime = document.getElementById("fm-brush-time")?.value || "20:00";
+    if (!name) { alert("Ad soyad gerekli!"); return; }
+
+    if (!state.familyMembers) state.familyMembers = [];
+    
+    if (state._editingFamilyMember) {
+      // Düzenle
+      const idx = state.familyMembers.findIndex(m => m.id === state._editingFamilyMember);
+      if (idx !== -1) {
+        state.familyMembers[idx] = { ...state.familyMembers[idx], name, relation, age, brushReminderTime };
+      }
+    } else {
+      // Yeni ekle
+      state.familyMembers.push({
+        id: "fm_" + Date.now(),
+        name, relation, age, brushReminderTime,
+        streak: 0, lastBrushDate: null
+      });
+    }
+
+    // Kaydet
+    localStorage.setItem("nurdis_family_members", JSON.stringify(state.familyMembers));
+    if (window.fb && state.fbReady && state.user) {
+      window.fb.saveUserProfile(state.user.uid, { ...state.userProfile, familyMembers: state.familyMembers }).catch(() => {});
+    }
+    state._editingFamilyMember = null;
+    checkBadges();
+    state.screen = "account";
+    render();
+    showNotif("👨‍👩‍👧 Kaydedildi", `${name} aile üyelerinize eklendi.`);
+  }
+
+  if (action === "remove-family-member") {
+    const id = el.dataset.id;
+    if (!confirm("Bu aile üyesini silmek istediğinize emin misiniz?")) return;
+    state.familyMembers = (state.familyMembers || []).filter(m => m.id !== id);
+    localStorage.setItem("nurdis_family_members", JSON.stringify(state.familyMembers));
+    if (window.fb && state.fbReady && state.user) {
+      window.fb.saveUserProfile(state.user.uid, { ...state.userProfile, familyMembers: state.familyMembers }).catch(() => {});
+    }
+    render();
+  }
+
+  if (action === "save-brush-video") {
+    const url = (document.getElementById("brush-video-url")?.value || "").trim();
+    if (!window.fb || !state.fbReady) { alert("Firebase bağlantısı hazır değil."); return; }
+    window.fb.setBrushingVideo(url).then(() => {
+      state.brushingVideoUrl = url;
+      alert("Diş fırçalama videosu kaydedildi.");
+    }).catch(() => alert("Kaydedilemedi."));
+  }
+
+  /* ===== TEDAVİ YÖNETİMİ ===== */
+  if (action === "add-treatment") {
+    const userName = (document.getElementById("tr-user")?.value || "").trim();
+    const treatmentName = (document.getElementById("tr-name")?.value || "").trim();
+    const date = document.getElementById("tr-date")?.value || new Date().toISOString().split('T')[0];
+    const notes = (document.getElementById("tr-notes")?.value || "").trim();
+    const payment = document.getElementById("tr-payment")?.value || "Nakit";
+    const patientType = document.getElementById("tr-patient-type")?.value || "kisi";
+    if (!userName || !treatmentName) { alert("Hasta adı ve tedavi gerekli!"); return; }
+
+    // Fiyat listesinden fiyatı al
+    const defaultPrices = { "Muayene":0,"Dolgu":2000,"Kanal Tedavisi":4000,"İmplant":15000,"Zirkonyum Kaplama":5000,"Diş Beyazlatma":3000,"Ortodonti":25000,"Protez":12000,"Diş Taşı Temizliği":1000,"Diş Çekimi":1500,"Köprü":8000,"Lamine Veneer":6000,"Şeffaf Plak":20000,"Cerrahi Çekim":3000 };
+    const allPrices = { ...defaultPrices, ...(state.treatmentPrices || {}) };
+    const grossAmount = allPrices[treatmentName] || 0;
+
+    // Tedavi kaydını Firebase'e ekle
+    const treatmentData = { userName, treatmentName, date, notes, amount: grossAmount, paymentMethod: payment, patientType };
+
+    // Otomatik fatura + muhasebe
+    if (grossAmount > 0) {
+      if (!state.accounting) state.accounting = { incomes:[], expenses:[], firms:[], bankAccounts:[], invoices:[] };
+      const kdv = grossAmount * 0.10;
+      const stopaj = patientType === "mukellef" ? grossAmount * 0.20 : 0;
+      const damga = grossAmount * 0.00948;
+      const netTahsil = grossAmount - stopaj + kdv;
+
+      const now = new Date();
+      const monthStr = String(now.getMonth()+1).padStart(2,'0');
+      const yearStr = String(now.getFullYear());
+      const thisMonthInv = (state.accounting.invoices||[]).filter(inv => inv.no && inv.no.startsWith(yearStr+'-'+monthStr));
+      const invoiceNo = yearStr+'-'+monthStr+'-'+String((thisMonthInv.length||0)+1).padStart(5,'0');
+
+      state.accounting.incomes.push({
+        id:"inc_"+Date.now(), description: userName + " - " + treatmentName, amount: netTahsil, grossAmount,
+        category: treatmentName, paymentMethod: payment, date, kdv, stopaj, damga, kdvOran:0.10, stopajOran: patientType==='mukellef'?0.20:0,
+        invoiceNo, patientType, createdAt: new Date().toISOString()
+      });
+      if (!state.accounting.invoices) state.accounting.invoices = [];
+      state.accounting.invoices.push({ no:invoiceNo, date, description:userName+' - '+treatmentName, grossAmount, kdv, stopaj, damga, netAmount:netTahsil, category:treatmentName, paymentMethod:payment });
+      localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
+      treatmentData.invoiceNo = invoiceNo;
+    }
+
+    if (window.fb && state.fbReady) {
+      window.fb.addTreatment(treatmentData).then(() => {
+        let msg = "✅ Tedavi kaydedildi: " + treatmentName;
+        if (grossAmount > 0) msg += "\n💰 ₺" + grossAmount.toLocaleString('tr-TR') + (treatmentData.invoiceNo ? "\n🧾 Fatura: " + treatmentData.invoiceNo : "");
+        alert(msg);
+        render();
+      }).catch(() => alert("Kaydedilemedi."));
+    } else {
+      // Firebase yoksa local'e kaydet
+      if (!state.treatments) state.treatments = [];
+      state.treatments.push({ id:"tr_"+Date.now(), ...treatmentData });
+      localStorage.setItem("nurdis_treatments_local", JSON.stringify(state.treatments));
+      let msg = "✅ Tedavi kaydedildi: " + treatmentName;
+      if (grossAmount > 0) msg += "\n💰 ₺" + grossAmount.toLocaleString('tr-TR');
+      alert(msg);
+      render();
+    }
+  }
+
+  if (action === "delete-treatment") {
+    const id = el.dataset.id;
+    if (!confirm("Bu tedavi kaydını silmek istediğinize emin misiniz?")) return;
+    // Local'den sil
+    state.treatments = (state.treatments||[]).filter(t => t.id !== id);
+    localStorage.setItem("nurdis_treatments_local", JSON.stringify(state.treatments));
+    if (window.fb && state.fbReady) {
+      window.fb.deleteTreatment(id).then(() => render()).catch(() => render());
+    } else { render(); }
+  }
+
+  /* ===== FİYAT LİSTESİ YÖNETİMİ ===== */
+  if (action === "add-price") {
+    const name = document.getElementById("new-price-name")?.value?.trim();
+    const amount = parseFloat(document.getElementById("new-price-amount")?.value);
+    if (!name || isNaN(amount)) { alert("Tedavi adı ve fiyat gerekli!"); return; }
+    if (!state.treatmentPrices) state.treatmentPrices = {};
+    state.treatmentPrices[name] = amount;
+    localStorage.setItem("nurdis_treatment_prices", JSON.stringify(state.treatmentPrices)); saveAccountingToFirebase();
+    alert("✅ " + name + ": ₺" + amount.toLocaleString('tr-TR'));
+    render();
+  }
+
+  if (action === "update-price") {
+    const name = el.dataset.priceName;
+    const amount = parseFloat(el.value);
+    if (!name || isNaN(amount)) return;
+    if (!state.treatmentPrices) state.treatmentPrices = {};
+    state.treatmentPrices[name] = amount;
+    localStorage.setItem("nurdis_treatment_prices", JSON.stringify(state.treatmentPrices)); saveAccountingToFirebase();
+  }
+
+  /* ===== OTOMATİK GİDER YÖNETİMİ ===== */
+  if (action === "save-auto-expenses") {
+    const inputs = document.querySelectorAll("[data-auto]");
+    if (!state.autoExpenses) state.autoExpenses = {};
+    inputs.forEach(inp => { state.autoExpenses[inp.dataset.auto] = parseFloat(inp.value) || 0; });
+    localStorage.setItem("nurdis_auto_expenses", JSON.stringify(state.autoExpenses)); saveAccountingToFirebase();
+    alert("✅ Otomatik gider tutarları kaydedildi.");
+    render();
+  }
+
+  if (action === "run-auto-expenses") {
+    if (!confirm("Bu ayın otomatik giderlerini şimdi muhasebeleştirmek istiyor musunuz?")) return;
+    if (!state.accounting) state.accounting = { incomes:[], expenses:[], firms:[], bankAccounts:[], invoices:[] };
+    const ae = state.autoExpenses || { kira:50000, elektrik:3000, su:1500, dogalgaz:2000, sgk:8000, vergi:5000 };
+    const date = new Date().toISOString().split('T')[0];
+    const autoItems = [
+      { desc:"Kira Ödemesi", cat:"Kira", amount:ae.kira, firm:"", stopaj:ae.kira*0.20, isKiraStopaj:true },
+      { desc:"Elektrik Faturası", cat:"Elektrik/Su/İnternet", amount:ae.elektrik, firm:"" },
+      { desc:"Su Faturası", cat:"Elektrik/Su/İnternet", amount:ae.su, firm:"" },
+      { desc:"Doğalgaz Faturası", cat:"Elektrik/Su/İnternet", amount:ae.dogalgaz, firm:"" },
+      { desc:"SGK/Prim Ödemesi", cat:"SGK Primi", amount:ae.sgk, firm:"" },
+      { desc:"Vergi Beyannamesi", cat:"Vergi", amount:ae.vergi, firm:"" },
+    ];
+    let total = 0;
+    autoItems.forEach(item => {
+      if (item.amount > 0) {
+        state.accounting.expenses.push({
+          id:"exp_auto_"+Date.now()+"_"+Math.random().toString(36).substr(2,4),
+          description: item.desc, amount: item.amount, category: item.cat, firm: item.firm,
+          date, stopaj: item.stopaj||0, isKiraStopaj: item.isKiraStopaj||false,
+          createdAt: new Date().toISOString()
+        });
+        total += item.amount;
+      }
+    });
+    localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
+    alert("✅ " + autoItems.filter(i=>i.amount>0).length + " otomatik gider muhasebeleştirildi.\nToplam: ₺" + total.toLocaleString('tr-TR'));
+    render();
+  }
+
+  if (action === "print-treatments") {
+    const printContent = document.querySelector('.card.p4.mb3:last-child')?.innerHTML || '';
+    const w = window.open('', '_blank');
+    w.document.write('<html><head><title>Tedavi Kayıtları</title><style>body{font-family:Arial;padding:20px;} .card{border:1px solid #ddd;padding:10px;margin:8px 0;border-radius:8px;}</style></head><body><h2>Nur Diş Klinik - Tedavi Kayıtları</h2>' + printContent + '</body></html>');
+    w.document.close();
+    w.print();
+  }
+
+  /* ===== İPUCU YÖNETİMİ ===== */
+  if (action === "add-tip") {
+    const text = (document.getElementById("tip-text")?.value || "").trim();
+    if (!text) { alert("İpucu metni gerekli!"); return; }
+    if (!window.fb || !state.fbReady) { alert("Firebase bağlantısı hazır değil."); return; }
+    window.fb.addHealthTip(text).then(() => {
+      alert("İpucu eklendi.");
+      render();
+    }).catch(() => alert("Eklenemedi."));
+  }
+
+  if (action === "delete-tip") {
+    const id = el.dataset.id;
+    if (!confirm("Bu ipucunu silmek istediğinize emin misiniz?")) return;
+    if (window.fb && state.fbReady) {
+      window.fb.deleteHealthTip(id).then(() => render()).catch(() => alert("Silinemedi."));
+    }
+  }
+
+  if (action === "add-announcement") {
+    const title = document.getElementById("ann-title")?.value?.trim();
+    const text = document.getElementById("ann-text")?.value?.trim();
+    const videoUrl = document.getElementById("ann-video")?.value?.trim() || "";
+    const imageFile = document.getElementById("ann-image")?.files?.[0];
+    if (!title || !text) { alert("Başlık ve metin gerekli!"); return; }
+
+    const addAnnouncement = (imageUrl) => {
+      if (window.fb && state.fbReady) {
+        window.fb.addAnnouncement({ title, text, imageUrl: imageUrl || "", videoUrl, createdAt: new Date().toISOString() })
+          .then(() => {
+            alert("Duyuru yayınlandı! 📢");
+            render();
+          }).catch(e => alert("Yayınlanamadı: " + e.message));
+      } else {
+        alert("Firebase bağlantısı hazır değil.");
+      }
+    };
+
+    if (imageFile) {
+      const reader = new FileReader();
+      reader.onload = (e) => addAnnouncement(e.target.result);
+      reader.readAsDataURL(imageFile);
+    } else {
+      addAnnouncement("");
+    }
+  }
+
+  if (action === "delete-announcement") {
+    const id = el.dataset.id;
+    if (!confirm("Bu duyuruyu silmek istediğinize emin misiniz?")) return;
+    if (window.fb && state.fbReady) {
+      window.fb.deleteAnnouncement(id).then(() => render()).catch(() => alert("Silinemedi."));
+    }
+  }
+
   if (action === "reload-update") {
     window.location.reload();
   }
@@ -1367,7 +2534,7 @@ document.addEventListener("click", (e) => {
     window.fb.adminSignIn(state.adminForm.email, state.adminForm.pass).then((res) => {
       state.authBusy = false;
       if (res.ok) {
-        state.adminLoggedIn = true; state.adminError = ""; state.screen = "admin-panel";
+        state.adminLoggedIn = true; localStorage.setItem("nurdis_admin_logged_in", "true"); state.adminError = ""; state.screen = "admin-panel";
         startAdminSubscriptions();
         playSound("login");
       } else {
@@ -1377,10 +2544,213 @@ document.addEventListener("click", (e) => {
       render();
     });
   }
+  if (action === "admin-tab") {
+    state.adminTab = el.dataset.tab;
+    render();
+  }
   if (action === "admin-logout") {
     stopAdminSubscriptions();
     if (window.fb) window.fb.signOutUser();
-    state.adminLoggedIn = false; state.screen = "home"; render();
+    state.adminLoggedIn = false; localStorage.removeItem("nurdis_admin_logged_in"); state.screen = "home"; render();
+  }
+
+  /* ===== 🎮 DİŞ DOKTORU OYUNU HANDLER'LARI ===== */
+  if (action === "game-start") {
+    resetGame();
+    gameState.screen = "exam";
+    render();
+  }
+
+  if (action === "game-restart") {
+    resetGame();
+    gameState.screen = "exam";
+    render();
+  }
+
+  if (action === "game-tooth") {
+    const isBad = el.dataset.bad === "true";
+    if (isBad) {
+      gameState.screen = "diagnose";
+      gameState.message = "";
+      gameState.score += 10;
+      render();
+    } else {
+      gameState.message = "❌ Bu diş sağlam! Sorunlu dişi bul!";
+      render();
+    }
+  }
+
+  if (action === "game-diagnose") {
+    const patient = GAME_PATIENTS[gameState.patientIndex];
+    const selected = el.dataset.problem;
+    if (selected === patient.problem) {
+      gameState.message = "✅ Doğru teşhis! " + patient.problemLabel + "!";
+      gameState.score += 20;
+      setTimeout(() => {
+        gameState.screen = "tools";
+        gameState.message = "";
+        render();
+      }, 1200);
+      render();
+    } else {
+      gameState.message = "❌ Yanlış! Tekrar dene.";
+      render();
+    }
+  }
+
+  if (action === "game-tool") {
+    const patient = GAME_PATIENTS[gameState.patientIndex];
+    const selected = el.dataset.tool;
+    if (selected === patient.tool) {
+      gameState.message = "";
+      gameState.screen = "treating";
+      gameState.treatClicks = 0;
+      gameState.treatTarget = 10 + Math.floor(Math.random() * 5);
+      render();
+    } else {
+      gameState.message = "❌ Yanlış alet! " + patient.treatmentLabel + " için doğru aleti seç.";
+      render();
+    }
+  }
+
+  if (action === "game-treat") {
+    gameState.treatClicks++;
+    if (gameState.treatClicks >= gameState.treatTarget) {
+      // Tedavi tamamlandı
+      gameState.screen = "result";
+      gameState.score += 20;
+      gameState.stars++;
+      render();
+    } else {
+      render();
+    }
+  }
+
+  if (action === "game-next") {
+    gameState.patientIndex++;
+    if (gameState.patientIndex >= GAME_PATIENTS.length) {
+      gameState.screen = "done";
+    } else {
+      gameState.screen = "exam";
+      gameState.message = "";
+      gameState.badToothIndex = Math.floor(Math.random() * 8);
+    }
+    render();
+  }
+
+  /* ===== 💰 MUHASEBE HANDLER'LARI ===== */
+  if (action === "pos-pay") {
+    const desc = document.getElementById("pos-desc")?.value?.trim();
+    const amount = parseFloat(document.getElementById("pos-amount")?.value);
+    const category = document.getElementById("pos-category")?.value;
+    const payment = document.getElementById("pos-payment")?.value;
+    const patientType = document.getElementById("pos-patient-type")?.value;
+    const firm = document.getElementById("pos-firm")?.value?.trim() || "";
+    const tc = document.getElementById("pos-tc")?.value?.trim() || "";
+    if (!desc || !amount) { alert("Açıklama ve tutar gerekli!"); return; }
+    if (!state.accounting) state.accounting = { incomes:[], expenses:[], firms:[], bankAccounts:[], invoices:[] };
+
+    // Otomatik vergi hesaplama
+    const grossAmount = amount; // Brüt tutar
+    const kdvOran = 0.10; // Sağlık hizmetleri KDV %10
+    const kdv = grossAmount * kdvOran;
+    const stopajOran = patientType === "mukellef" ? 0.20 : 0;
+    const stopaj = grossAmount * stopajOran;
+    const damga = grossAmount * 0.00948; // Damga vergisi ‰9.48
+    const netTahsil = grossAmount - stopaj + kdv;
+
+    // Otomatik fatura no
+    const now = new Date();
+    const monthStr = String(now.getMonth()+1).padStart(2,'0');
+    const yearStr = String(now.getFullYear());
+    const thisMonthInvoices = (state.accounting.invoices||[]).filter(inv => inv.no && inv.no.startsWith(yearStr + '-' + monthStr));
+    const invoiceNo = yearStr + '-' + monthStr + '-' + String((thisMonthInvoices.length || 0) + 1).padStart(5, '0');
+    const date = now.toISOString().split('T')[0];
+
+    // Gelir kaydı
+    state.accounting.incomes.push({
+      id: "inc_" + Date.now(), description: desc, amount: netTahsil, grossAmount: grossAmount,
+      category: category, paymentMethod: payment, date: date, firm: firm, tcNo: tc,
+      kdv: kdv, stopaj: stopaj, damga: damga, kdvOran: kdvOran, stopajOran: stopajOran,
+      invoiceNo: invoiceNo, patientType: patientType,
+      createdAt: new Date().toISOString()
+    });
+
+    // Fatura kaydı
+    if (!state.accounting.invoices) state.accounting.invoices = [];
+    state.accounting.invoices.push({
+      no: invoiceNo, date: date, description: desc, grossAmount: grossAmount,
+      kdv: kdv, stopaj: stopaj, damga: damga, netAmount: netTahsil,
+      category: category, paymentMethod: payment, firm: firm, tcNo: tc
+    });
+
+    localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
+
+    // Makbuz özeti
+    let receipt = "✅ ÖDEME ALINDI!\n\n";
+    receipt += "Fatura No: " + invoiceNo + "\n";
+    receipt += "Hasta/Firma: " + desc + (firm ? " (" + firm + ")" : "") + "\n";
+    receipt += "İşlem: " + category + "\n";
+    receipt += "Ödeme: " + payment + "\n\n";
+    receipt += "── Vergi Detayı ──\n";
+    receipt += "Brüt Tutar: ₺" + grossAmount.toLocaleString('tr-TR',{minimumFractionDigits:2}) + "\n";
+    receipt += "KDV (%10): ₺" + kdv.toLocaleString('tr-TR',{minimumFractionDigits:2}) + "\n";
+    if (stopaj > 0) receipt += "Stopaj (%20): -₺" + stopaj.toLocaleString('tr-TR',{minimumFractionDigits:2}) + "\n";
+    receipt += "Damga (‰9.48): ₺" + damga.toLocaleString('tr-TR',{minimumFractionDigits:2}) + "\n";
+    receipt += "───\n";
+    receipt += "NET TAHSİL: ₺" + netTahsil.toLocaleString('tr-TR',{minimumFractionDigits:2});
+
+    alert(receipt);
+    render();
+  }
+
+  if (action === "acc-add-expense") {
+    const desc = document.getElementById("acc-exp-desc")?.value?.trim();
+    const amount = parseFloat(document.getElementById("acc-exp-amount")?.value);
+    const category = document.getElementById("acc-exp-cat")?.value;
+    const firm = document.getElementById("acc-exp-firm")?.value?.trim() || "";
+    const invoiceNo = document.getElementById("acc-exp-invoice")?.value?.trim() || "";
+    const isKiraStopaj = document.getElementById("acc-exp-stopaj")?.checked;
+    if (!desc || !amount) { alert("Açıklama ve tutar gerekli!"); return; }
+    if (!state.accounting) state.accounting = { incomes:[], expenses:[], firms:[], bankAccounts:[], invoices:[] };
+
+    // Kira stopajı otomatik hesaplama
+    let stopaj = 0;
+    let grossAmount = amount;
+    if (isKiraStopaj) {
+      // Kira stopajı: Brüt × %20
+      grossAmount = amount;
+      stopaj = grossAmount * 0.20;
+    }
+
+    state.accounting.expenses.push({
+      id: "exp_" + Date.now(), description: desc, amount: amount, grossAmount: grossAmount,
+      category: category, firm: firm, date: new Date().toISOString().split('T')[0],
+      invoiceNo: invoiceNo, stopaj: stopaj, isKiraStopaj: isKiraStopaj,
+      createdAt: new Date().toISOString()
+    });
+    localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
+    alert("✅ Gider kaydedildi: ₺" + amount.toLocaleString('tr-TR') + (stopaj > 0 ? "\nStopaj (%20): ₺" + stopaj.toLocaleString('tr-TR',{minimumFractionDigits:2}) : ""));
+    render();
+  }
+
+  if (action === "acc-delete") {
+    const id = el.dataset.id;
+    const type = el.dataset.type;
+    if (!confirm("Bu kaydı silmek istediğinize emin misiniz?")) return;
+    if (!state.accounting) return;
+    if (type === "income") {
+      state.accounting.incomes = (state.accounting.incomes||[]).filter(i => i.id !== id);
+      // İlgili faturayı da sil
+      const deletedIncome = (state.accounting.incomes||[]).find(i => i.id === id);
+      if (deletedIncome && deletedIncome.invoiceNo) {
+        state.accounting.invoices = (state.accounting.invoices||[]).filter(inv => inv.no !== deletedIncome.invoiceNo);
+      }
+    } else {
+      state.accounting.expenses = (state.accounting.expenses||[]).filter(e => e.id !== id);
+    }
+    localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
+    render();
   }
   if (action === "admin-add-product") {
     const name = state._newProdName, price = parseFloat(state._newProdPrice);
@@ -1412,11 +2782,99 @@ document.addEventListener("click", (e) => {
     if (!window.fb || !state.fbReady) { alert("Firebase bağlantısı hazır değil."); return; }
     window.fb.setDeviceVideo(id, val).then(() => alert("Cihaz videosu kaydedildi.")).catch(() => alert("Kaydedilemedi."));
   }
+  
+  if (action === "save-social") {
+    const id = el.dataset.id;
+    const val = document.getElementById(`sm-${id}`)?.value || "";
+    state.socialMedia[id] = val;
+    localStorage.setItem("nurdis_social_media", JSON.stringify(state.socialMedia));
+    
+    if (window.fb && state.fbReady) {
+      window.fb.setSocialMedia(id, val).then(() => alert("Sosyal medya linki kaydedildi (tüm cihazlarda).")).catch((err) => {
+        console.error("Kaydedilemedi:", err);
+        alert("Kaydedilemedi: " + err.message);
+      });
+    } else {
+      alert("Sosyal medya linki kaydedildi (sadece bu cihazda).");
+    }
+  }
   if (action === "save-review-reply") {
     const id = el.dataset.id;
     const val = document.getElementById(`rvreply-${id}`)?.value || "";
     if (!window.fb || !state.fbReady) { alert("Firebase bağlantısı hazır değil."); return; }
     window.fb.replyToReview(id, val).then(() => alert("Yanıt kaydedildi.")).catch(() => alert("Kaydedilemedi."));
+  }
+  
+  if (action === "delete-review") {
+    if (!confirm("Bu yorumu silmek istediğinize emin misiniz?")) return;
+    const id = el.dataset.id;
+    
+    // Önce state'i güncelle
+    state.reviews = state.reviews.filter(r => r.id !== id);
+    localStorage.setItem("nurdis_reviews", JSON.stringify(state.reviews));
+    
+    if (window.fb && state.fbReady) {
+      window.fb.deleteReview(id).then(() => {
+        alert("Yorum silindi (tüm cihazlarda).");
+        // state.reviews otomatik güncellenecek (subscribe ile)
+        render();
+      }).catch((err) => {
+        console.error("Yorum silinemedi:", err);
+        alert("Yorum silindi (sadece bu cihazda): " + err.message);
+        render();
+      });
+    } else {
+      alert("Yorum silindi (sadece bu cihazda).");
+      render();
+    }
+  }
+  
+  if (action === "block-user") {
+    const uid = el.dataset.uid;
+    if (!uid) { alert("Kullanıcı ID bulunamadı."); return; }
+    if (!confirm("Bu kullanıcıyı engellemek istediğinize emin misiniz? Engellenen kullanıcı yorum yapamaz.")) return;
+    if (!state.blockedUsers.includes(uid)) {
+      state.blockedUsers.push(uid);
+      localStorage.setItem("nurdis_blocked_users", JSON.stringify(state.blockedUsers));
+      
+      if (window.fb && state.fbReady) {
+        window.fb.addToBlockedUsers(uid).then(() => {
+          alert("Kullanıcı engellendi (tüm cihazlarda).");
+          render();
+        }).catch((err) => {
+          console.error("Kullanıcı engellenemedi:", err);
+          alert("Engellenemedi: " + err.message);
+        });
+      } else {
+        alert("Kullanıcı engellendi (sadece bu cihazda).");
+        render();
+      }
+    }
+  }
+  
+  if (action === "unblock-user") {
+    const uid = el.dataset.uid;
+    if (!uid) { alert("Kullanıcı ID bulunamadı."); return; }
+    if (!confirm("Bu kullanıcının engelini kaldırmak istediğinize emin misiniz?")) return;
+    
+    // Önce state'i güncelle
+    state.blockedUsers = state.blockedUsers.filter(u => u !== uid);
+    localStorage.setItem("nurdis_blocked_users", JSON.stringify(state.blockedUsers));
+    
+    if (window.fb && state.fbReady) {
+      window.fb.removeFromBlockedUsers(uid).then(() => {
+        alert("Kullanıcı engeli kaldırıldı (tüm cihazlarda).");
+        // state.blockedUsers otomatik güncellenecek (subscribe ile)
+        render();
+      }).catch((err) => {
+        console.error("Engel kaldırılamadı:", err);
+        alert("Kullanıcı engeli kaldırıldı (sadece bu cihazda): " + err.message);
+        render();
+      });
+    } else {
+      alert("Kullanıcı engeli kaldırıldı (sadece bu cihazda).");
+      render();
+    }
   }
 });
 
@@ -1564,29 +3022,348 @@ function stopCameraHardware() {
 
 let unsubReviews = null, unsubProducts = null, unsubAppointments = null, unsubOrders = null;
 
+/* ============ BİLDİRİM SİSTEMİ ============ */
+let _notifFirstLoad = { reviews: true, appointments: true, orders: true };
+
+function requestNotifPermission() {
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission();
+  }
+}
+
+function showNotif(title, body) {
+  // Sayfa bildirim (her zaman çalışır)
+  _showInAppNotif(title, body);
+  // Browser bildirimi (izin gerekli)
+  if ("Notification" in window && Notification.permission === "granted") {
+    try { new Notification(title, { body, icon: "/icon-192.png" }); } catch(e) {}
+  }
+}
+
+function _showInAppNotif(title, body) {
+  const el = document.createElement("div");
+  el.className = "in-app-notif";
+  el.innerHTML = `<b>${escapeHtml(title)}</b><br><span>${escapeHtml(body)}</span>`;
+  document.body.appendChild(el);
+  setTimeout(() => el.classList.add("show"), 50);
+  setTimeout(() => { el.classList.remove("show"); setTimeout(() => el.remove(), 400); }, 5000);
+}
+
+/* ============ HATIRLATMA PLANLAMA ============ */
+let _brushReminderInterval = null;
+let _checkupTimeout = null;
+
+function scheduleBrushReminder(time) {
+  if (_brushReminderInterval) clearInterval(_brushReminderInterval);
+  if (!state.userProfile?.notificationsEnabled) return;
+  
+  const [hours, minutes] = time.split(":").map(Number);
+  
+  _brushReminderInterval = setInterval(() => {
+    const now = new Date();
+    if (now.getHours() === hours && now.getMinutes() === minutes && now.getSeconds() < 2) {
+      if (state.lastBrushDate !== now.toDateString()) {
+        showNotif("🪥 Diş Fırçalama Zamanı!", "Dişlerini fırçalamayı unutma! 🔥 Serini koru!");
+      }
+    }
+  }, 1000);
+}
+
+function scheduleCheckupReminder() {
+  if (_checkupTimeout) clearTimeout(_checkupTimeout);
+  if (!state.userProfile?.notificationsEnabled || !state.userProfile?.lastCheckup) return;
+  
+  const lastCheckup = new Date(state.userProfile.lastCheckup);
+  const nextCheckup = new Date(lastCheckup.getTime() + 180*24*60*60*1000);
+  const msUntilReminder = nextCheckup.getTime() - Date.now();
+  
+  // Eğer hatırlatma zamanı geçmişse hemen bildir
+  if (msUntilReminder <= 0) {
+    showNotif("🏥 Diş Kontrolü Zamanı!", "6 aylık diş kontrolünüz geldi. Randevu almayı unutmayın!");
+    return;
+  }
+  
+  // Makul bir zaman aşımı (max 24 saat = 86400000ms)
+  if (msUntilReminder <= 86400000) {
+    _checkupTimeout = setTimeout(() => {
+      showNotif("🏥 Diş Kontrolü Zamanı!", "6 aylık diş kontrolünüz geldi. Randevu almayı unutmayın!");
+    }, msUntilReminder);
+  }
+}
+
+function loadUserProfile() {
+  try {
+    const saved = localStorage.getItem("nurdis_user_profile");
+    if (saved) state.userProfile = JSON.parse(saved);
+  } catch(e) {}
+  try {
+    state.brushStreak = parseInt(localStorage.getItem("nurdis_brush_streak") || "0");
+    state.lastBrushDate = localStorage.getItem("nurdis_last_brush") || null;
+  } catch(e) {}
+  try {
+    state.familyMembers = JSON.parse(localStorage.getItem("nurdis_family_members") || "[]");
+  } catch(e) { state.familyMembers = []; }
+  try {
+    state.badges = JSON.parse(localStorage.getItem("nurdis_badges") || "[]");
+  } catch(e) { state.badges = []; }
+  
+  // Streak kontrolü - eğer son fırçalama dün değilse ve bugün de değilse seri kırılmış
+  if (state.lastBrushDate) {
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (state.lastBrushDate !== today && state.lastBrushDate !== yesterday) {
+      state.brushStreak = 0;
+      localStorage.setItem("nurdis_brush_streak", "0");
+    }
+  }
+  
+  // Günlük ipucu seç
+  pickDailyTip();
+
+  // Hatırlatmaları planla
+  if (state.userProfile?.brushReminderTime) {
+    scheduleBrushReminder(state.userProfile.brushReminderTime);
+  }
+  if (state.userProfile?.lastCheckup) {
+    scheduleCheckupReminder();
+  }
+}
+
+function pickDailyTip() {
+  // Firebase'den gelen ipuçları varsa onları kullan, yoksa varsayılanları
+  const tips = (state.healthTips && state.healthTips.length > 0) 
+    ? state.healthTips.map(t => t.text || t)
+    : DEFAULT_HEALTH_TIPS;
+  // Bugünün tarihine göre deterministik seçim (her gün aynı ipucu)
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  state.dailyTip = tips[dayOfYear % tips.length] || "";
+}
+
+/* ============ ROZET SİSTEMİ ============ */
+function checkBadges() {
+  if (!state.badges) state.badges = [];
+  let newBadge = null;
+
+  const addBadge = (id) => {
+    if (!state.badges.includes(id)) {
+      state.badges.push(id);
+      const def = BADGE_DEFS.find(b => b.id === id);
+      if (def) {
+        newBadge = def;
+        showNotif("🏆 Yeni Rozet!", `${def.icon} ${def.name} — ${def.desc}`);
+      }
+    }
+  };
+
+  // Yorum rozeti
+  if (state.reviews.some(r => r.uid === state.user?.uid)) addBadge("first_review");
+
+  // Randevu rozeti
+  if (state.appointments.some(a => a.uid === state.user?.uid)) addBadge("first_appointment");
+
+  // Streak rozetleri
+  if (state.brushStreak >= 7) addBadge("7_day_streak");
+  if (state.brushStreak >= 14) addBadge("14_day_streak");
+  if (state.brushStreak >= 30) addBadge("30_day_streak");
+  if (state.brushStreak >= 60) addBadge("60_day_streak");
+  if (state.brushStreak >= 100) addBadge("100_day_streak");
+  if (state.brushStreak >= 365) addBadge("365_day_streak");
+
+  // Aile rozeti
+  if ((state.familyMembers || []).length > 0) addBadge("family_member");
+
+  // Tam profil rozeti
+  const p = state.userProfile || {};
+  if (p.firstName && p.lastName && p.age && p.weight && p.height) addBadge("profile_complete");
+
+  // Kaydet
+  localStorage.setItem("nurdis_badges", JSON.stringify(state.badges));
+  if (window.fb && state.fbReady && state.user) {
+    window.fb.saveUserProfile(state.user.uid, { ...state.userProfile, badges: state.badges, familyMembers: state.familyMembers }).catch(() => {});
+  }
+}
+
+// Firebase'e accounting verilerini kaydet
+function saveAccountingToFirebase() {
+  if (window.fb && window.fb.saveAccountingData) {
+    window.fb.saveAccountingData({
+      accounting: state.accounting,
+      treatmentPrices: state.treatmentPrices,
+      autoExpenses: state.autoExpenses,
+      treatments: state.treatments || []
+    }).catch(() => {});
+  }
+}
+
 function wireFirebase() {
   if (!window.fb || !window.fb.ready) return;
   state.fbReady = true;
 
   window.fb.onAuthChange((user) => {
     state.user = user;
+    if (user) {
+      // Kullanıcı giriş yaptı - profilini yükle
+      window.fb.loadUserProfile(user.uid).then(profile => {
+        if (profile) {
+          state.userProfile = profile;
+          localStorage.setItem("nurdis_user_profile", JSON.stringify(profile));
+          if (profile.brushReminderTime) scheduleBrushReminder(profile.brushReminderTime);
+          if (profile.lastCheckup) scheduleCheckupReminder();
+        }
+        render();
+      }).catch(() => {});
+      window.fb.loadBrushStreak(user.uid).then(data => {
+        if (data) {
+          state.brushStreak = data.streak || 0;
+          state.lastBrushDate = data.lastDate || null;
+          localStorage.setItem("nurdis_brush_streak", state.brushStreak);
+          localStorage.setItem("nurdis_last_brush", state.lastBrushDate || "");
+        }
+        render();
+      }).catch(() => {});
+    } else {
+      state.userProfile = null;
+    }
     render();
   });
 
   // Herkese açık, gerçek zamanlı veriler:
-  unsubReviews = window.fb.subscribeReviews((items) => { state.reviews = items; render(); });
+  unsubReviews = window.fb.subscribeReviews((items) => {
+    // Bildirim: yeni yorum geldi mi kontrol et
+    if (!_notifFirstLoad.reviews && items.length > state.reviews.length) {
+      const yeni = items.find(i => !state.reviews.some(r => r.id === i.id));
+      if (yeni) showNotif("⭐ Yeni Yorum!", `${yeni.name}: "${(yeni.text||"").substring(0,60)}..."`);
+    }
+    _notifFirstLoad.reviews = false;
+    state.reviews = items; render();
+  });
+  
+  // Engellenen kullanıcıları Firebase'den yükle
+  if (window.fb.subscribeBlockedUsers) {
+    window.fb.subscribeBlockedUsers((blocked) => {
+      state.blockedUsers = blocked;
+      localStorage.setItem("nurdis_blocked_users", JSON.stringify(blocked));
+      render();
+    });
+  }
+  
+  // Sosyal medya linklerini Firebase'den yükle
+  if (window.fb.subscribeSocialMedia) {
+    window.fb.subscribeSocialMedia((social) => {
+      state.socialMedia = social;
+      localStorage.setItem("nurdis_social_media", JSON.stringify(social));
+      render();
+    });
+  }
   unsubProducts = window.fb.subscribeProducts((items) => { state.customProducts = items; render(); });
   window.fb.subscribeServiceVideos((map) => { state.serviceVideos = map; render(); });
   window.fb.subscribeDeviceVideos((map) => { state.deviceVideos = map; render(); });
   window.fb.subscribeProductImages((map) => { state.productImages = map; render(); });
+
+  // Bildirim izni iste
+  requestNotifPermission();
+
+  // Kullanıcı profilini Firebase'den yükle
+  if (state.user) {
+    window.fb.loadUserProfile(state.user.uid).then(profile => {
+      if (profile) {
+        state.userProfile = profile;
+        localStorage.setItem("nurdis_user_profile", JSON.stringify(profile));
+        // Hatırlatmaları yeniden planla
+        if (profile.brushReminderTime) scheduleBrushReminder(profile.brushReminderTime);
+        if (profile.lastCheckup) scheduleCheckupReminder();
+        render();
+      }
+    }).catch(() => {});
+    window.fb.loadBrushStreak(state.user.uid).then(data => {
+      if (data) {
+        state.brushStreak = data.streak || 0;
+        state.lastBrushDate = data.lastDate || null;
+        localStorage.setItem("nurdis_brush_streak", state.brushStreak);
+        localStorage.setItem("nurdis_last_brush", state.lastBrushDate || "");
+        render();
+      }
+    }).catch(() => {});
+  }
+
+  // Brushing video URL'sini yükle (herkes için)
+  window.fb.subscribeBrushingVideo((url) => {
+    state.brushingVideoUrl = url || "";
+    render();
+  });
+
+  // Sağlık ipuçlarını yükle
+  window.fb.subscribeHealthTips((tips) => {
+    state.healthTips = tips;
+    pickDailyTip();
+    render();
+  });
+
+  // Duyuruları yükle
+  if (window.fb.subscribeAnnouncements) {
+    window.fb.subscribeAnnouncements((announcements) => {
+      const prevCount = (state.announcements || []).length;
+      state.announcements = announcements;
+      // Yeni duyuru geldiğinde bildirim göster
+      if (announcements.length > prevCount && prevCount > 0) {
+        const newest = announcements[0];
+        if (newest) {
+          showNotif("📢 Yeni Duyuru!", newest.title || "Yeni bir duyuru yayınlandı");
+        }
+      }
+      render();
+    });
+  }
+
+  // Kullanıcı tedavilerini yükle (admin ekler)
+  if (window.fb.subscribeTreatments) {
+    window.fb.subscribeTreatments((treatments) => {
+      state.treatments = treatments;
+      render();
+    });
+  }
 
   render();
 }
 
 function startAdminSubscriptions() {
   if (!window.fb || !state.fbReady) return;
-  unsubAppointments = window.fb.subscribeAppointments((items) => { state.appointments = items; render(); });
-  unsubOrders = window.fb.subscribeOrders((items) => { state.orders = items; render(); });
+  unsubAppointments = window.fb.subscribeAppointments((items) => {
+    // Bildirim: yeni randevu
+    if (!_notifFirstLoad.appointments && items.length > state.appointments.length) {
+      const yeni = items.find(i => !state.appointments.some(r => r.id === i.id));
+      if (yeni) showNotif("📅 Yeni Randevu!", `${yeni.name} — ${yeni.date||""} ${yeni.time||""}`);
+    }
+    _notifFirstLoad.appointments = false;
+    state.appointments = items; render();
+  });
+  unsubOrders = window.fb.subscribeOrders((items) => {
+    // Bildirim: yeni sipariş
+    if (!_notifFirstLoad.orders && items.length > state.orders.length) {
+      const yeni = items.find(i => !state.orders.some(r => r.id === i.id));
+      if (yeni) showNotif("📦 Yeni Sipariş!", `${yeni.name} — ${yeni.total||0} ₺`);
+    }
+    _notifFirstLoad.orders = false;
+    state.orders = items; render();
+  });
+
+  // Firebase'den accounting verilerini yükle
+  if (window.fb.loadAccountingData) {
+    window.fb.loadAccountingData().then(docSnap => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.accounting) state.accounting = data.accounting;
+        if (data.treatmentPrices) state.treatmentPrices = data.treatmentPrices;
+        if (data.autoExpenses) state.autoExpenses = data.autoExpenses;
+        if (data.treatments) state.treatments = data.treatments;
+        localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
+        localStorage.setItem("nurdis_treatment_prices", JSON.stringify(state.treatmentPrices)); saveAccountingToFirebase();
+        localStorage.setItem("nurdis_auto_expenses", JSON.stringify(state.autoExpenses)); saveAccountingToFirebase();
+        if (data.treatments) localStorage.setItem("nurdis_treatments_local", JSON.stringify(data.treatments));
+        render();
+      }
+    }).catch(() => {});
+  }
 }
 
 function stopAdminSubscriptions() {
@@ -1677,4 +3454,339 @@ if ("serviceWorker" in navigator) {
       render();
     }
   });
+}
+
+/* Dişini Tasarla - yeni kod entegrasyonu bekleniyor */
+
+
+
+
+/* ============ GÜLÜŞ STİLİNİ TASARLA - Apiframe GPT Image 2 ============ */
+let _gsPhotoBase64 = null;
+let _gsSelectedStyle = 'hollywood';
+
+const SMILE_PROMPTS = {
+  hollywood: 'Give a Hollywood smile: slightly prominent upper front teeth, golden ratio, perfect symmetry, bright white celebrity-like dazzling teeth.',
+  inci: 'Give a pearl-like smile: teeth smaller, rounded, evenly aligned like pearls with warm natural white shade.',
+  iri: 'Give larger, fuller teeth creating a powerful attractive bold smile.',
+  kopek: 'Slightly elongate and sharpen the canine teeth for a characterful prominent look.',
+  lamine: 'Apply thin porcelain veneer shells bonded to the front of teeth for a refined elegant smile.',
+  kompozit: 'Apply composite veneers for aesthetic corrections with minimal preparation, natural looking.',
+  metal: 'Apply metal-backed porcelain crowns with slightly reduced light translucency.',
+  implant: 'Fill missing tooth gaps with natural-looking dental implant ceramic crowns.',
+  dislek: 'Make the two upper front teeth slightly protrude outward and appear longer, rabbit-like.',
+  ortodonti: 'Add realistic orthodontic braces (dental braces / diş teli) to both upper and lower teeth. Each tooth should have a small square metal bracket bonded to its front surface. A thin horizontal metal archwire should connect all brackets on the upper arch and another on the lower arch. Keep the natural tooth color and shape — only add the metal brackets and archwire on top. Make it look like a real orthodontic treatment in progress.'
+};
+
+
+
+
+/* ============ 🎮 KÜÇÜK DİŞ DOKTORU OYUNU v2 - 3D Görsel ============ */
+const GAME_PATIENTS = [
+  { id:1, emoji:"🐻", name:"Ayıcık", color:"#8B4513", complaint:"Çok tatlı yedim, dişim sızlıyor...", problem:"cavity", problemLabel:"Çürük", treatment:"Dolgu", tool:"drill", toolEmoji:"🔧" },
+  { id:2, emoji:"🐰", name:"Tavşancık", color:"#FFB6C1", complaint:"Havuç kemirirken dişim kırıldı!", problem:"broken", problemLabel:"Kırık Diş", treatment:"Kaplama", tool:"crown", toolEmoji:"👑" },
+  { id:3, emoji:"🐱", name:"Kedicik", color:"#FFA500", complaint:"Dişlerim sarardı, beyazlatmak istiyorum!", problem:"yellow", problemLabel:"Sararma", treatment:"Beyazlatma", tool:"whitening", toolEmoji:"💡" },
+  { id:4, emoji:"🐶", name:"Köpecik", color:"#D2691E", complaint:"Diş etim şişti, çok ağrıyor!", problem:"abscess", problemLabel:"Apse", treatment:"Kanal Tedavisi", tool:"rootcanal", toolEmoji:"💉" },
+  { id:5, emoji:"🦊", name:"Tilkicik", color:"#FF4500", complaint:"Dişlerimde taşlar birikti!", problem:"tartar", problemLabel:"Diş Taşı", treatment:"Temizlik", tool:"scaler", toolEmoji:"🪥" },
+];
+
+const GAME_TOOLS_ALL = [
+  { id:"drill", emoji:"🔧", name:"Matkap + Dolgu" },
+  { id:"crown", emoji:"👑", name:"Kaplama" },
+  { id:"whitening", emoji:"💡", name:"LED + Jel" },
+  { id:"rootcanal", emoji:"💉", name:"Kanal Aleti" },
+  { id:"scaler", emoji:"🪥", name:"Skaler" },
+  { id:"brush", emoji:"🪥", name:"Diş Fırçası" },
+  { id:"pliers", emoji:"🔨", name:"Pense" },
+  { id:"mirror", emoji:"🪞", name:"Ayna" },
+];
+
+let gameState = { screen:"waiting", patientIndex:0, score:0, stars:0, treatClicks:0, treatTarget:12, message:"", badToothIndex:3, shaking:false, sparkle:false, pulling:false, pullProgress:0 };
+
+function resetGame() {
+  gameState = { screen:"waiting", patientIndex:0, score:0, stars:0, treatClicks:0, treatTarget:12, message:"", badToothIndex: Math.floor(Math.random()*8), shaking:false, sparkle:false, pulling:false, pullProgress:0 };
+}
+
+/* Diş SVG çizimi */
+function toothSVG(color, isProblem, problemType, index, isPulling, pullProgress) {
+  const baseColor = isProblem ? getProblemColor(problemType) : color || "#FFFEF5";
+  const gumColor = isProblem && problemType === "abscess" ? "#FF6B6B" : "#FFB5B5";
+  const rootColor = "#F5E6D3";
+  const shakeAnim = isProblem ? `animation:toothShake 0.5s ease-in-out infinite;` : '';
+  const pullTransform = isPulling ? `transform:translateY(-${pullProgress}px) rotate(${pullProgress * 2}deg);` : '';
+  const sparkle = isProblem ? `<circle cx="25" cy="18" r="3" fill="${getSparkleColor(problemType)}" opacity="0.7"><animate attributeName="opacity" values="0.3;1;0.3" dur="1s" repeatCount="indefinite"/></circle>` : '';
+  
+  return `<svg viewBox="0 0 50 70" style="width:100%;height:100%;${shakeAnim}${pullTransform}filter:drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
+    <!-- Diş eti -->
+    <ellipse cx="25" cy="22" rx="18" ry="8" fill="${gumColor}"/>
+    <!-- Diş gövdesi (mine) -->
+    <rect x="10" y="14" width="30" height="28" rx="6" fill="${baseColor}" stroke="#E8E0D0" stroke-width="0.5"/>
+    <!-- Diş kökleri -->
+    <path d="M15 42 L13 58 Q14 62 16 60 L18 44" fill="${rootColor}"/>
+    <path d="M32 42 L34 58 Q33 62 31 60 L29 44" fill="${rootColor}"/>
+    <!-- Mine parlaklığı -->
+    <rect x="14" y="16" width="8" height="12" rx="3" fill="rgba(255,255,255,0.3)"/>
+    ${sparkle}
+    ${isProblem && problemType === 'cavity' ? '<circle cx="30" cy="28" r="5" fill="#3D2B1F" opacity="0.8"/><circle cx="30" cy="28" r="3" fill="#1A0F0A"/>' : ''}
+    ${isProblem && problemType === 'broken' ? '<path d="M20 14 L28 22 L22 30" stroke="#CCC" stroke-width="2" fill="none"/><rect x="28" y="14" width="12" height="14" rx="2" fill="none" stroke="#CCC" stroke-dasharray="2,2"/>' : ''}
+    ${isProblem && problemType === 'tartar' ? '<rect x="8" y="36" width="34" height="6" rx="2" fill="#A0A050" opacity="0.7"/><rect x="10" y="34" width="30" height="4" rx="1" fill="#808040" opacity="0.5"/>' : ''}
+  </svg>`;
+}
+
+function getProblemColor(type) {
+  switch(type) {
+    case "cavity": return "#FFF8E1";
+    case "broken": return "#FFE0E0";
+    case "yellow": return "#FFD54F";
+    case "abscess": return "#FFCDD2";
+    case "tartar": return "#E8E0C0";
+    default: return "#FFFEF5";
+  }
+}
+
+function getSparkleColor(type) {
+  switch(type) {
+    case "cavity": return "#FF5722";
+    case "broken": return "#F44336";
+    case "yellow": return "#FF9800";
+    case "abscess": return "#E91E63";
+    case "tartar": return "#8BC34A";
+    default: return "#FFF";
+  }
+}
+
+/* Ağız görünümü - 8 diş */
+function renderMouth(patient, badIndex, examMode, treatMode, treatProgress) {
+  let teeth = '';
+  for (let i = 0; i < 8; i++) {
+    const isBad = i === badIndex;
+    const isPulling = treatMode && isBad;
+    const pp = isPulling ? Math.min(treatProgress * 3, 20) : 0;
+    const toothColor = "#FFFEF5";
+    
+    teeth += `<div data-action="${examMode ? 'game-tooth' : ''}" data-bad="${isBad}" style="
+      width:calc(12.5% - 4px); min-width:40px; aspect-ratio:5/7;
+      cursor:${examMode ? 'pointer' : 'default'};
+      transition: transform 0.2s, box-shadow 0.2s;
+      position:relative;
+      ${examMode && isBad ? 'z-index:2;' : ''}
+    ">
+      ${toothSVG(toothColor, isBad, patient.problem, i, isPulling, pp)}
+    </div>`;
+  }
+  
+  return `<div style="
+    background: linear-gradient(180deg, #FF9E9E 0%, #FFB5B5 30%, #FF8080 100%);
+    border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
+    padding: 20px 12px 30px;
+    position: relative;
+    box-shadow: inset 0 -10px 20px rgba(0,0,0,0.15), 0 8px 30px rgba(0,0,0,0.1);
+    perspective: 500px;
+    transform: rotateX(5deg);
+  ">
+    <!-- Üst dudak -->
+    <div style="position:absolute;top:-8px;left:10%;right:10%;height:16px;background:linear-gradient(180deg,#FF6B6B,#FF8080);border-radius:50% 50% 0 0;"></div>
+    <!-- Dişler -->
+    <div style="display:flex;justify-content:center;gap:3px;align-items:flex-end;padding-top:8px;">
+      ${teeth}
+    </div>
+    <!-- Alt dudak -->
+    <div style="position:absolute;bottom:-5px;left:15%;right:15%;height:12px;background:linear-gradient(0deg,#FF6B6B,#FF8080);border-radius:0 0 50% 50%;"></div>
+  </div>`;
+}
+
+/* Parçacık efekti */
+function sparkleEffect() {
+  let sparkles = '';
+  for (let i = 0; i < 8; i++) {
+    const x = 20 + Math.random() * 60;
+    const y = 20 + Math.random() * 60;
+    const delay = Math.random() * 0.5;
+    sparkles += `<div style="position:absolute;left:${x}%;top:${y}%;width:8px;height:8px;background:gold;border-radius:50%;animation:sparkleFloat 0.8s ease-out ${delay}s both;">✨</div>`;
+  }
+  return sparkles;
+}
+
+function renderDentistGame() {
+  const gs = gameState;
+  const patient = GAME_PATIENTS[gs.patientIndex] || GAME_PATIENTS[0];
+
+  const scoreBar = `<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:linear-gradient(135deg,#1A237E,#283593);border-radius:20px;margin-bottom:16px;color:white;box-shadow:0 4px 15px rgba(26,35,126,0.3);">
+    <div style="text-align:center;"><div style="font-size:22px;">⭐</div><div style="font-size:12px;font-weight:700;">${gs.score}</div></div>
+    <div style="text-align:center;"><div style="font-size:14px;font-weight:600;">Hasta ${gs.patientIndex + 1}/${GAME_PATIENTS.length}</div><div style="font-size:11px;opacity:0.8;">Küçük Diş Doktoru</div></div>
+    <div style="text-align:center;"><div style="font-size:22px;">${"⭐".repeat(gs.stars)}</div><div style="font-size:11px;opacity:0.8;">${gs.stars}/${GAME_PATIENTS.length}</div></div>
+  </div>`;
+
+  // CSS animasyonları
+  const animCSS = `<style>
+    @keyframes toothShake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-2px)} 75%{transform:translateX(2px)} }
+    @keyframes sparkleFloat { 0%{opacity:1;transform:scale(1) translateY(0)} 100%{opacity:0;transform:scale(0) translateY(-30px)} }
+    @keyframes toolSpin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+    @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+    @keyframes slideIn { 0%{opacity:0;transform:translateX(100px)} 100%{opacity:1;transform:translateX(0)} }
+    @keyframes fadeInUp { 0%{opacity:0;transform:translateY(20px)} 100%{opacity:1;transform:translateY(0)} }
+    @keyframes drillShake { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-5deg)} 75%{transform:rotate(5deg)} }
+    @keyframes glowPulse { 0%,100%{box-shadow:0 0 10px rgba(255,215,0,0.3)} 50%{box-shadow:0 0 30px rgba(255,215,0,0.8)} }
+  </style>`;
+
+  // BEKLEME
+  if (gs.screen === "waiting") {
+    return `${topbar("🎮 Küçük Diş Doktoru","Hastalarını tedavi et!", {back:"home"})}${animCSS}
+      <div class="content">
+        <div class="card p5" style="text-align:center;background:linear-gradient(135deg,#E3F2FD,#BBDEFB);border:2px solid #90CAF9;">
+          <img src="game-logo.png" style="width:140px;height:140px;border-radius:24px;margin-bottom:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15);animation:bounce 2s ease-in-out infinite;" />
+          <p class="name" style="font-size:24px;margin:12px 0 8px;color:#1A237E;">Küçük Diş Doktoru</p>
+          <p style="font-size:14px;color:#455A64;margin-bottom:24px;">Merhaba Doktor! Bugün 5 sevimli hasta seni bekliyor.<br>Her birinin dişini muayene et, doğru tedaviyi seç ve uygula!</p>
+          <div style="display:flex;justify-content:center;gap:8px;margin-bottom:24px;font-size:40px;">
+            ${GAME_PATIENTS.map(p => `<span style="animation:slideIn 0.5s ease-out both;animation-delay:${p.id*0.1}s;">${p.emoji}</span>`).join('')}
+          </div>
+          <button class="btn-primary" style="font-size:18px;padding:18px;background:linear-gradient(135deg,#1A237E,#283593);border-radius:16px;box-shadow:0 4px 15px rgba(26,35,126,0.3);" data-action="game-start">🩺 Kliniği Aç!</button>
+        </div>
+      </div>`;
+  }
+
+  // OYUN BİTTİ
+  if (gs.screen === "done") {
+    return `${topbar("🏆 Oyun Bitti!","Tebrikler Doktor!", {back:"home"})}${animCSS}
+      <div class="content">
+        <div class="card p5" style="text-align:center;background:linear-gradient(135deg,#FFF8E1,#FFECB3);border:2px solid #FFD54F;">
+          <div style="font-size:80px;animation:pulse 1.5s ease-in-out infinite;">🏆</div>
+          <p class="name" style="font-size:24px;color:#E65100;margin:12px 0;">Tebrikler Doktor!</p>
+          <div style="font-size:36px;margin:16px 0;">${"⭐".repeat(gs.stars)}${"☆".repeat(GAME_PATIENTS.length - gs.stars)}</div>
+          <p style="font-size:28px;font-weight:800;color:#1A237E;">${gs.score} Puan</p>
+          <p style="font-size:15px;color:#455A64;margin:16px 0;">${gs.stars >= 4 ? "🎉 Sen harika bir diş doktorusun!" : gs.stars >= 2 ? "👏 Güzel iş! Biraz daha pratik!" : "💪 Tekrar dene, daha iyi olacaksın!"}</p>
+          <button class="btn-primary" style="font-size:18px;padding:18px;background:linear-gradient(135deg,#E65100,#FF8F00);border-radius:16px;" data-action="game-restart">🔄 Tekrar Oyna</button>
+        </div>
+      </div>`;
+  }
+
+  // MUAYENE
+  if (gs.screen === "exam") {
+    return `${topbar("🎮 Muayene","Sorunlu dişi bul!", {back:"home"})}${animCSS}
+      <div class="content">
+        ${scoreBar}
+        <div class="card p4" style="text-align:center;animation:fadeInUp 0.5s ease-out;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <div style="font-size:56px;animation:bounce 2s ease-in-out infinite;">${patient.emoji}</div>
+            <div style="text-align:left;flex:1;">
+              <p class="name" style="font-size:18px;color:#1A237E;">${patient.name}</p>
+              <div style="background:#FFF3CD;border-radius:10px;padding:10px;margin-top:6px;border-left:4px solid #FFB300;">
+                <p style="font-size:13px;margin:0;color:#795548;">💬 "${patient.complaint}"</p>
+              </div>
+            </div>
+          </div>
+          <p style="font-size:13px;color:#666;margin-bottom:12px;">🔍 Ayna ile ağzına bak — sorunlu dişi bul ve tıkla!</p>
+          ${renderMouth(patient, gs.badToothIndex, true, false, 0)}
+          ${gs.message ? `<div style="margin-top:12px;padding:10px;border-radius:10px;background:#FFEBEE;"><p style="margin:0;font-size:13px;color:#C62828;">${gs.message}</p></div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  // TEŞHİS
+  if (gs.screen === "diagnose") {
+    const shuffled = [...GAME_PATIENTS].sort(() => Math.random() - 0.5);
+    return `${topbar("🩺 Teşhis Koy","Bu hastanın sorunu ne?", {back:"home"})}${animCSS}
+      <div class="content">
+        ${scoreBar}
+        <div class="card p4" style="text-align:center;animation:fadeInUp 0.5s ease-out;">
+          <div style="font-size:56px;margin-bottom:8px;">${patient.emoji}</div>
+          <p class="name" style="font-size:18px;color:#1A237E;">${patient.name}'in sorunu ne?</p>
+          <div style="margin:12px 0;">
+            ${renderMouth(patient, gs.badToothIndex, false, false, 0)}
+          </div>
+          ${gs.message ? `<div style="padding:10px;border-radius:10px;background:${gs.message.includes("Doğru") ? '#E8F5E9' : '#FFEBEE'};margin-bottom:12px;"><p style="margin:0;font-size:13px;color:${gs.message.includes("Doğru") ? '#2E7D32' : '#C62828'};">${gs.message}</p></div>` : ''}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            ${shuffled.map(p => `<button data-action="game-diagnose" data-problem="${p.problem}" style="
+              padding:14px 8px;border-radius:14px;border:2px solid #E0E0E0;background:white;cursor:pointer;
+              font-size:13px;font-weight:600;color:#333;transition:all 0.2s;
+              display:flex;flex-direction:column;align-items:center;gap:4px;
+            ">${p.emoji}<br>${p.problemLabel}</button>`).join('')}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ALET SEÇİMİ
+  if (gs.screen === "tools") {
+    const shuffled = [...GAME_TOOLS_ALL].sort(() => Math.random() - 0.5);
+    return `${topbar("🔧 Alet Seç","Doğru tedavi aletini seç!", {back:"home"})}${animCSS}
+      <div class="content">
+        ${scoreBar}
+        <div class="card p4" style="text-align:center;animation:fadeInUp 0.5s ease-out;">
+          <div style="font-size:48px;">${patient.emoji}</div>
+          <p class="name" style="font-size:16px;color:#1A237E;">Teşhis: <span style="color:#E65100;">${patient.problemLabel}</span></p>
+          <p style="font-size:13px;color:#666;margin-bottom:4px;">Tedavi: <b>${patient.treatment}</b></p>
+          <p style="font-size:12px;color:#999;margin-bottom:12px;">Doğru aleti seç!</p>
+          ${gs.message ? `<div style="padding:10px;border-radius:10px;background:#FFEBEE;margin-bottom:12px;"><p style="margin:0;font-size:13px;color:#C62828;">${gs.message}</p></div>` : ''}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            ${shuffled.map(t => `<button data-action="game-tool" data-tool="${t.id}" style="
+              padding:14px;border-radius:14px;border:2px solid #E0E0E0;background:white;cursor:pointer;
+              transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:6px;
+            "><span style="font-size:30px;">${t.emoji}</span><span style="font-size:12px;font-weight:600;color:#333;">${t.name}</span></button>`).join('')}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // TEDAVİ
+  if (gs.screen === "treating") {
+    const progress = Math.min(100, Math.round((gs.treatClicks / gs.treatTarget) * 100));
+    const tool = GAME_TOOLS_ALL.find(t => t.id === patient.tool) || GAME_TOOLS_ALL[0];
+    const isNearDone = progress > 70;
+    
+    return `${topbar("💊 Tedavi","Dişi tedavi et!", {back:"home"})}${animCSS}
+      <div class="content">
+        ${scoreBar}
+        <div class="card p4" style="text-align:center;animation:fadeInUp 0.5s ease-out;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:12px;">
+            <div style="font-size:48px;">${patient.emoji}</div>
+            <div style="font-size:36px;${gs.treatClicks > 0 ? 'animation:drillShake 0.15s ease-in-out infinite;' : ''}">${tool.emoji}</div>
+          </div>
+          <p class="name" style="font-size:16px;color:#1A237E;">${patient.treatment} yapılıyor...</p>
+          <div style="margin:16px 0;position:relative;">
+            ${renderMouth(patient, gs.badToothIndex, false, true, gs.treatClicks)}
+            ${gs.treatClicks > 0 ? `<div style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;overflow:hidden;">${sparkleEffect()}</div>` : ''}
+          </div>
+          <!-- Progress bar -->
+          <div style="width:100%;height:24px;background:#E0E0E0;border-radius:12px;overflow:hidden;margin:12px 0;box-shadow:inset 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="width:${progress}%;height:100%;background:linear-gradient(90deg,${isNearDone ? '#4CAF50,#66BB6A' : '#1A237E,#283593'});border-radius:12px;transition:width 0.15s;display:flex;align-items:center;justify-content:center;">
+              <span style="color:white;font-size:12px;font-weight:700;">${progress}%</span>
+            </div>
+          </div>
+          <button data-action="game-treat" style="
+            width:100%;padding:20px;border-radius:16px;border:3px solid ${isNearDone ? '#4CAF50' : '#FFB300'};
+            background:linear-gradient(135deg,${isNearDone ? '#E8F5E9,#C8E6C9' : '#FFF8E1,#FFECB3'});
+            cursor:pointer;font-size:18px;font-weight:700;color:#333;
+            animation:${gs.treatClicks > 0 ? 'pulse 0.3s' : 'glowPulse 2s infinite'};
+            box-shadow:0 4px 15px rgba(0,0,0,0.1);transition:all 0.1s;
+          ">${tool.emoji} TIKLA! (${gs.treatTarget - gs.treatClicks} kaldı)</button>
+        </div>
+      </div>`;
+  }
+
+  // SONUÇ
+  if (gs.screen === "result") {
+    return `${topbar("🎉 Tedavi Tamam!","${patient.name} çok mutlu!", {back:"home"})}${animCSS}
+      <div class="content">
+        ${scoreBar}
+        <div class="card p5" style="text-align:center;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border:2px solid #66BB6A;animation:fadeInUp 0.5s ease-out;">
+          <div style="font-size:80px;animation:bounce 1s ease-in-out infinite;">${patient.emoji}</div>
+          <div style="font-size:40px;margin:8px 0;">😊✨</div>
+          <p class="name" style="font-size:22px;color:#2E7D32;">${patient.name} çok mutlu!</p>
+          <div style="background:white;border-radius:12px;padding:12px;margin:16px 0;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+            <p style="font-size:14px;color:#455A64;margin:0;">💬 "Teşekkürler Doktor! Artık dişim ağrımıyor!"</p>
+          </div>
+          <div style="display:flex;justify-content:center;gap:20px;margin:16px 0;">
+            <div style="text-align:center;"><div style="font-size:28px;">⭐</div><div style="font-size:13px;font-weight:600;color:#E65100;">+1 Yıldız</div></div>
+            <div style="text-align:center;"><div style="font-size:28px;">🎯</div><div style="font-size:13px;font-weight:600;color:#1A237E;">+20 Puan</div></div>
+          </div>
+          <button class="btn-primary" style="font-size:18px;padding:18px;background:linear-gradient(135deg,#2E7D32,#43A047);border-radius:16px;box-shadow:0 4px 15px rgba(46,125,50,0.3);" data-action="game-next">
+            ${gs.patientIndex < GAME_PATIENTS.length - 1 ? '➡️ Sıradaki Hasta' : '🏆 Sonuçları Gör'}
+          </button>
+        </div>
+      </div>`;
+  }
+
+  return "";
 }
