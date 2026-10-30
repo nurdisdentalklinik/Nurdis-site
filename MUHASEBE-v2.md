@@ -141,12 +141,12 @@ Doğrulama:
 - Firebase `nur-dis-klinik` bağlı ✅
 - Konsol hatası yok ✅
 
-### ⚠️ Dikkat: GitHub bağlantısı
-Cloudflare projesi `nurdisdentalklinik/Nurdis-site` reposuna bağlı. Repo'daki kod **eski** (muhasebe v2 yok).
+### ✅ GitHub bağlantısı güncellendi
+Repo: `nurdisdentalklinik/Nurdis-site`
+Commit: `e9b0289` (Muhasebe modulu v2)
+Cloudflare otomatik deploy: `54bfe8d1` ✅ success
 
-Bu yüzden:
-- Repo'ya yeni bir commit atılırsa **eski sürüm geri gelir**
-- Önce repo'yu güncellemek gerekiyor (GitHub token'ı ile)
+Artık repo ile canlı site **senkron**. Repoya yeni commit atıldığında muhasebe v2 korunur.
 
 ### Tekrar deploy
 ```bash
