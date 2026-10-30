@@ -301,6 +301,14 @@ let state = {
   demirbaslar: [],
   demirbasEdit: undefined,
   accTamamlanan: {},
+  bordroYil: null,
+  bordroAy: null,
+  yevmiyeYil: null,
+  yevmiyeAy: 0,
+  mizanYil: null,
+  tabloYil: null,
+  firmaBilgi: null,
+  mutabakatSonuc: null,
   kdvYil: null,
   kdvAy: null,
   gvDonem: 1,
@@ -372,6 +380,7 @@ function loadAll() {
   try { const sg = JSON.parse(localStorage.getItem("nurdis_sgk_settings") || "null"); if (sg) state.sgkSettings = sg; } catch(e){}
   try { state.demirbaslar = JSON.parse(localStorage.getItem("nurdis_demirbaslar") || "[]"); } catch(e){ state.demirbaslar = []; }
   try { state.accTamamlanan = JSON.parse(localStorage.getItem("nurdis_beyan_tamam") || "{}"); } catch(e){ state.accTamamlanan = {}; }
+  try { state.firmaBilgi = JSON.parse(localStorage.getItem("nurdis_firma_bilgi") || "null"); } catch(e){ state.firmaBilgi = null; }
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}
   
@@ -2369,6 +2378,1022 @@ function renderAccCari() {
   `;
 }
 
+/* =========================================================
+   NUR DİŞ — TAM MALİ MÜŞAVİR PAKETİ v4
+   Bordro · e-Fatura (UBL-TR) · Banka Mutabakatı
+   Yevmiye Defteri · Mizan · Gelir Tablosu · Bilanço
+   Yıllık Mali Rapor · Tahsilat Makbuzu
+========================================================= */
+
+/* ---------------- ORTAK YARDIMCILAR ---------------- */
+
+function accTarihTR(d) {
+  const t = d ? new Date(d) : new Date();
+  return t.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+function accTarihUzun(d) {
+  const t = d ? new Date(d) : new Date();
+  return t.toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+}
+/* Yıl-ay anahtarı: 2026-10 */
+function accKey(d) {
+  const t = d ? new Date(d) : new Date();
+  return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0");
+}
+function accAyAdi(yil, ay) { // ay 1-12
+  return new Date(yil, ay - 1, 1).toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+}
+
+/* =========================================================
+   1) BORDRO (Maaş Pusulası)
+========================================================= */
+
+function accBordro(p, donemYil, donemAy) {
+  const c = accPayroll(p);
+  const s = sgkSet();
+  return {
+    personel: p,
+    donem: accAyAdi(donemYil, donemAy),
+    donemKey: donemYil + "-" + String(donemAy).padStart(2, "0"),
+    gun: c.gun,
+    brutUcret: c.brut,
+    pek: c.pek,
+    isciSgk: c.isciSgk,
+    isciIssiz: c.isciIssiz,
+    gvMatrah: c.gvMatrah,
+    gelirVergisi: c.gelirVergisi,
+    damga: c.damga,
+    kesintiToplam: c.isciSgk + c.isciIssiz + c.gelirVergisi + c.damga,
+    netUcret: c.net,
+    isverenSgk: c.isverenSgk,
+    isverenIssiz: c.isverenIssiz,
+    isvereneMaliyet: c.isvereneMaliyet,
+    toplamSgk: c.toplamSgk,
+    asgariUcret: s.minWage
+  };
+}
+
+function accBordroTumu(donemYil, donemAy) {
+  return (state.personnel || []).filter(p => p.aktif !== false)
+    .map(p => accBordro(p, donemYil, donemAy));
+}
+
+/* A4 bordro HTML */
+function accBordroHTML(b) {
+  const p = b.personel;
+  return `<div style="border:1px solid #ccc;border-radius:6px;padding:16px;margin-bottom:14px;page-break-inside:avoid;">
+    <div style="display:flex;justify-content:space-between;border-bottom:2px solid #0B6E86;padding-bottom:8px;margin-bottom:10px;">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:#0B6E86;">NUR DİŞ &amp; DENTAL KLİNİK</div>
+        <div style="font-size:10px;color:#666;">ÜCRET BORDROSU / MAAŞ PUSULASI</div>
+      </div>
+      <div style="text-align:right;font-size:11px;">
+        <div><b>Dönem:</b> ${b.donem}</div>
+        <div style="color:#888;">Düzenleme: ${accTarihTR()}</div>
+      </div>
+    </div>
+
+    <table style="width:100%;font-size:11px;margin-bottom:10px;">
+      <tr>
+        <td style="padding:3px 0;"><b>Ad Soyad:</b> ${escapeHtml(p.name || "-")}</td>
+        <td style="padding:3px 0;"><b>TC Kimlik:</b> ${escapeHtml(p.tcNo || "-")}</td>
+      </tr>
+      <tr>
+        <td style="padding:3px 0;"><b>Görev:</b> ${escapeHtml(p.position || "-")}</td>
+        <td style="padding:3px 0;"><b>Çalışılan Gün:</b> ${b.gun}</td>
+      </tr>
+    </table>
+
+    <table style="width:100%;font-size:11px;border-collapse:collapse;">
+      <tr style="background:#f0f6f8;">
+        <th style="text-align:left;padding:5px;border:1px solid #ddd;">KAZANÇLAR</th>
+        <th style="text-align:right;padding:5px;border:1px solid #ddd;">TUTAR</th>
+        <th style="text-align:left;padding:5px;border:1px solid #ddd;">KESİNTİLER</th>
+        <th style="text-align:right;padding:5px;border:1px solid #ddd;">TUTAR</th>
+      </tr>
+      <tr>
+        <td style="padding:5px;border:1px solid #ddd;">Brüt Ücret</td>
+        <td style="padding:5px;border:1px solid #ddd;text-align:right;">${accTL(b.brutUcret)}</td>
+        <td style="padding:5px;border:1px solid #ddd;">SGK İşçi Payı (%14)</td>
+        <td style="padding:5px;border:1px solid #ddd;text-align:right;">${accTL(b.isciSgk)}</td>
+      </tr>
+      <tr>
+        <td style="padding:5px;border:1px solid #ddd;color:#888;font-size:10px;">Prime Esas Kazanç</td>
+        <td style="padding:5px;border:1px solid #ddd;text-align:right;color:#888;font-size:10px;">${accTL(b.pek)}</td>
+        <td style="padding:5px;border:1px solid #ddd;">İşsizlik İşçi (%1)</td>
+        <td style="padding:5px;border:1px solid #ddd;text-align:right;">${accTL(b.isciIssiz)}</td>
+      </tr>
+      <tr>
+        <td style="padding:5px;border:1px solid #ddd;"></td><td style="padding:5px;border:1px solid #ddd;"></td>
+        <td style="padding:5px;border:1px solid #ddd;">Gelir Vergisi</td>
+        <td style="padding:5px;border:1px solid #ddd;text-align:right;">${accTL(b.gelirVergisi)}</td>
+      </tr>
+      <tr>
+        <td style="padding:5px;border:1px solid #ddd;"></td><td style="padding:5px;border:1px solid #ddd;"></td>
+        <td style="padding:5px;border:1px solid #ddd;">Damga Vergisi (‰7,59)</td>
+        <td style="padding:5px;border:1px solid #ddd;text-align:right;">${accTL(b.damga)}</td>
+      </tr>
+      <tr style="background:#fff3e0;">
+        <td style="padding:6px;border:1px solid #ddd;font-weight:700;">TOPLAM</td>
+        <td style="padding:6px;border:1px solid #ddd;text-align:right;font-weight:700;">${accTL(b.brutUcret)}</td>
+        <td style="padding:6px;border:1px solid #ddd;font-weight:700;">KESİNTİ TOPLAMI</td>
+        <td style="padding:6px;border:1px solid #ddd;text-align:right;font-weight:700;">${accTL(b.kesintiToplam)}</td>
+      </tr>
+    </table>
+
+    <div style="background:#0B6E86;color:#fff;padding:9px;border-radius:5px;margin-top:8px;display:flex;justify-content:space-between;font-size:13px;font-weight:800;">
+      <span>NET ÖDENECEK ÜCRET</span><span>${accTL(b.netUcret)}</span>
+    </div>
+
+    <table style="width:100%;font-size:10px;margin-top:8px;color:#666;">
+      <tr>
+        <td>İşveren SGK (%${(sgkSet().isverenSgk - (p.tesvikli ? sgkSet().tesvikPuan : 0)).toFixed(2)}): ${accTL(b.isverenSgk)}</td>
+        <td>İşveren İşsizlik (%2): ${accTL(b.isverenIssiz)}</td>
+        <td style="text-align:right;"><b>İşverene Maliyet: ${accTL(b.isvereneMaliyet)}</b></td>
+      </tr>
+    </table>
+
+    <div style="display:flex;justify-content:space-between;margin-top:18px;font-size:10px;">
+      <div style="text-align:center;width:45%;">
+        <div style="border-top:1px solid #999;padding-top:4px;">İşveren / Kaşe-İmza</div>
+      </div>
+      <div style="text-align:center;width:45%;">
+        <div style="border-top:1px solid #999;padding-top:4px;">Personel İmzası<br/><span style="color:#aaa;">${escapeHtml(p.name || "")}</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderAccBordro() {
+  const simdi = new Date();
+  const yil = state.bordroYil || simdi.getFullYear();
+  const ay = state.bordroAy || (simdi.getMonth() + 1);
+  const liste = accBordroTumu(yil, ay);
+  const t = accPayrollTotal();
+
+  const yilChip = [yil - 1, yil, yil + 1].map(y =>
+    `<button data-action="bordro-yil" data-yil="${y}" style="flex:1;padding:7px;border-radius:9px;font-size:11.5px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${y === yil ? "#00695C" : "var(--line)"};background:${y === yil ? "#00695C" : "rgba(255,255,255,.7)"};color:${y === yil ? "#fff" : "var(--ink)"};cursor:pointer;">${y}</button>`).join("");
+
+  const ayChip = Array.from({ length: 12 }, (_, i) => i + 1).map(m => {
+    const aktif = m === ay;
+    return `<button data-action="bordro-ay" data-ay="${m}" style="flex:0 0 auto;min-width:38px;padding:6px 4px;border-radius:8px;font-size:11px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${aktif ? "#00695C" : "var(--line)"};background:${aktif ? "#00695C" : "rgba(255,255,255,.7)"};color:${aktif ? "#fff" : "var(--ink)"};cursor:pointer;">${m}</button>`;
+  }).join("");
+
+  const kartlar = liste.map(b => `
+    <div class="card p3 mb2">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:12.5px;font-weight:700;margin:0;">${escapeHtml(b.personel.name)}</p>
+          <p style="font-size:10px;color:var(--muted);margin:2px 0 0;">${escapeHtml(b.personel.position || "")} · ${b.gun} gün</p>
+          <p style="font-size:10.5px;color:#2E7D32;margin:3px 0 0;font-weight:700;">Net: ${accTL(b.netUcret)}</p>
+          <p style="font-size:9.5px;color:#888;margin:1px 0 0;">Brüt ${accTL(b.brutUcret)} · Kesinti ${accTL(b.kesintiToplam)}</p>
+        </div>
+        <button data-action="bordro-tek" data-id="${b.personel.id}" style="background:#E0F2F1;border:none;border-radius:6px;padding:6px 9px;cursor:pointer;font-size:11px;">🖨️</button>
+      </div>
+    </div>`).join("") || `<p class="footnote">Bu dönem için aktif personel yok.</p>`;
+
+  return `
+    <div style="display:flex;gap:6px;margin-bottom:8px;">${yilChip}</div>
+    <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px;">${ayChip}</div>
+
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#004D40,#00695C);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 2px;">📄 ${accAyAdi(yil, ay)} Bordrosu</p>
+      <p style="font-size:10.5px;opacity:.85;margin:0 0 10px;">${liste.length} personel</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9px;margin:0;opacity:.85;">TOPLAM NET</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0 0;">${accTL0(liste.reduce((s, b) => s + b.netUcret, 0))}</p>
+        </div>
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9px;margin:0;opacity:.85;">İŞVERENE MALİYET</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0 0;">${accTL0(liste.reduce((s, b) => s + b.isvereneMaliyet, 0))}</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;">
+      <button class="btn-primary" style="background:#00695C;font-size:11.5px;padding:11px;" data-action="bordro-hepsi">🖨️ Tüm Bordroyu Yazdır</button>
+      <button class="btn-primary" style="background:#0E93AC;font-size:11.5px;padding:11px;" data-action="bordro-csv">⬇️ CSV İndir</button>
+    </div>
+
+    <p class="section-label">Personel Bordroları (${liste.length})</p>
+    ${kartlar}
+
+    <div class="card p4 mb3" style="background:#E0F2F1;border:1px solid #80CBC4;">
+      <p style="font-size:11.5px;font-weight:700;color:#00695C;margin:0 0 6px;">💡 Bordro nedir, neden gerekli?</p>
+      <p style="font-size:10.5px;color:#00897B;margin:0;line-height:1.6;">
+        Bordro, işçiye ödenen ücretin yasal dökümüdür. SGK denetiminde, iş davalarında ve
+        personelin imzasıyla birlikte <b>ispat belgesi</b> niteliği taşır.
+        Her ay yazdırıp imzalatmanız önerilir.
+      </p>
+    </div>
+  `;
+}
+
+/* =========================================================
+   2) e-FATURA / e-ARŞİV (UBL-TR)
+========================================================= */
+
+/* Türkiye e-Fatura standartı: UBL-TR 1.2 */
+function accUblTR(fatura) {
+  const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+  const id = (fatura.invoiceNo || ("NUR" + Date.now())).replace(/\s/g, "");
+  const uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+  const kdvOran = fatura.kdvOran != null ? fatura.kdvOran : 0.10;
+  const brut = accNum(fatura.grossAmount || fatura.amount);
+  const kdv = accNum(fatura.kdv) || brut * kdvOran;
+  const matrah = brut;
+  const toplam = matrah + kdv;
+  const vknTckn = (fatura.tcNo || fatura.vkn || "").replace(/\D/g, "");
+  const saticiVkn = (state.firmaBilgi && state.firmaBilgi.vergiNo ? state.firmaBilgi.vergiNo : "").replace(/\D/g, "");
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+         xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+         xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
+  <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+  <cbc:CustomizationID>TR1.2</cbc:CustomizationID>
+  <cbc:ProfileID>EARSIVFATURA</cbc:ProfileID>
+  <cbc:ID>${id}</cbc:ID>
+  <cbc:CopyIndicator>false</cbc:CopyIndicator>
+  <cbc:UUID>${uuid}</cbc:UUID>
+  <cbc:IssueDate>${(fatura.date || accToday())}</cbc:IssueDate>
+  <cbc:IssueTime>${new Date().toTimeString().slice(0, 8)}</cbc:IssueTime>
+  <cbc:InvoiceTypeCode>SATIS</cbc:InvoiceTypeCode>
+  <cbc:Note>${escapeHtml(fatura.notes || "Dis Tedavi Hizmeti")}</cbc:Note>
+  <cbc:DocumentCurrencyCode>TRY</cbc:DocumentCurrencyCode>
+  <cbc:LineCountNumeric>1</cbc:LineCountNumeric>
+
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="VKN">${saticiVkn || "0000000000"}</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyName>
+        <cbc:Name>${escapeHtml((state.firmaBilgi && state.firmaBilgi.unvan) || "NUR DIS & DENTAL KLINIK")}</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>${escapeHtml((state.firmaBilgi && state.firmaBilgi.adres) || "Mardin Kiziltepe TOKI")}</cbc:StreetName>
+        <cbc:CitySubdivisionName>${escapeHtml((state.firmaBilgi && state.firmaBilgi.ilce) || "Kiziltepe")}</cbc:CitySubdivisionName>
+        <cbc:CityName>${escapeHtml((state.firmaBilgi && state.firmaBilgi.il) || "Mardin")}</cbc:CityName>
+        <cac:Country>
+          <cbc:Name>Turkiye</cbc:Name>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cac:TaxScheme>
+          <cbc:Name>Kiziltepe</cbc:Name>
+        </cac:TaxScheme>
+      </cac:PartyTaxScheme>
+      <cac:Contact>
+        <cbc:Telephone>${escapeHtml((state.firmaBilgi && state.firmaBilgi.telefon) || "05051050302")}</cbc:Telephone>
+        <cbc:ElectronicMail>${escapeHtml((state.firmaBilgi && state.firmaBilgi.eposta) || "nurdisdentalklinik@gmail.com")}</cbc:ElectronicMail>
+      </cac:Contact>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+
+  <cac:AccountingCustomerParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="${vknTckn.length === 10 ? "VKN" : "TCKN"}">${vknTckn || "11111111111"}</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyName>
+        <cbc:Name>${escapeHtml(fatura.firm || fatura.description || "Musteri")}</cbc:Name>
+      </cac:PartyName>
+      <cac:PostalAddress>
+        <cbc:StreetName>-</cbc:StreetName>
+        <cbc:CitySubdivisionName>-</cbc:CitySubdivisionName>
+        <cbc:CityName>-</cbc:CityName>
+        <cac:Country><cbc:Name>Turkiye</cbc:Name></cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyTaxScheme>
+        <cac:TaxScheme><cbc:Name>-</cbc:Name></cac:TaxScheme>
+      </cac:PartyTaxScheme>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="TRY">${kdv.toFixed(2)}</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="TRY">${matrah.toFixed(2)}</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="TRY">${kdv.toFixed(2)}</cbc:TaxAmount>
+      <cbc:Percent>${(kdvOran * 100).toFixed(0)}</cbc:Percent>
+      <cac:TaxCategory>
+        <cac:TaxScheme><cbc:Name>KDV</cbc:Name><cbc:TaxTypeCode>0015</cbc:TaxTypeCode></cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="TRY">${matrah.toFixed(2)}</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="TRY">${matrah.toFixed(2)}</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="TRY">${toplam.toFixed(2)}</cbc:TaxInclusiveAmount>
+    <cbc:PayableAmount currencyID="TRY">${toplam.toFixed(2)}</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="C62">1</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="TRY">${matrah.toFixed(2)}</cbc:LineExtensionAmount>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="TRY">${kdv.toFixed(2)}</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="TRY">${matrah.toFixed(2)}</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="TRY">${kdv.toFixed(2)}</cbc:TaxAmount>
+        <cbc:Percent>${(kdvOran * 100).toFixed(0)}</cbc:Percent>
+        <cac:TaxCategory>
+          <cac:TaxScheme><cbc:Name>KDV</cbc:Name><cbc:TaxTypeCode>0015</cbc:TaxTypeCode></cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item>
+      <cbc:Name>${escapeHtml(fatura.category || "Dis Tedavi Hizmeti")}</cbc:Name>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="TRY">${matrah.toFixed(2)}</cbc:PriceAmount>
+    </cac:Price>
+  </cac:InvoiceLine>
+</Invoice>`;
+}
+
+function renderAccEFatura() {
+  const inc = (state.accounting.incomes || []).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+  const buAy = inc.filter(x => accKey(x.date) === accKey());
+  const fb = state.firmaBilgi || {};
+
+  const son = inc.slice(0, 15).map(x => `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);">
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:11.5px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(x.description || "")}</p>
+        <p style="font-size:9.5px;color:var(--muted);margin:2px 0 0;">${escapeHtml(x.invoiceNo || "fatura no yok")} · ${accTarihTR(x.date)} · ${accTL(x.grossAmount || x.amount)}</p>
+      </div>
+      <button data-action="efatura-indir" data-id="${x.id}" style="background:#E3F2FD;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:10px;font-weight:700;color:#1565C0;">XML</button>
+    </div>`).join("") || `<p class="footnote">Henüz fatura kaydı yok.</p>`;
+
+  return `
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#0D47A1,#1565C0);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 2px;">🧾 e-Fatura / e-Arşiv</p>
+      <p style="font-size:10.5px;opacity:.85;margin:0 0 10px;">UBL-TR 1.2 formatında · ${inc.length} fatura</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9px;margin:0;opacity:.85;">BU AY</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0 0;">${buAy.length}</p>
+        </div>
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9px;margin:0;opacity:.85;">BU AY TOPLAM</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0 0;">${accTL0(buAy.reduce((s, x) => s + accNum(x.grossAmount || x.amount), 0))}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p4 mb3" style="background:#E8EAF6;border:1px solid #9FA8DA;">
+      <p style="font-size:12px;font-weight:700;color:#283593;margin:0 0 8px;">🏢 Firma Bilgileri (faturada kullanılır)</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <input class="input" id="fb-unvan" placeholder="Ünvan" value="${escapeAttr(fb.unvan || "NUR DİŞ & DENTAL KLİNİK")}" style="font-size:11px;padding:6px;" />
+        <input class="input" id="fb-vergi" placeholder="Vergi / TC No" value="${escapeAttr(fb.vergiNo || "")}" style="font-size:11px;padding:6px;" />
+        <input class="input" id="fb-vergiDaire" placeholder="Vergi Dairesi" value="${escapeAttr(fb.vergiDaire || "")}" style="font-size:11px;padding:6px;" />
+        <input class="input" id="fb-telefon" placeholder="Telefon" value="${escapeAttr(fb.telefon || "")}" style="font-size:11px;padding:6px;" />
+        <input class="input" id="fb-il" placeholder="İl" value="${escapeAttr(fb.il || "Mardin")}" style="font-size:11px;padding:6px;" />
+        <input class="input" id="fb-ilce" placeholder="İlçe" value="${escapeAttr(fb.ilce || "Kızıltepe")}" style="font-size:11px;padding:6px;" />
+      </div>
+      <button class="btn-primary" style="margin-top:8px;background:#283593;font-size:11.5px;padding:10px;" data-action="firma-save">💾 Kaydet</button>
+      <p style="font-size:9.5px;color:#5C6BC0;margin:6px 0 0;">Bu bilgiler e-Fatura XML'ine ve yazdırılan belgelere otomatik eklenir.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;">
+      <a href="${ACC_LINKS.gibDijital}" target="_blank" rel="noopener" class="btn-primary" style="text-decoration:none;background:#2E7D32;font-size:11.5px;padding:11px;">🔗 e-Arşiv Portal</a>
+      <button class="btn-primary" style="background:#1565C0;font-size:11.5px;padding:11px;" data-action="efatura-hepsi">⬇️ Tüm XML</button>
+    </div>
+
+    <p class="section-label">Son Faturalar</p>
+    <div class="card p4 mb3">${son}</div>
+
+    <div class="card p4 mb3" style="background:#FFF8E1;border:1px solid #FFD54F;">
+      <p style="font-size:11.5px;font-weight:700;color:#E65100;margin:0 0 6px;">⚖️ Yasal Durum</p>
+      <p style="font-size:10.5px;color:#8D6E00;margin:0;line-height:1.65;">
+        XML dosyasını indirip <b>GİB e-Arşiv Portalı'na</b> yükleyerek faturayı resmîleştirebilirsiniz.
+        Belirli ciro üstü mükellefler için e-Fatura zorunludur; e-Arşiv tüm mükelleflere açıktır.
+        GİB'e gönderim <b>mali mühür / e-imza</b> gerektirdiği için son adım sizde.
+      </p>
+    </div>
+  `;
+}
+
+/* =========================================================
+   3) BANKA MUTABAKATI
+========================================================= */
+
+/* CSV/TXT banka ekstresini ayrıştırır (tarih; açıklama; tutar) */
+function accParseBankCsv(text) {
+  const satirlar = text.split(/\r?\n/).filter(s => s.trim());
+  const sonuc = [];
+  let ayirici = ";";
+  if (satirlar.length && satirlar[0].split(",").length > satirlar[0].split(";").length) ayirici = ",";
+
+  satirlar.forEach((s, i) => {
+    const p = s.split(ayirici).map(x => x.trim().replace(/^"|"$/g, ""));
+    if (p.length < 2) return;
+
+    // Tarih bul
+    let tarih = null, tutar = null, aciklama = "";
+    for (const alan of p) {
+      if (!tarih) {
+        const m = alan.match(/^(\d{1,2})[\.\/](\d{1,2})[\.\/](\d{2,4})$/);
+        if (m) {
+          let y = parseInt(m[3]); if (y < 100) y += 2000;
+          tarih = y + "-" + String(parseInt(m[2])).padStart(2, "0") + "-" + String(parseInt(m[1])).padStart(2, "0");
+          continue;
+        }
+        const iso = alan.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (iso) { tarih = alan; continue; }
+      }
+      // Tutar bul (ondalıklı ve binlik ayraçlı)
+      const temiz = alan.replace(/\s/g, "");
+      if (tutar === null && /^-?[\d\.]+,\d{2}$/.test(temiz)) {
+        tutar = parseFloat(temiz.replace(/\./g, "").replace(",", ".")); continue;
+      }
+      if (tutar === null && /^-?[\d,]+\.\d{2}$/.test(temiz)) {
+        tutar = parseFloat(temiz.replace(/,/g, "")); continue;
+      }
+      if (tutar === null && /^-?\d+$/.test(temiz) && Math.abs(parseInt(temiz)) > 0 && alan.length <= 12) {
+        tutar = parseInt(temiz); continue;
+      }
+      if (alan.length > aciklama.length && !/^\d+$/.test(alan)) aciklama = alan;
+    }
+
+    if (tarih && tutar !== null) {
+      sonuc.push({ tarih, tutar, aciklama: aciklama || "Banka hareketi", satir: i + 1 });
+    }
+  });
+  return sonuc;
+}
+
+/* Basit benzerlik skoru (kelime örtüşmesi) */
+function accBenzerlik(a, b) {
+  const norm = s => (s || "").toLowerCase()
+    .replace(/[^a-z0-9ğüşıöç\s]/g, " ")
+    .split(/\s+/).filter(w => w.length > 2);
+  const A = norm(a), B = norm(b);
+  if (!A.length || !B.length) return 0;
+  let esles = 0;
+  A.forEach(w => { if (B.some(x => x === w || (x.length > 3 && w.length > 3 && (x.includes(w) || w.includes(x))))) esles++; });
+  return esles / Math.max(A.length, B.length);
+}
+
+function accMutabakat(text) {
+  const banka = accParseBankCsv(text);
+  const kayitlar = [
+    ...(state.accounting.incomes || []).map(x => ({ ...x, tip: "gelir" })),
+    ...(state.accounting.expenses || []).map(x => ({ ...x, tip: "gider" }))
+  ];
+
+  const sonuc = banka.map(b => {
+    let enIyi = null, enIyiSkor = 0;
+    const absTutar = Math.abs(b.tutar);
+    kayitlar.forEach(k => {
+      const netTutar = accNum(k.amount);
+      const brutTutar = accNum(k.grossAmount || k.amount);
+      // Net tutar, brüt tutar veya KDV'li toplam eşleşebilir
+      const tutarFark = Math.min(
+        Math.abs(netTutar - absTutar),
+        Math.abs(brutTutar - absTutar)
+      );
+      const gunFark = Math.abs((new Date(b.tarih) - new Date(k.date)) / 86400000);
+      if (tutarFark > 1 || gunFark > 12) return;
+      let skor = 0.55 + (1 - gunFark / 12) * 0.20;
+      skor += accBenzerlik(b.aciklama, (k.description || "") + " " + (k.firm || "") + " " + (k.category || "")) * 0.25;
+      if (skor > enIyiSkor) { enIyiSkor = skor; enIyi = k; }
+    });
+    return { banka: b, eslesme: enIyi, skor: enIyiSkor };
+  });
+
+  return { banka, sonuc, eslesen: sonuc.filter(x => x.eslesme).length };
+}
+
+function renderAccMutabakat() {
+  const sonuc = state.mutabakatSonuc;
+  const fb = state.firmaBilgi || {};
+
+  let sonucHtml = "";
+  if (sonuc) {
+    const satirlar = sonuc.sonuc.map(x => {
+      const b = x.banka;
+      const esl = x.eslesme;
+      const renk = esl ? (x.skor > 0.78 ? "#2E7D32" : "#F9A825") : "#C62828";
+      return `<div style="padding:8px 0;border-bottom:1px solid var(--line);">
+        <div style="display:flex;justify-content:space-between;gap:8px;">
+          <div style="flex:1;min-width:0;">
+            <p style="font-size:11.5px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(b.aciklama)}</p>
+            <p style="font-size:9.5px;color:var(--muted);margin:2px 0 0;">${accTarihTR(b.tarih)} · ${accTL(Math.abs(b.tutar))}</p>
+          </div>
+          <span style="font-size:9.5px;font-weight:700;color:${renk};flex-shrink:0;">${esl ? (x.skor > 0.78 ? "✓ Eşleşti" : "~ Benzer") : "✗ Eşleşmedi"}</span>
+        </div>
+        ${esl ? `<p style="font-size:9px;color:#666;margin:3px 0 0;padding-left:2px;">→ ${escapeHtml(esl.description || "")} · ${accTL(esl.amount)} · %${Math.round(x.skor * 100)}</p>` : ""}
+      </div>`;
+    }).join("");
+
+    sonucHtml = `<div class="card p4 mb3" style="background:#E8F5E9;border:1px solid #A5D6A7;">
+      <p style="font-size:12.5px;font-weight:700;color:#1B5E20;margin:0 0 6px;">📊 Sonuç: ${sonuc.eslesen}/${sonuc.banka.length} eşleşti</p>
+      <p style="font-size:10.5px;color:#2E7D32;margin:0;">Eşleşmeyen ${sonuc.banka.length - sonuc.eslesen} hareket için muhasebe kaydı eksik olabilir.</p>
+    </div>
+    <div class="card p4 mb3">
+      <p style="font-size:12.5px;font-weight:700;margin:0 0 8px;">Banka Hareketleri</p>
+      ${satirlar}
+    </div>`;
+  }
+
+  return `
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#1A237E,#283593);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 2px;">🏦 Banka Mutabakatı</p>
+      <p style="font-size:10.5px;opacity:.85;margin:0;">Banka ekstrenizi yükleyin, muhasebe kayıtlarıyla otomatik eşleştirelim</p>
+    </div>
+
+    <div class="card p4 mb3">
+      <p style="font-size:12px;font-weight:700;margin:0 0 8px;">📎 Ekstre Dosyası (CSV / TXT)</p>
+      <input type="file" id="mutabakat-file" accept=".csv,.txt" style="font-size:11.5px;width:100%;margin-bottom:10px;" />
+      <div style="background:#F5F5F5;border-radius:8px;padding:9px;margin-bottom:10px;">
+        <p style="font-size:10px;color:#666;margin:0;line-height:1.6;">
+          <b>Beklenen format:</b> her satırda tarih ve tutar olmalı.<br/>
+          Örnek:<br/>
+          <code style="font-size:9.5px;">01.10.2026;POS TAHSİLAT;5000,00</code><br/>
+          <code style="font-size:9.5px;">2026-10-02;HAVALE ALİ V;3000.00</code>
+        </p>
+      </div>
+      <button class="btn-primary" style="background:#283593;font-size:12px;padding:11px;" data-action="mutabakat-yukle">🔄 Ekstreyi Yükle ve Eşleştir</button>
+    </div>
+
+    ${sonucHtml}
+
+    <div class="card p4 mb3" style="background:#FFF3E0;border:1px solid #FFB74D;">
+      <p style="font-size:11.5px;font-weight:700;color:#E65100;margin:0 0 6px;">💡 Nasıl çalışır?</p>
+      <p style="font-size:10.5px;color:#BF360C;margin:0;line-height:1.6;">
+        Ekstreyi yükleyince program <b>tutar + tarih + açıklama benzerliğine</b> göre eşleştirir.
+        Eşleşmeyen hareket = muhasebede eksik kayıt. Bu, kayıp gelir/gider bulmanın en hızlı yoludur.
+      </p>
+    </div>
+  `;
+}
+
+/* =========================================================
+   4) YEVMİYE DEFTERİ
+========================================================= */
+
+/* Türk muhasebe standartı: tek düzen hesap planı */
+const HESAP_PLANI = {
+  kasa: { kod: "100", ad: "Kasa" },
+  banka: { kod: "102", ad: "Bankalar" },
+  alicilar: { kod: "120", ad: "Alıcılar" },
+  saticilar: { kod: "320", ad: "Satıcılar" },
+  kdvHesaplanan: { kod: "391", ad: "Hesaplanan KDV" },
+  kdvIndirilecek: { kod: "191", ad: "İndirilecek KDV" },
+  gelirler: { kod: "600", ad: "Yurt İçi Satışlar" },
+  giderler: { kod: "770", ad: "Genel Yönetim Giderleri" },
+  amortisman: { kod: "730", ad: "Amortisman Giderleri" },
+  personel: { kod: "335", ad: "Personele Borçlar" },
+  sgk: { kod: "361", ad: "Ödenecek SGK Primi" },
+  vergi: { kod: "360", ad: "Ödenecek Vergi ve Fonlar" }
+};
+
+/* Gelir kaydından yevmiye fişi üretir (çift kayıt sistemi) */
+function accYevmiyeGelir(x, sira) {
+  const brut = accNum(x.grossAmount || x.amount);
+  const kdv = accNum(x.kdv);
+  const stopaj = accNum(x.stopaj);
+  const tahsil = accNum(x.amount);
+  const satirlar = [];
+
+  // Borç: Kasa/Banka
+  satirlar.push({ hesap: tahsil > 0 ? "kasa" : "alicilar", borc: tahsil, alacak: 0, aciklama: x.description });
+  if (stopaj > 0) {
+    satirlar.push({ hesap: "vergi", borc: 0, alacak: stopaj, aciklama: "Stopaj" });
+  }
+  // Alacak: Gelir
+  satirlar.push({ hesap: "gelirler", borc: 0, alacak: brut, aciklama: x.category });
+  // Alacak: KDV
+  if (kdv > 0) {
+    satirlar.push({ hesap: "kdvHesaplanan", borc: 0, alacak: kdv, aciklama: "KDV %10" });
+  }
+  return { tarih: x.date, fisNo: "Y-" + String(sira).padStart(4, "0"), tip: "Gelir", aciklama: x.description, satirlar };
+}
+
+function accYevmiyeGider(x, sira) {
+  const tutar = accNum(x.amount);
+  const kdv = accNum(x.kdv);
+  const net = tutar - kdv;
+  const satirlar = [];
+  satirlar.push({ hesap: "giderler", borc: net > 0 ? net : tutar, alacak: 0, aciklama: x.description });
+  if (kdv > 0) satirlar.push({ hesap: "kdvIndirilecek", borc: kdv, alacak: 0, aciklama: "KDV" });
+  satirlar.push({ hesap: "kasa", borc: 0, alacak: tutar, aciklama: x.description });
+  return { tarih: x.date, fisNo: "Y-" + String(sira).padStart(4, "0"), tip: "Gider", aciklama: x.description, satirlar };
+}
+
+function accYevmiyeListesi(yil, ay) {
+  const filtre = x => {
+    if (!x.date) return false;
+    const d = new Date(x.date);
+    if (d.getFullYear() !== yil) return false;
+    if (ay && (d.getMonth() + 1) !== ay) return false;
+    return true;
+  };
+  const inc = (state.accounting.incomes || []).filter(filtre);
+  const exp = (state.accounting.expenses || []).filter(filtre);
+
+  const fisler = [];
+  let sira = 1;
+  inc.forEach(x => fisler.push(accYevmiyeGelir(x, sira++)));
+  exp.forEach(x => fisler.push(accYevmiyeGider(x, sira++)));
+
+  // Amortisman fişi (yıl sonu)
+  if (!ay) {
+    const amort = accAmortismanYillik(yil);
+    if (amort > 0) {
+      fisler.push({
+        tarih: yil + "-12-31", fisNo: "Y-" + String(sira++).padStart(4, "0"), tip: "Amortisman",
+        aciklama: yil + " yılı amortisman kaydı",
+        satirlar: [
+          { hesap: "amortisman", borc: amort, alacak: 0, aciklama: "Yıllık amortisman" },
+          { hesap: "giderler", borc: 0, alacak: amort, aciklama: "Birikmiş amortisman" }
+        ]
+      });
+    }
+  }
+
+  fisler.sort((a, b) => new Date(a.tarih) - new Date(b.tarih));
+  return fisler;
+}
+
+function renderAccYevmiye() {
+  const simdi = new Date();
+  const yil = state.yevmiyeYil || simdi.getFullYear();
+  const ay = state.yevmiyeAy || 0; // 0 = tüm yıl
+  const fisler = accYevmiyeListesi(yil, ay || null);
+
+  const toplamBorc = fisler.reduce((s, f) => s + f.satirlar.reduce((a, x) => a + x.borc, 0), 0);
+  const toplamAlacak = fisler.reduce((s, f) => s + f.satirlar.reduce((a, x) => a + x.alacak, 0), 0);
+
+  const yilChip = [yil - 1, yil, yil + 1].map(y =>
+    `<button data-action="yevmiye-yil" data-yil="${y}" style="flex:1;padding:7px;border-radius:9px;font-size:11.5px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${y === yil ? "#4A148C" : "var(--line)"};background:${y === yil ? "#4A148C" : "rgba(255,255,255,.7)"};color:${y === yil ? "#fff" : "var(--ink)"};cursor:pointer;">${y}</button>`).join("");
+
+  const ayChip = [{ v: 0, l: "Tümü" }, ...Array.from({ length: 12 }, (_, i) => ({ v: i + 1, l: String(i + 1) }))].map(x => {
+    const aktif = x.v === (ay || 0);
+    return `<button data-action="yevmiye-ay" data-ay="${x.v}" style="flex:0 0 auto;min-width:${x.v === 0 ? 56 : 38}px;padding:6px 4px;border-radius:8px;font-size:11px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${aktif ? "#4A148C" : "var(--line)"};background:${aktif ? "#4A148C" : "rgba(255,255,255,.7)"};color:${aktif ? "#fff" : "var(--ink)"};cursor:pointer;">${x.l}</button>`;
+  }).join("");
+
+  const fisHtml = fisler.slice(0, 25).map(f => {
+    const satirlar = f.satirlar.filter(s => s.borc > 0 || s.alacak > 0).map(s => {
+      const h = HESAP_PLANI[s.hesap] || { kod: "?", ad: s.hesap };
+      return `<div style="display:flex;justify-content:space-between;font-size:10px;padding:2px 0 ${s.borc ? "" : "0 0"};color:${s.borc > 0 ? "#1565C0" : "#C62828"};">
+        <span style="flex:1;padding-left:${s.borc > 0 ? 0 : 12}px;">${h.kod} ${h.ad}</span>
+        <span style="width:78px;text-align:right;font-family:monospace;">${s.borc > 0 ? accTL0(s.borc) : ""}</span>
+        <span style="width:78px;text-align:right;font-family:monospace;">${s.alacak > 0 ? accTL0(s.alacak) : ""}</span>
+      </div>`;
+    }).join("");
+    return `<div style="padding:7px 0;border-bottom:1px solid var(--line);">
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;margin-bottom:3px;">
+        <span style="font-weight:700;">${f.fisNo} · ${accTarihTR(f.tarih)}</span>
+        <span style="color:var(--muted);font-size:9.5px;">${f.tip}</span>
+      </div>
+      <p style="font-size:10px;color:#555;margin:0 0 3px;">${escapeHtml(f.aciklama || "")}</p>
+      ${satirlar}
+    </div>`;
+  }).join("") || `<p class="footnote">Bu dönemde kayıt yok.</p>`;
+
+  return `
+    <div style="display:flex;gap:6px;margin-bottom:8px;">${yilChip}</div>
+    <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px;">${ayChip}</div>
+
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#311B92,#4A148C);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 2px;">📚 Yevmiye Defteri (${fisler.length} fiş)</p>
+      <p style="font-size:10.5px;opacity:.85;margin:0 0 10px;">Çift kayıt sistemi · Tek düzen hesap planı</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9px;margin:0;opacity:.85;">TOPLAM BORÇ</p>
+          <p style="font-size:14px;font-weight:800;margin:2px 0 0;">${accTL0(toplamBorc)}</p>
+        </div>
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9px;margin:0;opacity:.85;">TOPLAM ALACAK</p>
+          <p style="font-size:14px;font-weight:800;margin:2px 0 0;">${accTL0(toplamAlacak)}</p>
+        </div>
+      </div>
+      <p style="font-size:9.5px;margin:8px 0 0;opacity:.9;">${Math.abs(toplamBorc - toplamAlacak) < 1 ? "✅ Borç = Alacak (denk)" : "⚠️ Denge yok: " + accTL(Math.abs(toplamBorc - toplamAlacak))}</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;">
+      <button class="btn-primary" style="background:#4A148C;font-size:11.5px;padding:11px;" data-action="yevmiye-yazdir">🖨️ Defteri Yazdır</button>
+      <button class="btn-primary" style="background:#0E93AC;font-size:11.5px;padding:11px;" data-action="yevmiye-csv">⬇️ CSV</button>
+    </div>
+
+    <p class="section-label">Yevmiye Fişleri ${fisler.length > 25 ? "(ilk 25)" : ""}</p>
+    <div class="card p4 mb3">${fisHtml}</div>
+
+    <div class="card p4 mb3" style="background:#EDE7F6;border:1px solid #B39DDB;">
+      <p style="font-size:11.5px;font-weight:700;color:#4527A0;margin:0 0 6px;">📖 Tek Düzen Hesap Planı</p>
+      <p style="font-size:10px;color:#5E35B1;margin:0;line-height:1.7;">
+        100 Kasa · 102 Bankalar · 120 Alıcılar · 191 İndirilecek KDV<br/>
+        320 Satıcılar · 335 Personele Borçlar · 360 Ödenecek Vergi<br/>
+        361 Ödenecek SGK · 391 Hesaplanan KDV · 600 Yurt İçi Satışlar<br/>
+        730 Amortisman · 770 Genel Yönetim Giderleri
+      </p>
+    </div>
+  `;
+}
+
+/* =========================================================
+   5) MİZAN
+========================================================= */
+
+function accMizan(yil) {
+  const fisler = accYevmiyeListesi(yil, null);
+  const hesaplar = {};
+
+  fisler.forEach(f => f.satirlar.forEach(s => {
+    const h = HESAP_PLANI[s.hesap] || { kod: "?", ad: s.hesap };
+    const k = h.kod;
+    if (!hesaplar[k]) hesaplar[k] = { kod: h.kod, ad: h.ad, borc: 0, alacak: 0 };
+    hesaplar[k].borc += s.borc;
+    hesaplar[k].alacak += s.alacak;
+  }));
+
+  return Object.values(hesaplar)
+    .map(h => ({ ...h, bakiye: h.borc - h.alacak }))
+    .sort((a, b) => a.kod.localeCompare(b.kod));
+}
+
+function renderAccMizan() {
+  const yil = state.mizanYil || new Date().getFullYear();
+  const m = accMizan(yil);
+  const tb = m.reduce((s, h) => s + h.borc, 0);
+  const ta = m.reduce((s, h) => s + h.alacak, 0);
+
+  const yilChip = [yil - 1, yil, yil + 1].map(y =>
+    `<button data-action="mizan-yil" data-yil="${y}" style="flex:1;padding:7px;border-radius:9px;font-size:11.5px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${y === yil ? "#BF360C" : "var(--line)"};background:${y === yil ? "#BF360C" : "rgba(255,255,255,.7)"};color:${y === yil ? "#fff" : "var(--ink)"};cursor:pointer;">${y}</button>`).join("");
+
+  const satirlar = m.map(h => `
+    <tr style="border-bottom:1px solid var(--line);">
+      <td style="padding:5px 3px;font-size:10px;">${h.kod}</td>
+      <td style="padding:5px 3px;font-size:10px;">${escapeHtml(h.ad)}</td>
+      <td style="padding:5px 3px;font-size:10px;text-align:right;font-family:monospace;">${h.borc > 0 ? accTL0(h.borc) : "—"}</td>
+      <td style="padding:5px 3px;font-size:10px;text-align:right;font-family:monospace;">${h.alacak > 0 ? accTL0(h.alacak) : "—"}</td>
+      <td style="padding:5px 3px;font-size:10px;text-align:right;font-family:monospace;font-weight:700;color:${h.bakiye >= 0 ? "#1565C0" : "#C62828"};">${accTL0(Math.abs(h.bakiye))}</td>
+    </tr>`).join("") || `<tr><td colspan="5" style="padding:12px;text-align:center;font-size:11px;color:#888;">Kayıt yok</td></tr>`;
+
+  return `
+    <div style="display:flex;gap:6px;margin-bottom:12px;">${yilChip}</div>
+
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#BF360C,#E64A19);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 2px;">⚖️ ${yil} Yılı Mizanı</p>
+      <p style="font-size:10.5px;opacity:.85;margin:0;">${m.length} hesap</p>
+    </div>
+
+    <div class="card p4 mb3" style="padding:10px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <tr style="background:#FBE9E7;">
+          <th style="text-align:left;padding:6px 3px;font-size:9px;color:#BF360C;">KOD</th>
+          <th style="text-align:left;padding:6px 3px;font-size:9px;color:#BF360C;">HESAP</th>
+          <th style="text-align:right;padding:6px 3px;font-size:9px;color:#BF360C;">BORÇ</th>
+          <th style="text-align:right;padding:6px 3px;font-size:9px;color:#BF360C;">ALACAK</th>
+          <th style="text-align:right;padding:6px 3px;font-size:9px;color:#BF360C;">BAKİYE</th>
+        </tr>
+        ${satirlar}
+        <tr style="background:#FFF3E0;border-top:2px solid #BF360C;">
+          <td colspan="2" style="padding:7px 3px;font-size:10.5px;font-weight:800;">TOPLAM</td>
+          <td style="padding:7px 3px;font-size:10.5px;text-align:right;font-weight:800;font-family:monospace;">${accTL0(tb)}</td>
+          <td style="padding:7px 3px;font-size:10.5px;text-align:right;font-weight:800;font-family:monospace;">${accTL0(ta)}</td>
+          <td style="padding:7px 3px;font-size:10.5px;text-align:right;font-weight:800;">${Math.abs(tb - ta) < 1 ? "✅" : "⚠️"}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;">
+      <button class="btn-primary" style="background:#BF360C;font-size:11.5px;padding:11px;" data-action="mizan-yazdir">🖨️ Mizan Yazdır</button>
+      <button class="btn-primary" style="background:#0E93AC;font-size:11.5px;padding:11px;" data-action="mizan-csv">⬇️ CSV</button>
+    </div>
+
+    <div class="card p4 mb3" style="background:#FFF3E0;border:1px solid #FFB74D;">
+      <p style="font-size:11.5px;font-weight:700;color:#E65100;margin:0 0 6px;">💡 Mizan nedir?</p>
+      <p style="font-size:10.5px;color:#BF360C;margin:0;line-height:1.6;">
+        Tüm hesapların borç-alacak dökümü. <b>Borç = Alacak</b> olmak zorundadır —
+        değilse kayıtta hata var. Mali müşavirin her ay ilk baktığı belgedir.
+      </p>
+    </div>
+  `;
+}
+
+/* =========================================================
+   6) GELİR TABLOSU + BİLANÇO
+========================================================= */
+
+function accGelirTablosu(yil) {
+  const inc = (state.accounting.incomes || []).filter(x => new Date(x.date).getFullYear() === yil);
+  const exp = (state.accounting.expenses || []).filter(x => new Date(x.date).getFullYear() === yil);
+
+  const brutSatis = inc.reduce((s, x) => s + accNum(x.grossAmount || x.amount), 0);
+  const kdvToplam = inc.reduce((s, x) => s + accNum(x.kdv), 0);
+  const netSatis = brutSatis;
+
+  // Giderleri kategoriye göre grupla
+  const giderGruplari = {};
+  exp.forEach(x => {
+    const k = x.category || "Diğer";
+    giderGruplari[k] = (giderGruplari[k] || 0) + accNum(x.amount);
+  });
+  const toplamGider = exp.reduce((s, x) => s + accNum(x.amount), 0);
+  const amort = accAmortismanYillik(yil);
+  const faaliyetKari = netSatis - toplamGider - amort;
+  const vergi = gvHesapla(Math.max(0, faaliyetKari));
+  const netKar = faaliyetKari - vergi;
+
+  return { yil, brutSatis, netSatis, kdvToplam, giderGruplari, toplamGider, amort, faaliyetKari, vergi, netKar };
+}
+
+function accBilanco(yil) {
+  const inc = (state.accounting.incomes || []).filter(x => new Date(x.date).getFullYear() === yil);
+  const exp = (state.accounting.expenses || []).filter(x => new Date(x.date).getFullYear() === yil);
+
+  // Nakit: tahsil edilen gelir − ödenen gider
+  const tahsilEdilen = inc.filter(x => x.paid !== false).reduce((s, x) => s + accNum(x.amount), 0);
+  const odenen = exp.reduce((s, x) => s + accNum(x.amount), 0);
+  const nakit = tahsilEdilen - odenen;
+
+  // Alacaklar: veresiye
+  const alacaklar = inc.filter(x => x.paid === false).reduce((s, x) => s + accNum(x.amount), 0);
+
+  // Borçlar: tahakkuk eden vergiler
+  const gt = accGelirTablosu(yil);
+  const kdvSeri = accKdvSeri(yil);
+  const kdvBorcu = kdvSeri.reduce((s, x) => s + x.odenecek, 0);
+  const gelirVergisiBorcu = Math.max(0, gt.vergi);
+  const sgkBorcu = accPayrollTotal().toplamSgk;
+
+  const aktifToplam = nakit + alacaklar;
+  const borcToplam = kdvBorcu + gelirVergisiBorcu + sgkBorcu;
+  // Öz kaynak: denkleştirici kalem (Aktif = Borç + Öz Kaynak)
+  const ozkaynak = aktifToplam - borcToplam;
+
+  return {
+    yil,
+    nakit, alacaklar, aktifToplam,
+    kdvBorcu, gelirVergisiBorcu, sgkBorcu, borcToplam,
+    ozkaynak,
+    pasifToplam: borcToplam + ozkaynak,
+    gt
+  };
+}
+
+function renderAccTablolar() {
+  const yil = state.tabloYil || new Date().getFullYear();
+  const gt = accGelirTablosu(yil);
+  const bl = accBilanco(yil);
+
+  const yilChip = [yil - 1, yil, yil + 1].map(y =>
+    `<button data-action="tablo-yil" data-yil="${y}" style="flex:1;padding:7px;border-radius:9px;font-size:11.5px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${y === yil ? "#1B5E20" : "var(--line)"};background:${y === yil ? "#1B5E20" : "rgba(255,255,255,.7)"};color:${y === yil ? "#fff" : "var(--ink)"};cursor:pointer;">${y}</button>`).join("");
+
+  const giderSatirlar = Object.entries(gt.giderGruplari).sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => `<tr><td style="padding:4px 0;font-size:11px;">${escapeHtml(k)}</td><td style="padding:4px 0;font-size:11px;text-align:right;font-family:monospace;">${accTL(v)}</td></tr>`).join("");
+
+  return `
+    <div style="display:flex;gap:6px;margin-bottom:12px;">${yilChip}</div>
+
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#1B5E20,#2E7D32);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 2px;">📈 ${yil} Gelir Tablosu</p>
+      <p style="font-size:10.5px;opacity:.85;margin:0 0 10px;">Dönem sonu finansal sonuç</p>
+      <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;">
+        <p style="font-size:9.5px;margin:0;opacity:.85;">NET KÂR</p>
+        <p style="font-size:20px;font-weight:800;margin:2px 0 0;">${accTL0(gt.netKar)}</p>
+      </div>
+    </div>
+
+    <div class="card p4 mb3">
+      <p style="font-size:12.5px;font-weight:700;margin:0 0 8px;color:#1B5E20;">📊 GELİR TABLOSU</p>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid var(--line);"><td style="padding:5px 0;font-size:11px;font-weight:600;">Brüt Satışlar</td><td style="padding:5px 0;font-size:11px;text-align:right;font-weight:700;">${accTL(gt.brutSatis)}</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><td style="padding:5px 0;font-size:11px;padding-left:10px;">KDV (bilgi)</td><td style="padding:5px 0;font-size:11px;text-align:right;color:#E65100;">${accTL(gt.kdvToplam)}</td></tr>
+        <tr><td colspan="2" style="padding:8px 0 4px;font-size:10.5px;font-weight:700;color:#C62828;">FAALİYET GİDERLERİ</td></tr>
+        ${giderSatirlar || '<tr><td colspan="2" style="font-size:10.5px;color:#888;padding:4px 0;">Gider kaydı yok</td></tr>'}
+        ${gt.amort > 0 ? `<tr><td style="padding:4px 0;font-size:11px;">Amortisman</td><td style="padding:4px 0;font-size:11px;text-align:right;font-family:monospace;">${accTL(gt.amort)}</td></tr>` : ""}
+        <tr style="border-top:1px solid var(--line);"><td style="padding:5px 0;font-size:11px;font-weight:700;">Toplam Gider</td><td style="padding:5px 0;font-size:11px;text-align:right;font-weight:700;color:#C62828;">${accTL(gt.toplamGider + gt.amort)}</td></tr>
+        <tr style="background:#E8F5E9;"><td style="padding:6px 0;font-size:11.5px;font-weight:800;">FAALİYET KÂRI</td><td style="padding:6px 0;font-size:11.5px;text-align:right;font-weight:800;color:${gt.faaliyetKari >= 0 ? "#2E7D32" : "#C62828"};">${accTL(gt.faaliyetKari)}</td></tr>
+        <tr><td style="padding:4px 0;font-size:11px;">Gelir Vergisi Karşılığı</td><td style="padding:4px 0;font-size:11px;text-align:right;color:#E65100;">-${accTL(gt.vergi)}</td></tr>
+        <tr style="background:#C8E6C9;"><td style="padding:7px 0;font-size:12px;font-weight:800;">DÖNEM NET KÂRI</td><td style="padding:7px 0;font-size:12px;text-align:right;font-weight:800;color:#1B5E20;">${accTL(gt.netKar)}</td></tr>
+      </table>
+    </div>
+
+    <div class="card p4 mb3">
+      <p style="font-size:12.5px;font-weight:700;margin:0 0 8px;color:#0D47A1;">⚖️ FİNANSAL DURUM (${yil})</p>
+      <table style="width:100%;border-collapse:collapse;font-size:11px;">
+        <tr style="background:#E3F2FD;"><th style="text-align:left;padding:6px 4px;font-size:10px;">AKTİF (VARLIKLAR)</th><th style="text-align:right;padding:6px 4px;font-size:10px;">TUTAR</th></tr>
+        <tr><td style="padding:4px;font-size:10.5px;">Nakit (kasa + banka)</td><td style="padding:4px;text-align:right;font-family:monospace;color:${bl.nakit >= 0 ? "#2E7D32" : "#C62828"};">${accTL(bl.nakit)}</td></tr>
+        <tr><td style="padding:4px;font-size:10.5px;">Alacaklar (veresiye)</td><td style="padding:4px;text-align:right;font-family:monospace;">${accTL(bl.alacaklar)}</td></tr>
+        <tr style="background:#E3F2FD;"><td style="padding:6px 4px;font-weight:800;font-size:11px;">AKTİF TOPLAM</td><td style="padding:6px 4px;text-align:right;font-weight:800;font-family:monospace;">${accTL(bl.aktifToplam)}</td></tr>
+      </table>
+      <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:10px;">
+        <tr style="background:#FFEBEE;"><th style="text-align:left;padding:6px 4px;font-size:10px;">PASİF (KAYNAKLAR)</th><th style="text-align:right;padding:6px 4px;font-size:10px;">TUTAR</th></tr>
+        <tr><td style="padding:4px;font-size:10.5px;">Ödenecek KDV (yıllık)</td><td style="padding:4px;text-align:right;font-family:monospace;">${accTL(bl.kdvBorcu)}</td></tr>
+        <tr><td style="padding:4px;font-size:10.5px;">Ödenecek gelir vergisi</td><td style="padding:4px;text-align:right;font-family:monospace;">${accTL(bl.gelirVergisiBorcu)}</td></tr>
+        <tr><td style="padding:4px;font-size:10.5px;">Ödenecek SGK primi</td><td style="padding:4px;text-align:right;font-family:monospace;">${accTL(bl.sgkBorcu)}</td></tr>
+        <tr><td style="padding:4px;font-size:10.5px;font-weight:600;">Borçlar toplamı</td><td style="padding:4px;text-align:right;font-family:monospace;font-weight:600;">${accTL(bl.borcToplam)}</td></tr>
+        <tr><td style="padding:4px;font-size:10.5px;">Öz kaynak</td><td style="padding:4px;text-align:right;font-family:monospace;color:${bl.ozkaynak >= 0 ? "#2E7D32" : "#C62828"};">${accTL(bl.ozkaynak)}</td></tr>
+        <tr style="background:#FFEBEE;"><td style="padding:6px 4px;font-weight:800;font-size:11px;">PASİF TOPLAM</td><td style="padding:6px 4px;text-align:right;font-weight:800;font-family:monospace;">${accTL(bl.pasifToplam)}</td></tr>
+      </table>
+      <p style="font-size:9.5px;color:${Math.abs(bl.aktifToplam - bl.pasifToplam) < 1 ? "#2E7D32" : "#C62828"};margin:8px 0 0;text-align:center;font-weight:600;">
+        ${Math.abs(bl.aktifToplam - bl.pasifToplam) < 1 ? "✅ Aktif = Pasif (denk)" : "⚠️ Denge yok"}
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;">
+      <button class="btn-primary" style="background:#1B5E20;font-size:11.5px;padding:11px;" data-action="tablolar-yazdir">🖨️ Yazdır</button>
+      <button class="btn-primary" style="background:#0E93AC;font-size:11.5px;padding:11px;" data-action="yillik-rapor">📑 Yıllık Rapor</button>
+    </div>
+  `;
+}
+
+/* =========================================================
+   7) YILLIK MALİ RAPOR (kapsamlı)
+========================================================= */
+
+function accYillikRaporHTML(yil) {
+  const gt = accGelirTablosu(yil);
+  const bl = accBilanco(yil);
+  const mz = accMizan(yil);
+  const kdvSeri = accKdvSeri(yil);
+  const bordro = (state.personnel || []).filter(p => p.aktif !== false).map(p => accBordro(p, yil, new Date().getMonth() + 1));
+  const pt = accPayrollTotal();
+  const demirbas = state.demirbaslar || [];
+
+  const kdvToplamOdenecek = kdvSeri.reduce((s, x) => s + x.odenecek, 0);
+  const kdvToplamHesaplanan = kdvSeri.reduce((s, x) => s + x.hesaplanan, 0);
+  const kdvToplamIndirilecek = kdvSeri.reduce((s, x) => s + x.indirilecek, 0);
+
+  return `
+    <h2 style="margin:0 0 4px;font-size:20px;color:#0B6E86;">NUR DİŞ &amp; DENTAL KLİNİK</h2>
+    <div style="font-size:12px;color:#666;margin-bottom:4px;">${yil} YILI MALİ FAALİYET RAPORU</div>
+    <div style="font-size:10px;color:#999;margin-bottom:18px;">Düzenleme tarihi: ${accTarihUzun()}</div>
+
+    <h3 style="font-size:14px;color:#0B6E86;border-bottom:2px solid #0B6E86;padding-bottom:3px;margin:18px 0 10px;">1. ÖZET GÖSTERGELER</h3>
+    <table style="width:100%;font-size:11px;border-collapse:collapse;">
+      <tr><td style="padding:4px 0;">Brüt Satış / Gelir</td><td style="text-align:right;font-weight:700;">${accTL(gt.brutSatis)}</td></tr>
+      <tr><td style="padding:4px 0;">Toplam Gider</td><td style="text-align:right;color:#C62828;font-weight:700;">${accTL(gt.toplamGider + gt.amort)}</td></tr>
+      <tr><td style="padding:4px 0;border-top:1px solid #ccc;"><b>Net Kâr</b></td><td style="text-align:right;border-top:1px solid #ccc;font-weight:800;color:${gt.netKar >= 0 ? "#2E7D32" : "#C62828"};">${accTL(gt.netKar)}</td></tr>
+      <tr><td style="padding:4px 0;">Hesaplanan Gelir Vergisi</td><td style="text-align:right;color:#E65100;">${accTL(gt.vergi)}</td></tr>
+      <tr><td style="padding:4px 0;">Efektif Vergi Oranı</td><td style="text-align:right;">%${(gt.faaliyetKari > 0 ? (gt.vergi / gt.faaliyetKari * 100) : 0).toFixed(1)}</td></tr>
+    </table>
+
+    <h3 style="font-size:14px;color:#0B6E86;border-bottom:2px solid #0B6E86;padding-bottom:3px;margin:18px 0 10px;">2. KDV DÖKÜMÜ</h3>
+    <table style="width:100%;font-size:10.5px;border-collapse:collapse;">
+      <tr style="background:#f5f5f5;"><th style="text-align:left;padding:5px;">Ay</th><th style="text-align:right;padding:5px;">Hesaplanan</th><th style="text-align:right;padding:5px;">İndirilecek</th><th style="text-align:right;padding:5px;">Ödenen</th></tr>
+      ${kdvSeri.map(x => `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px;">${x.etiket}</td><td style="text-align:right;padding:4px;">${x.hesaplanan > 0 ? accTL(x.hesaplanan) : "—"}</td><td style="text-align:right;padding:4px;">${x.indirilecek > 0 ? accTL(x.indirilecek) : "—"}</td><td style="text-align:right;padding:4px;font-weight:700;">${x.odenecek > 0 ? accTL(x.odenecek) : "—"}</td></tr>`).join("")}
+      <tr style="background:#FFF3E0;font-weight:800;"><td style="padding:5px;">TOPLAM</td><td style="text-align:right;padding:5px;">${accTL(kdvToplamHesaplanan)}</td><td style="text-align:right;padding:5px;">${accTL(kdvToplamIndirilecek)}</td><td style="text-align:right;padding:5px;color:#E65100;">${accTL(kdvToplamOdenecek)}</td></tr>
+    </table>
+
+    <h3 style="font-size:14px;color:#0B6E86;border-bottom:2px solid #0B6E86;padding-bottom:3px;margin:18px 0 10px;">3. PERSONEL VE SGK</h3>
+    <table style="width:100%;font-size:10.5px;border-collapse:collapse;">
+      <tr style="background:#f5f5f5;"><th style="text-align:left;padding:5px;">Personel</th><th style="text-align:right;padding:5px;">Brüt</th><th style="text-align:right;padding:5px;">SGK Primi</th><th style="text-align:right;padding:5px;">Net</th></tr>
+      ${bordro.map(b => `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px;">${escapeHtml(b.personel.name)}</td><td style="text-align:right;padding:4px;">${accTL(b.brutUcret)}</td><td style="text-align:right;padding:4px;">${accTL(b.toplamSgk)}</td><td style="text-align:right;padding:4px;font-weight:700;">${accTL(b.netUcret)}</td></tr>`).join("") || '<tr><td colspan="4" style="padding:6px;color:#888;">Personel kaydı yok</td></tr>'}
+      <tr style="background:#EDE7F6;font-weight:800;"><td style="padding:5px;">TOPLAM</td><td style="text-align:right;padding:5px;">${accTL(pt.brut)}</td><td style="text-align:right;padding:5px;">${accTL(pt.toplamSgk)}</td><td style="text-align:right;padding:5px;">${accTL(pt.net)}</td></tr>
+    </table>
+
+    <h3 style="font-size:14px;color:#0B6E86;border-bottom:2px solid #0B6E86;padding-bottom:3px;margin:18px 0 10px;">4. AMORTİSMAN</h3>
+    <table style="width:100%;font-size:10.5px;border-collapse:collapse;">
+      ${demirbas.map(d => `<tr style="border-bottom:1px solid #eee;"><td style="padding:4px;">${escapeHtml(d.ad)}</td><td style="padding:4px;">${accNum(d.omur)} yıl</td><td style="text-align:right;padding:4px;">${accTL(accAmortYilTutar(d, yil))}</td></tr>`).join("") || '<tr><td colspan="3" style="padding:6px;color:#888;">Demirbaş kaydı yok</td></tr>'}
+      <tr style="background:#E0F2F1;font-weight:800;"><td colspan="2" style="padding:5px;">YILLIK AMORTİSMAN</td><td style="text-align:right;padding:5px;">${accTL(gt.amort)}</td></tr>
+    </table>
+
+    <h3 style="font-size:14px;color:#0B6E86;border-bottom:2px solid #0B6E86;padding-bottom:3px;margin:18px 0 10px;">5. GELİR TABLOSU</h3>
+    <table style="width:100%;font-size:11px;border-collapse:collapse;">
+      ${Object.entries(gt.giderGruplari).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<tr><td style="padding:4px;">${escapeHtml(k)}</td><td style="text-align:right;padding:4px;">${accTL(v)}</td></tr>`).join("")}
+      ${gt.amort > 0 ? `<tr><td style="padding:4px;">Amortisman</td><td style="text-align:right;padding:4px;">${accTL(gt.amort)}</td></tr>` : ""}
+      <tr style="background:#E8F5E9;font-weight:800;"><td style="padding:5px;">NET KÂR</td><td style="text-align:right;padding:5px;">${accTL(gt.netKar)}</td></tr>
+    </table>
+
+    <h3 style="font-size:14px;color:#0B6E86;border-bottom:2px solid #0B6E86;padding-bottom:3px;margin:18px 0 10px;">6. BİLANÇO</h3>
+    <table style="width:100%;font-size:10.5px;border-collapse:collapse;">
+      <tr style="background:#E3F2FD;"><th style="text-align:left;padding:5px;">AKTİF</th><th style="text-align:right;padding:5px;">TUTAR</th></tr>
+      <tr><td style="padding:4px;">Kasa + Banka</td><td style="text-align:right;padding:4px;">${accTL(Math.max(0, bl.donenVarliklar.kasa) + Math.max(0, bl.donenVarliklar.banka))}</td></tr>
+      <tr><td style="padding:4px;">Alıcılar</td><td style="text-align:right;padding:4px;">${accTL(Math.max(0, bl.donenVarliklar.alicilar))}</td></tr>
+      <tr style="font-weight:800;"><td style="padding:5px;">AKTİF TOPLAM</td><td style="text-align:right;padding:5px;">${accTL(bl.aktifToplam)}</td></tr>
+      <tr style="background:#FFEBEE;"><th style="text-align:left;padding:5px;">PASİF</th><th style="text-align:right;padding:5px;">TUTAR</th></tr>
+      <tr><td style="padding:4px;">Borçlar</td><td style="text-align:right;padding:4px;">${accTL(bl.borclar.toplam)}</td></tr>
+      <tr><td style="padding:4px;">Öz Kaynak</td><td style="text-align:right;padding:4px;">${accTL(bl.ozkaynak)}</td></tr>
+      <tr style="font-weight:800;"><td style="padding:5px;">PASİF TOPLAM</td><td style="text-align:right;padding:5px;">${accTL(bl.pasifToplam)}</td></tr>
+    </table>
+
+    <h3 style="font-size:14px;color:#0B6E86;border-bottom:2px solid #0B6E86;padding-bottom:3px;margin:18px 0 10px;">7. MİZAN ÖZETİ</h3>
+    <table style="width:100%;font-size:10px;border-collapse:collapse;">
+      <tr style="background:#f5f5f5;"><th style="text-align:left;padding:4px;">Kod</th><th style="text-align:left;padding:4px;">Hesap</th><th style="text-align:right;padding:4px;">Borç</th><th style="text-align:right;padding:4px;">Alacak</th></tr>
+      ${mz.map(h => `<tr style="border-bottom:1px solid #eee;"><td style="padding:3px;">${h.kod}</td><td style="padding:3px;">${escapeHtml(h.ad)}</td><td style="text-align:right;padding:3px;">${h.borc > 0 ? accTL0(h.borc) : "—"}</td><td style="text-align:right;padding:3px;">${h.alacak > 0 ? accTL0(h.alacak) : "—"}</td></tr>`).join("")}
+    </table>
+
+    <div style="margin-top:24px;padding-top:10px;border-top:1px solid #ccc;font-size:9px;color:#888;line-height:1.6;">
+      Bu rapor Nur Diş &amp; Dental Klinik muhasebe programı tarafından ${accTarihUzun()} tarihinde otomatik oluşturulmuştur.
+      Resmî beyanname ve bildirimlerde GİB ve SGK sistemlerindeki kayıtlar esas alınır.
+      Hesaplamalar 2026 vergi mevzuatı parametreleriyle yapılmıştır.
+    </div>
+  `;
+}
+
 function renderAccounting() {
   const tab = state.accTab || "ozet";
   const subs = [
@@ -2380,8 +3405,14 @@ function renderAccounting() {
     { id: "personel", label: "👥 Personel & SGK" },
     { id: "cari", label: "💳 Cari Hesap" },
     { id: "demirbas", label: "🏗️ Amortisman" },
+    { id: "bordro", label: "📄 Bordro" },
+    { id: "efatura", label: "🧾 e-Fatura" },
+    { id: "mutabakat", label: "🏦 Banka Mutabakatı" },
+    { id: "yevmiye", label: "📚 Yevmiye" },
+    { id: "mizan", label: "⚖️ Mizan" },
+    { id: "tablolar", label: "📈 Gelir Tablosu" },
     { id: "vergi", label: "🧾 Vergi Özeti" },
-    { id: "rapor", label: "📈 Raporlar" },
+    { id: "rapor", label: "📊 Raporlar" },
     { id: "otomatik", label: "🔄 Otomatik" }
   ];
   const bar = subs.map(s => `<button class="admin-tab ${tab === s.id ? "active" : ""}" data-action="acc-tab" data-tab="${s.id}">${s.label}</button>`).join("");
@@ -2394,6 +3425,12 @@ function renderAccounting() {
   else if (tab === "personel") body = renderAccPersonel();
   else if (tab === "cari") body = renderAccCari();
   else if (tab === "demirbas") body = renderAccDemirbas();
+  else if (tab === "bordro") body = renderAccBordro();
+  else if (tab === "efatura") body = renderAccEFatura();
+  else if (tab === "mutabakat") body = renderAccMutabakat();
+  else if (tab === "yevmiye") body = renderAccYevmiye();
+  else if (tab === "mizan") body = renderAccMizan();
+  else if (tab === "tablolar") body = renderAccTablolar();
   else if (tab === "vergi") body = renderAccVergi();
   else if (tab === "rapor") body = renderAccRapor();
   else if (tab === "otomatik") body = renderAccOtomatik();
@@ -3162,6 +4199,177 @@ function accAction(action, el) {
     if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
     alert("✅ SGK primi gider olarak kaydedildi: " + accTL(t.toplamSgk));
     render();
+    return true;
+  }
+
+  /* ---- BORDRO ---- */
+  if (A("bordro-yil")) { state.bordroYil = parseInt(el.dataset.yil); render(); return true; }
+  if (A("bordro-ay")) { state.bordroAy = parseInt(el.dataset.ay); render(); return true; }
+  if (A("bordro-tek")) {
+    const p = (state.personnel || []).find(x => x.id === el.dataset.id);
+    if (!p) return true;
+    const yil = state.bordroYil || new Date().getFullYear();
+    const ay = state.bordroAy || (new Date().getMonth() + 1);
+    accPrint("Maaş Pusulası — " + p.name, accBordroHTML(accBordro(p, yil, ay)));
+    return true;
+  }
+  if (A("bordro-hepsi")) {
+    const yil = state.bordroYil || new Date().getFullYear();
+    const ay = state.bordroAy || (new Date().getMonth() + 1);
+    const liste = accBordroTumu(yil, ay);
+    if (!liste.length) { alert("Bu dönem için personel yok."); return true; }
+    accPrint("Bordro — " + accAyAdi(yil, ay), liste.map(accBordroHTML).join(""));
+    return true;
+  }
+  if (A("bordro-csv")) {
+    const yil = state.bordroYil || new Date().getFullYear();
+    const ay = state.bordroAy || (new Date().getMonth() + 1);
+    const liste = accBordroTumu(yil, ay);
+    const rows = [["Ad Soyad", "TC", "Görev", "Gün", "Brüt", "SGK İşçi", "İşsizlik", "Gelir V.", "Damga", "Net", "İşveren SGK", "Maliyet"]];
+    liste.forEach(b => rows.push([
+      b.personel.name, b.personel.tcNo || "", b.personel.position || "", b.gun,
+      b.brutUcret.toFixed(2), b.isciSgk.toFixed(2), b.isciIssiz.toFixed(2),
+      b.gelirVergisi.toFixed(2), b.damga.toFixed(2), b.netUcret.toFixed(2),
+      (b.isverenSgk + b.isverenIssiz).toFixed(2), b.isvereneMaliyet.toFixed(2)
+    ]));
+    accCsvDownload("bordro-" + yil + "-" + String(ay).padStart(2, "0") + ".csv", rows);
+    return true;
+  }
+
+  /* ---- e-FATURA ---- */
+  if (A("firma-save")) {
+    state.firmaBilgi = {
+      unvan: document.getElementById("fb-unvan")?.value?.trim() || "NUR DİŞ & DENTAL KLİNİK",
+      vergiNo: document.getElementById("fb-vergi")?.value?.trim() || "",
+      vergiDaire: document.getElementById("fb-vergiDaire")?.value?.trim() || "",
+      telefon: document.getElementById("fb-telefon")?.value?.trim() || "",
+      il: document.getElementById("fb-il")?.value?.trim() || "Mardin",
+      ilce: document.getElementById("fb-ilce")?.value?.trim() || "Kızıltepe"
+    };
+    localStorage.setItem("nurdis_firma_bilgi", JSON.stringify(state.firmaBilgi));
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    alert("✅ Firma bilgileri kaydedildi.");
+    render();
+    return true;
+  }
+  if (A("efatura-indir")) {
+    const x = (state.accounting.incomes || []).find(r => r.id === el.dataset.id);
+    if (!x) return true;
+    const xml = accUblTR(x);
+    const blob = new Blob([xml], { type: "application/xml;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "fatura-" + (x.invoiceNo || x.id) + ".xml";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    return true;
+  }
+  if (A("efatura-hepsi")) {
+    const inc = state.accounting.incomes || [];
+    if (!inc.length) { alert("Fatura kaydı yok."); return true; }
+    if (!confirm(inc.length + " fatura XML olarak indirilecek. Devam?")) return true;
+    inc.forEach((x, i) => setTimeout(() => {
+      const blob = new Blob([accUblTR(x)], { type: "application/xml;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "fatura-" + (x.invoiceNo || x.id) + ".xml";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }, i * 350));
+    return true;
+  }
+
+  /* ---- BANKA MUTABAKATI ---- */
+  if (A("mutabakat-yukle")) {
+    const f = document.getElementById("mutabakat-file")?.files?.[0];
+    if (!f) { alert("Önce bir dosya seçin."); return true; }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const r = accMutabakat(e.target.result);
+        if (!r.banka.length) { alert("Dosyada tarih + tutar içeren satır bulunamadı.\n\nÖrnek format:\n01.10.2026;POS TAHSİLAT;5000,00"); return; }
+        state.mutabakatSonuc = r;
+        render();
+      } catch (err) {
+        alert("Dosya okunamadı: " + (err && err.message ? err.message : ""));
+      }
+    };
+    reader.readAsText(f, "UTF-8");
+    return true;
+  }
+
+  /* ---- YEVMİYE ---- */
+  if (A("yevmiye-yil")) { state.yevmiyeYil = parseInt(el.dataset.yil); render(); return true; }
+  if (A("yevmiye-ay")) { state.yevmiyeAy = parseInt(el.dataset.ay); render(); return true; }
+  if (A("yevmiye-yazdir")) {
+    const yil = state.yevmiyeYil || new Date().getFullYear();
+    const ay = state.yevmiyeAy || null;
+    const fisler = accYevmiyeListesi(yil, ay);
+    let h = '<table style="width:100%;border-collapse:collapse;font-size:10px;">';
+    h += '<tr style="background:#f0f0f0;"><th style="padding:4px;border:1px solid #ddd;">Tarih</th><th style="padding:4px;border:1px solid #ddd;">Fiş</th><th style="padding:4px;border:1px solid #ddd;">Hesap</th><th style="padding:4px;border:1px solid #ddd;text-align:right;">Borç</th><th style="padding:4px;border:1px solid #ddd;text-align:right;">Alacak</th></tr>';
+    fisler.forEach(f => {
+      f.satirlar.filter(s => s.borc > 0 || s.alacak > 0).forEach((s, i) => {
+        const hp = HESAP_PLANI[s.hesap] || { kod: "?", ad: s.hesap };
+        h += '<tr>';
+        if (i === 0) h += '<td style="padding:3px;border:1px solid #ddd;" rowspan="' + f.satirlar.length + '">' + accTarihTR(f.tarih) + '</td><td style="padding:3px;border:1px solid #ddd;" rowspan="' + f.satirlar.length + '">' + f.fisNo + '</td>';
+        h += '<td style="padding:3px;border:1px solid #ddd;">' + hp.kod + ' ' + escapeHtml(hp.ad) + '</td>';
+        h += '<td style="padding:3px;border:1px solid #ddd;text-align:right;">' + (s.borc > 0 ? accTL(s.borc) : "") + '</td>';
+        h += '<td style="padding:3px;border:1px solid #ddd;text-align:right;">' + (s.alacak > 0 ? accTL(s.alacak) : "") + '</td>';
+        h += '</tr>';
+      });
+    });
+    h += '</table>';
+    accPrint("Yevmiye Defteri — " + yil + (ay ? " / " + ay : ""), h);
+    return true;
+  }
+  if (A("yevmiye-csv")) {
+    const yil = state.yevmiyeYil || new Date().getFullYear();
+    const ay = state.yevmiyeAy || null;
+    const fisler = accYevmiyeListesi(yil, ay);
+    const rows = [["Tarih", "Fiş No", "Tip", "Açıklama", "Hesap Kodu", "Hesap Adı", "Borç", "Alacak"]];
+    fisler.forEach(f => f.satirlar.forEach(s => {
+      const hp = HESAP_PLANI[s.hesap] || { kod: "", ad: s.hesap };
+      rows.push([f.tarih, f.fisNo, f.tip, f.aciklama || "", hp.kod, hp.ad, s.borc.toFixed(2), s.alacak.toFixed(2)]);
+    }));
+    accCsvDownload("yevmiye-" + yil + (ay ? "-" + ay : "") + ".csv", rows);
+    return true;
+  }
+
+  /* ---- MİZAN ---- */
+  if (A("mizan-yil")) { state.mizanYil = parseInt(el.dataset.yil); render(); return true; }
+  if (A("mizan-yazdir")) {
+    const yil = state.mizanYil || new Date().getFullYear();
+    const m = accMizan(yil);
+    let h = '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+    h += '<tr style="background:#f0f0f0;"><th style="padding:5px;border:1px solid #ddd;text-align:left;">Kod</th><th style="padding:5px;border:1px solid #ddd;text-align:left;">Hesap</th><th style="padding:5px;border:1px solid #ddd;text-align:right;">Borç</th><th style="padding:5px;border:1px solid #ddd;text-align:right;">Alacak</th><th style="padding:5px;border:1px solid #ddd;text-align:right;">Bakiye</th></tr>';
+    m.forEach(x => {
+      h += '<tr><td style="padding:4px;border:1px solid #ddd;">' + x.kod + '</td><td style="padding:4px;border:1px solid #ddd;">' + escapeHtml(x.ad) + '</td><td style="padding:4px;border:1px solid #ddd;text-align:right;">' + (x.borc > 0 ? accTL(x.borc) : "") + '</td><td style="padding:4px;border:1px solid #ddd;text-align:right;">' + (x.alacak > 0 ? accTL(x.alacak) : "") + '</td><td style="padding:4px;border:1px solid #ddd;text-align:right;">' + accTL(Math.abs(x.bakiye)) + '</td></tr>';
+    });
+    const tb = m.reduce((s, x) => s + x.borc, 0), ta = m.reduce((s, x) => s + x.alacak, 0);
+    h += '<tr style="background:#fff3e0;font-weight:bold;"><td colspan="2" style="padding:5px;border:1px solid #ddd;">TOPLAM</td><td style="padding:5px;border:1px solid #ddd;text-align:right;">' + accTL(tb) + '</td><td style="padding:5px;border:1px solid #ddd;text-align:right;">' + accTL(ta) + '</td><td></td></tr>';
+    h += '</table>';
+    accPrint("Mizan — " + yil, h);
+    return true;
+  }
+  if (A("mizan-csv")) {
+    const yil = state.mizanYil || new Date().getFullYear();
+    const m = accMizan(yil);
+    const rows = [["Kod", "Hesap", "Borç", "Alacak", "Bakiye"]];
+    m.forEach(x => rows.push([x.kod, x.ad, x.borc.toFixed(2), x.alacak.toFixed(2), x.bakiye.toFixed(2)]));
+    accCsvDownload("mizan-" + yil + ".csv", rows);
+    return true;
+  }
+
+  /* ---- TABLOLAR / YILLIK RAPOR ---- */
+  if (A("tablo-yil")) { state.tabloYil = parseInt(el.dataset.yil); render(); return true; }
+  if (A("tablolar-yazdir")) {
+    const yil = state.tabloYil || new Date().getFullYear();
+    accPrint("Gelir Tablosu ve Bilanço — " + yil, accYillikRaporHTML(yil));
+    return true;
+  }
+  if (A("yillik-rapor")) {
+    const yil = state.tabloYil || new Date().getFullYear();
+    accPrint(yil + " Yılı Mali Faaliyet Raporu", accYillikRaporHTML(yil));
     return true;
   }
 
@@ -5065,7 +6273,8 @@ function saveAccountingToFirebase() {
       personnel: state.personnel || [],
       sgkSettings: state.sgkSettings || null,
       demirbaslar: state.demirbaslar || [],
-      accTamamlanan: state.accTamamlanan || {}
+      accTamamlanan: state.accTamamlanan || {},
+      firmaBilgi: state.firmaBilgi || null
     }).catch(() => {});
   }
 }
@@ -5235,6 +6444,7 @@ function startAdminSubscriptions() {
         if (data.sgkSettings) { state.sgkSettings = data.sgkSettings; localStorage.setItem("nurdis_sgk_settings", JSON.stringify(state.sgkSettings)); }
         if (data.demirbaslar) { state.demirbaslar = data.demirbaslar; localStorage.setItem("nurdis_demirbaslar", JSON.stringify(state.demirbaslar)); }
         if (data.accTamamlanan) { state.accTamamlanan = data.accTamamlanan; localStorage.setItem("nurdis_beyan_tamam", JSON.stringify(state.accTamamlanan)); }
+        if (data.firmaBilgi) { state.firmaBilgi = data.firmaBilgi; localStorage.setItem("nurdis_firma_bilgi", JSON.stringify(state.firmaBilgi)); }
         localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_treatment_prices", JSON.stringify(state.treatmentPrices)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_auto_expenses", JSON.stringify(state.autoExpenses)); saveAccountingToFirebase();
