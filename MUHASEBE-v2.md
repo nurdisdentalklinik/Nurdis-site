@@ -1,6 +1,6 @@
-# Nur Diş — Muhasebe Modülü v2
+# Nur Diş — Muhasebe & Mali Müşavirlik Modülü v3
 
-**Tarih:** 31 Ekim 2026
+**Tarih:** 31 Ekim 2026 · **Sürüm:** v3 (Mali Müşavir Motoru)
 **Klasör:** `/home/user/repo_push/` (Nur Diş projesi)
 **Mevcut ekran:** Yönetici Paneli → 💰 Muhasebe
 
@@ -131,7 +131,7 @@ Her satırda **✏️ düzenle** ve **🗑️ sil** butonu:
 
 **Canlı:** https://nurdis.pages.dev
 **Deploy ID:** d51cf48d-nurdis.pages.dev
-**Tarih:** 31 Ekim 2026
+**Tarih:** 31 Ekim 2026 · **Sürüm:** v3 (Mali Müşavir Motoru)
 **Hesap:** Nurdisdentalklinik@gmail.com's Account (`2ca714018fc59d1b7ccb5ac80716b986`)
 
 Doğrulama:
@@ -153,6 +153,112 @@ Artık repo ile canlı site **senkron**. Repoya yeni commit atıldığında muha
 cd /home/user
 ./deploy-nurdis.sh <NUR_DIS_API_TOKEN>
 ```
+
+---
+
+## 10. v3 — MALİ MÜŞAVİR MOTORU
+
+Nur Diş'te mali müşavir yok; bu yüzden tüm mali müşavirlik süreçleri programa gömüldü.
+
+### 10.1 Beyanname Takvimi (🔔 Takvim & Uyarı)
+Otomatik oluşan takvim — 2026 resmî tarihleri:
+
+| Beyanname | Son gün | Kurum |
+|---|---|---|
+| KDV-1 | Her ayın 28'i | GİB |
+| Muhtasar + Prim Hizmet | Her ayın 26'sı | GİB/SGK |
+| Damga Vergisi | Her ayın 26'sı | GİB |
+| SGK Prim Ödemesi | Her ayın 26'sı | SGK |
+| Geçici Vergi | 17 Mayıs · 17 Ağustos · 17 Kasım | GİB |
+| Yıllık Gelir Vergisi | 31 Mart (1. taksit) · 31 Temmuz (2. taksit) | GİB |
+| Bağ-Kur (4/b) | Her ayın 1'i | SGK |
+
+Her satırda **✓ Tamamlandı** butonu var. İşaretlenen beyanname uyarı listesinden düşer.
+Eski dönemler varsayılan olarak gizli (+ butonla açılır).
+
+### 10.2 Uyarı Motoru (otomatik, 10 kural)
+| Uyarı | Kural |
+|---|---|
+| 🔴 Kritik | Beyanname bugün/3 gün içinde veya gecikmiş |
+| 🔴 Kritik | Personelde eksik TC kimlik no (SGK bildirgesi verilemez) |
+| 🟠 Uyarı | 7 gün içinde beyanname |
+| 🟠 Uyarı | 30+ gün tahsil edilmeyen alacak |
+| 🟠 Uyarı | KDV hesaplanmamış gelir kaydı (beyanname eksik çıkar) |
+| 🟠 Uyarı | Aylık SGK primi (personel varsa) |
+| 🔵 Bilgi | Ödenecek KDV tutarı |
+| 🔵 Bilgi | Devreden KDV |
+| 🔵 Bilgi | Geçici vergi yaklaşıyor (30 gün) + tahmini tutar |
+| 🔵 Bilgi | Demirbaş kaydı yok (amortisman kaçıyor) |
+| 🔵 Bilgi | Bu ay gelir kaydı yok |
+
+### 10.3 KDV Beyannamesi (📑 KDV Beyanı)
+- Yıl + ay seçici
+- **Devreden KDV zinciri**: her ay önceki devreden otomatik düşülür
+- KDV-1 tablosu: brüt gelir, hesaplanan KDV, indirilecek KDV, önceki devir, **ödenecek**, **sonraki devir**
+- Yıllık KDV özeti + Dijital Vergi Dairesi ödeme linki
+
+### 10.4 Gelir Vergisi (🧮 Gelir Vergisi)
+**Geçici vergi** (1-2-3. dönem):
+- Kümülatif gelir/gider → ticari kâr → matrah
+- Kümülatif vergi − önceki dönem mahsubu = **bu dönem ödenecek**
+- Son tarih ve e-Beyanname linki
+
+**Yıllık gelir vergisi** (projeksiyon):
+- Yıllık gelir − gider − **amortisman** = matrah
+- Vergi − ödenen geçici vergiler = **kalan**
+- 1. ve 2. taksit tutarları
+
+**2026 vergi dilimleri (GVK m.103 — 332 Seri No'lu Tebliğ):**
+```
+     0 –   190.000  →  %15
+190.000 –   400.000  →  %20
+400.000 – 1.000.000  →  %27
+1.000.000 – 5.300.000 → %35
+5.300.000 +          →  %40
+```
+⚠️ v2'de 2025 rakamları (158.000/330.000/800.000) kullanılıyordu — **düzeltildi**.
+
+Doğrulama: 600.000 matrah → **124.500 ₺** ✅ (resmî örnekle birebir)
+
+### 10.5 Amortisman (🏗️ Amortisman)
+VUK 333 faydalı ömürler:
+| Kategori | Ömür |
+|---|---|
+| Bilgisayar / yazılım | 4 yıl |
+| Tıbbi cihaz (küçük) | 5 yıl |
+| Tıbbi cihaz (röntgen) | 10 yıl |
+| Dental ünite / koltuk | 10 yıl |
+| Mobilya ve demirbaş | 10 yıl |
+| Bina | 40 yıl |
+| Binek otomobil | 5 yıl |
+
+- **Kıst amortisman**: alındığı yıl kalan ay kadar gider
+- Yıllık amortisman otomatik olarak gelir vergisi hesabından düşülür
+- Birikmiş amortisman ve kalan değer takibi
+
+### 10.6 Cari Hesap (💳 Cari Hesap)
+- Gelir kaydederken **"Veresiye / ödenmedi"** işaretlenirse buraya düşer
+- Hasta/firma bazlı bakiye
+- Gecikme yaşı (30/60 gün renk kodu)
+- **✓ Ödendi** butonu → tahsilat kaydı
+
+---
+
+## 11. Yasal Sınırlar (önemli)
+
+Program **mali müşavir yerine geçecek şekilde** tasarlandı ama şu sınırlar var:
+
+| Yapılabilir ✅ | Yapılamaz ❌ |
+|---|---|
+| Beyanname tutarlarını hesaplama | GİB'e doğrudan beyanname gönderme |
+| Özet hazırlama, kopyalama | SGK'ya doğrudan bildirge gönderme |
+| Vade takibi ve uyarı | e-İmza gerektiren resmî işlemler |
+| Amortisman/vergi hesabı | Defter tasdiki, YMM raporu |
+
+**Neden?** GİB e-Beyanname ve SGK e-Bildirge sistemleri **e-İmza / mali mühür** ile kişiye özel giriş ister. Üçüncü taraf uygulamanın oraya otomatik veri göndermesi yasal olarak mümkün değil.
+
+**Çözüm (uygulandı):** Program tutarı hesaplar → özet çıkarır → **tek tıkla resmî sisteme gider** → kopyala-yapıştır ile beyan edersin. Manuel hesap yükü sıfırlanır, sadece son onay sende kalır.
+
 
 ## 9. Yasal not
 
