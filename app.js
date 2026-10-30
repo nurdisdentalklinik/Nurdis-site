@@ -290,6 +290,14 @@ let state = {
   myAppointments: [],
   announcements: [],
   accounting: { incomes: [], expenses: [], firms: [], bankAccounts: [], invoices: [] },
+  personnel: [],
+  sgkSettings: null,
+  accTab: "ozet",
+  accRange: "ay",
+  accFrom: "",
+  accTo: "",
+  accEdit: null,
+  personelEdit: undefined,
   treatmentPrices: {},
   autoExpenses: { kira:50000, elektrik:3000, su:1500, dogalgaz:2000, sgk:8000, vergi:5000 },
   bookingForm: { date:"", time:"", name:"", phone:"" },
@@ -354,6 +362,8 @@ function loadAll() {
   try { state.accounting = JSON.parse(localStorage.getItem("nurdis_accounting") || '{"incomes":[],"expenses":[],"firms":[],"bankAccounts":[],"invoices":[]}'); } catch(e){ state.accounting = {incomes:[],expenses:[],firms:[],bankAccounts:[],invoices:[]}; }
   try { state.treatmentPrices = JSON.parse(localStorage.getItem("nurdis_treatment_prices") || '{}'); } catch(e){ state.treatmentPrices = {}; }
   try { state.autoExpenses = JSON.parse(localStorage.getItem("nurdis_auto_expenses") || '{"kira":50000,"elektrik":3000,"su":1500,"dogalgaz":2000,"sgk":8000,"vergi":5000}'); } catch(e){}
+  try { state.personnel = JSON.parse(localStorage.getItem("nurdis_personnel") || "[]"); } catch(e){ state.personnel = []; }
+  try { const sg = JSON.parse(localStorage.getItem("nurdis_sgk_settings") || "null"); if (sg) state.sgkSettings = sg; } catch(e){}
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}
   
@@ -1246,6 +1256,1034 @@ function renderAdminLogin() {
     </div>`;
 }
 
+/* =========================================================
+   NUR DİŞ & DENTAL KLİNİK — MUHASEBE MODÜLÜ v2
+   • Personel & SGK primi otomasyonu (2026 parametreleri)
+   • Vergi / beyanname özeti + GİB & SGK resmî bağlantıları
+   • Haftalık / aylık / 3 aylık / 6 aylık / yıllık raporlar
+   • Her gelir ve gider kaydını düzenleme
+========================================================= */
+
+/* ---------------- YARDIMCI ---------------- */
+
+function accTL(n) {
+  return "₺" + (Number(n) || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function accTL0(n) {
+  return "₺" + Math.round(Number(n) || 0).toLocaleString("tr-TR");
+}
+function accNum(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function accToday() { return new Date().toISOString().split("T")[0]; }
+
+/* 2026 resmî parametreler (brüt asgari ücret 33.030 ₺, tavan 9 kat) */
+const SGK_DEFAULTS = {
+  minWage: 33030,
+  tavanCarpan: 9,
+  isciSgk: 14,
+  isciIssizlik: 1,
+  isverenSgk: 20.5,
+  isverenIssizlik: 2,
+  tesvikPuan: 5,
+  damgaOran: 0.00759,
+  vergiDilimleri: [
+    { ust: 158000, oran: 0.15 },
+    { ust: 330000, oran: 0.20 },
+    { ust: 800000, oran: 0.27 },
+    { ust: 4300000, oran: 0.35 },
+    { ust: null, oran: 0.40 }
+  ]
+};
+
+function sgkSet() {
+  return Object.assign({}, SGK_DEFAULTS, state.sgkSettings || {});
+}
+
+/* Kümülatif gelir vergisi dilim hesabı */
+function accGelirVergisi(matrah, dilimler) {
+  const d = dilimler || SGK_DEFAULTS.vergiDilimleri;
+  let vergi = 0, alt = 0;
+  for (let i = 0; i < d.length; i++) {
+    const ust = (d[i].ust == null) ? Infinity : d[i].ust;
+    if (matrah > alt) {
+      const kismi = Math.min(matrah, ust) - alt;
+      if (kismi > 0) vergi += kismi * d[i].oran;
+    }
+    alt = ust;
+    if (matrah <= ust) break;
+  }
+  return vergi;
+}
+
+/* Bir personelin tek aylık bordrosu */
+function accPayroll(p) {
+  const s = sgkSet();
+  const gun = Math.max(0, Math.min(30, accNum(p.days) || 30));
+  const oran = gun / 30;
+  const brut = accNum(p.grossSalary);
+
+  const alt = s.minWage * oran;
+  const ust = s.minWage * (s.tavanCarpan || 9) * oran;
+
+  let pek = brut * oran;
+  let uyari = "";
+  if (pek < alt) { pek = alt; uyari = "Brüt ücret asgari ücretin altında — prime esas kazanç alt sınıra çekildi."; }
+  if (pek > ust) { pek = ust; uyari = "Prime esas kazanç tavanı aşıldı — tavan tutardan hesaplandı."; }
+
+  const isciSgk = pek * s.isciSgk / 100;
+  const isciIssiz = pek * s.isciIssizlik / 100;
+  const isverenSgkOran = Math.max(0, s.isverenSgk - (p.tesvikli ? s.tesvikPuan : 0));
+  const isverenSgk = pek * isverenSgkOran / 100;
+  const isverenIssiz = pek * s.isverenIssizlik / 100;
+
+  const gvMatrah = pek - isciSgk - isciIssiz;
+  const asgariMatrah = Math.max(0, alt - (alt * (s.isciSgk + s.isciIssizlik) / 100));
+  const vergiBrut = accGelirVergisi(gvMatrah * 12, s.vergiDilimleri) / 12;
+  const vergiIstisna = accGelirVergisi(asgariMatrah * 12, s.vergiDilimleri) / 12;
+  const gelirVergisi = Math.max(0, vergiBrut - vergiIstisna);
+
+  const damga = Math.max(0, pek * s.damgaOran - alt * s.damgaOran);
+
+  const net = pek - isciSgk - isciIssiz - gelirVergisi - damga;
+  const toplamSgk = isciSgk + isciIssiz + isverenSgk + isverenIssiz;
+  const isvereneMaliyet = pek + isverenSgk + isverenIssiz;
+
+  return {
+    gun, brut, pek, alt, ust,
+    isciSgk, isciIssiz, isverenSgk, isverenSgkOran, isverenIssiz,
+    gvMatrah, gelirVergisi, damga, net, toplamSgk, isvereneMaliyet, uyari
+  };
+}
+
+/* Aktif personelin toplam SGK yükü */
+function accPayrollTotal(list) {
+  const arr = (list || state.personnel || []).filter(p => p.aktif !== false);
+  const t = { kisi: arr.length, brut: 0, pek: 0, isciSgk: 0, isciIssiz: 0, isverenSgk: 0, isverenIssiz: 0, gelirVergisi: 0, damga: 0, net: 0, toplamSgk: 0, isvereneMaliyet: 0 };
+  arr.forEach(p => {
+    const c = accPayroll(p);
+    t.brut += c.brut; t.pek += c.pek;
+    t.isciSgk += c.isciSgk; t.isciIssiz += c.isciIssiz;
+    t.isverenSgk += c.isverenSgk; t.isverenIssiz += c.isverenIssiz;
+    t.gelirVergisi += c.gelirVergisi; t.damga += c.damga;
+    t.net += c.net; t.toplamSgk += c.toplamSgk; t.isvereneMaliyet += c.isvereneMaliyet;
+  });
+  return t;
+}
+
+/* ---------------- DÖNEM ARALIĞI ---------------- */
+
+function accRangeStart(key) {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  if (key === "ozel" && state.accFrom) return new Date(state.accFrom + "T00:00:00");
+  switch (key) {
+    case "hafta": { const k = (d.getDay() + 6) % 7; d.setDate(d.getDate() - k); return d; }
+    case "ay": return new Date(d.getFullYear(), d.getMonth(), 1);
+    case "3ay": return new Date(d.getFullYear(), d.getMonth() - 2, 1);
+    case "6ay": return new Date(d.getFullYear(), d.getMonth() - 5, 1);
+    case "yil": return new Date(d.getFullYear(), 0, 1);
+    default: return new Date(d.getFullYear(), d.getMonth(), 1);
+  }
+}
+function accRangeEnd(key) {
+  if (key === "ozel" && state.accTo) {
+    const d = new Date(state.accTo + "T23:59:59");
+    return d;
+  }
+  const d = new Date();
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+function accRangeLabel(key) {
+  const map = { hafta: "Bu Hafta", ay: "Bu Ay", "3ay": "Son 3 Ay", "6ay": "Son 6 Ay", yil: "Bu Yıl", ozel: "Özel Aralık" };
+  if (key === "ozel") return (state.accFrom || "—") + " → " + (state.accTo || "—");
+  return map[key] || "Bu Ay";
+}
+function accInRange(items) {
+  const bas = accRangeStart(state.accRange).getTime();
+  const bit = accRangeEnd(state.accRange).getTime();
+  return (items || []).filter(x => {
+    if (!x || !x.date) return false;
+    const t = new Date(x.date).getTime();
+    return t >= bas && t <= bit;
+  });
+}
+function accSum(items, field) {
+  return (items || []).reduce((s, x) => s + accNum(x[field]), 0);
+}
+function accGroupBy(items, field) {
+  const m = {};
+  (items || []).forEach(x => {
+    const k = x[field] || "Diğer";
+    if (!m[k]) m[k] = { toplam: 0, adet: 0 };
+    m[k].toplam += accNum(x.amount);
+    m[k].adet++;
+  });
+  return Object.entries(m).sort((a, b) => b[1].toplam - a[1].toplam);
+}
+
+/* ---------------- RESMÎ BAĞLANTILAR ---------------- */
+
+const ACC_LINKS = {
+  sgkEBildirge: "https://ebildirge.sgk.gov.tr/",
+  sgkEDevlet: "https://www.turkiye.gov.tr/",
+  gibEBeyanname: "https://ebeyanname.gib.gov.tr/",
+  gibDijital: "https://dijital.gib.gov.tr/",
+  gibInteraktif: "https://ivd.gib.gov.tr/"
+};
+
+function accCopy(text) {
+  const bitir = (ok) => alert(ok ? "✅ Kopyalandı. Resmî sisteme yapıştırabilirsiniz." : "Kopyalanamadı — metni elle seçip kopyalayın.");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => bitir(true)).catch(() => bitir(false));
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    ta.remove(); bitir(ok);
+  }
+}
+
+function accSgkOzetMetni() {
+  const s = sgkSet();
+  const ay = new Date();
+  const donem = String(ay.getMonth() + 1).padStart(2, "0") + "/" + ay.getFullYear();
+  const t = accPayrollTotal();
+  let m = "NUR DİŞ & DENTAL KLİNİK\n";
+  m += "AYLIK PRİM VE HİZMET BELGESİ ÖZETİ\n";
+  m += "Dönem: " + donem + "\n";
+  m += "Asgari ücret (brüt): " + accTL(s.minWage) + " · Tavan: " + accTL(s.minWage * s.tavanCarpan) + "\n";
+  m += "--------------------------------------------------\n";
+  (state.personnel || []).filter(p => p.aktif !== false).forEach((p, i) => {
+    const c = accPayroll(p);
+    m += (i + 1) + ". " + (p.name || "-") + (p.tcNo ? " (TC: " + p.tcNo + ")" : "") + "\n";
+    m += "   Görev: " + (p.position || "-") + " · Gün: " + c.gun + " · SPEK: " + accTL(c.pek) + "\n";
+    m += "   İşçi payı: " + accTL(c.isciSgk + c.isciIssiz) + " · İşveren payı: " + accTL(c.isverenSgk + c.isverenIssiz) + "\n";
+    m += "   Toplam prim: " + accTL(c.toplamSgk) + " · Net ücret: " + accTL(c.net) + "\n";
+  });
+  m += "--------------------------------------------------\n";
+  m += "TOPLAM SİGORTA PRİMİ: " + accTL(t.toplamSgk) + "\n";
+  m += "  İşçi payı toplamı: " + accTL(t.isciSgk + t.isciIssiz) + "\n";
+  m += "  İşveren payı toplamı: " + accTL(t.isverenSgk + t.isverenIssiz) + "\n";
+  m += "TOPLAM İŞVEREN MALİYETİ: " + accTL(t.isvereneMaliyet) + "\n";
+  m += "\nBu özet ön hazırlıktır; resmî bildirim e-Bildirge üzerinden yapılır.\n";
+  return m;
+}
+
+function accVergiOzetMetni() {
+  const inc = accInRange(state.accounting.incomes);
+  const exp = accInRange(state.accounting.expenses);
+  const brut = inc.reduce((s, i) => s + accNum(i.grossAmount || i.amount), 0);
+  const kdv = accSum(inc, "kdv");
+  const stopaj = accSum(inc, "stopaj");
+  const damga = accSum(inc, "damga");
+  const gider = accSum(exp, "amount");
+  const kdvGider = exp.reduce((s, e) => s + (accNum(e.kdv) || 0), 0);
+  let m = "NUR DİŞ & DENTAL KLİNİK\n";
+  m += "BEYANNAME ÖN ÖZETİ — " + accRangeLabel(state.accRange) + "\n";
+  m += "--------------------------------------------------\n";
+  m += "Brüt gelir: " + accTL(brut) + "\n";
+  m += "Hesaplanan KDV (%10): " + accTL(kdv) + "\n";
+  m += "İndirilecek KDV (gider): " + accTL(kdvGider) + "\n";
+  m += "ÖDENECEK KDV: " + accTL(Math.max(0, kdv - kdvGider)) + "\n";
+  m += "--------------------------------------------------\n";
+  m += "Stopaj (%20): " + accTL(stopaj) + "\n";
+  m += "Damga vergisi: " + accTL(damga) + "\n";
+  m += "Toplam gider: " + accTL(gider) + "\n";
+  m += "Net kâr: " + accTL(brut - gider) + "\n";
+  m += "\nBu özet ön hazırlıktır; beyanname GİB e-Beyanname üzerinden verilir.\n";
+  return m;
+}
+
+/* ---------------- RENDER: ANA GİRİŞ ---------------- */
+
+function renderAccounting() {
+  const tab = state.accTab || "ozet";
+  const subs = [
+    { id: "ozet", label: "📊 Özet" },
+    { id: "islem", label: "💳 Gelir/Gider" },
+    { id: "personel", label: "👥 Personel & SGK" },
+    { id: "vergi", label: "🧾 Vergi & Beyanname" },
+    { id: "rapor", label: "📈 Raporlar" },
+    { id: "otomatik", label: "🔄 Otomatik" }
+  ];
+  const bar = subs.map(s => `<button class="admin-tab ${tab === s.id ? "active" : ""}" data-action="acc-tab" data-tab="${s.id}">${s.label}</button>`).join("");
+  let body = "";
+  if (tab === "ozet") body = renderAccOzet();
+  else if (tab === "islem") body = renderAccIslem();
+  else if (tab === "personel") body = renderAccPersonel();
+  else if (tab === "vergi") body = renderAccVergi();
+  else if (tab === "rapor") body = renderAccRapor();
+  else if (tab === "otomatik") body = renderAccOtomatik();
+  return `<div class="admin-tabs" style="margin-bottom:10px;flex-wrap:wrap;">${bar}</div>${body}`;
+}
+
+/* ---------------- ÖZET ---------------- */
+
+function renderAccOzet() {
+  const acc = state.accounting;
+  const inc = accInRange(acc.incomes);
+  const exp = accInRange(acc.expenses);
+  const gelir = accSum(inc, "amount");
+  const gider = accSum(exp, "amount");
+  const net = gelir - gider;
+  const kdv = accSum(inc, "kdv");
+  const stopaj = accSum(inc, "stopaj");
+  const personel = accPayrollTotal();
+  const bekleyenSGK = personel.toplamSgk;
+
+  const chip = (id, label) => `<button data-action="acc-range" data-range="${id}" style="flex:0 0 auto;padding:7px 13px;border-radius:20px;font-size:11.5px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${state.accRange === id ? "var(--teal)" : "var(--line)"};background:${state.accRange === id ? "var(--teal)" : "rgba(255,255,255,.7)"};color:${state.accRange === id ? "#fff" : "var(--ink)"};cursor:pointer;">${label}</button>`;
+  const chips = ["hafta", "ay", "3ay", "6ay", "yil"].map((k, i) => chip(k, ["Hafta", "Ay", "3 Ay", "6 Ay", "Yıl"][i])).join("");
+  const ozel = state.accRange === "ozel"
+    ? `<div style="display:flex;gap:6px;margin-top:8px;align-items:center;">
+         <input class="input" type="date" id="acc-from" value="${escapeAttr(state.accFrom || "")}" style="font-size:11px;padding:6px;" />
+         <span style="font-size:11px;">→</span>
+         <input class="input" type="date" id="acc-to" value="${escapeAttr(state.accTo || "")}" style="font-size:11px;padding:6px;" />
+         <button class="btn-primary" style="width:auto;padding:6px 10px;font-size:11px;" data-action="acc-range-apply">Uygula</button>
+       </div>`
+    : "";
+
+  return `
+    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;">${chips}${chip("ozel", "Özel")}</div>
+    ${ozel}
+    <p style="font-size:11px;color:var(--muted);margin:0 0 10px;">Dönem: <b>${accRangeLabel(state.accRange)}</b> · ${inc.length} gelir, ${exp.length} gider kaydı</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+      <div class="card p3" style="text-align:center;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border:1px solid #A5D6A7;">
+        <p style="font-size:10px;color:#2E7D32;margin:0;font-weight:700;">GELİR</p>
+        <p style="font-size:16px;font-weight:800;color:#1B5E20;margin:3px 0;">${accTL0(gelir)}</p>
+      </div>
+      <div class="card p3" style="text-align:center;background:linear-gradient(135deg,#FFEBEE,#FFCDD2);border:1px solid #EF9A9A;">
+        <p style="font-size:10px;color:#C62828;margin:0;font-weight:700;">GİDER</p>
+        <p style="font-size:16px;font-weight:800;color:#B71C1C;margin:3px 0;">${accTL0(gider)}</p>
+      </div>
+    </div>
+    <div class="card p3" style="text-align:center;margin-bottom:10px;background:${net >= 0 ? "linear-gradient(135deg,#E3F2FD,#BBDEFB)" : "linear-gradient(135deg,#FFF3E0,#FFE0B2)"};border:1px solid ${net >= 0 ? "#90CAF9" : "#FFB74D"};">
+      <p style="font-size:10px;color:#555;margin:0;font-weight:700;">${net >= 0 ? "NET KÂR" : "ZARAR"}</p>
+      <p style="font-size:20px;font-weight:800;color:${net >= 0 ? "#0D47A1" : "#BF360C"};margin:3px 0;">${accTL(Math.abs(net))}</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px;">
+      <div class="card p2" style="text-align:center;"><p style="font-size:9px;color:#666;margin:0;">KDV</p><p style="font-size:12.5px;font-weight:700;color:#E65100;margin:2px 0;">${accTL0(kdv)}</p></div>
+      <div class="card p2" style="text-align:center;"><p style="font-size:9px;color:#666;margin:0;">Stopaj</p><p style="font-size:12.5px;font-weight:700;color:#1565C0;margin:2px 0;">${accTL0(stopaj)}</p></div>
+      <div class="card p2" style="text-align:center;background:#F3E5F5;border:1px solid #CE93D8;"><p style="font-size:9px;color:#6A1B9A;margin:0;">SGK Primi</p><p style="font-size:12.5px;font-weight:700;color:#4A148C;margin:2px 0;">${accTL0(bekleyenSGK)}</p></div>
+    </div>
+
+    <div class="card p3 mb3" style="background:#EDE7F6;border:1px solid #B39DDB;">
+      <p style="font-size:11.5px;font-weight:700;color:#4527A0;margin:0 0 6px;">👥 Personel durumu</p>
+      <p style="font-size:11px;color:#5E35B1;margin:0;">${personel.kisi} aktif personel · Aylık SGK primi <b>${accTL(personel.toplamSgk)}</b> · İşveren maliyeti <b>${accTL(personel.isvereneMaliyet)}</b></p>
+      <button class="btn-primary" style="margin-top:8px;font-size:11.5px;padding:9px;background:#5E35B1;" data-action="acc-tab" data-tab="personel">SGK Primini Görüntüle →</button>
+    </div>
+
+    <div class="card p4 mb3">
+      <p style="font-size:13px;font-weight:700;margin:0 0 10px;">⚡ Hızlı İşlem</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button class="btn-primary" style="font-size:12px;padding:11px;background:#2E7D32;" data-action="acc-tab" data-tab="islem">💰 Gelir Ekle</button>
+        <button class="btn-primary" style="font-size:12px;padding:11px;background:var(--bad);" data-action="acc-tab" data-tab="islem">📉 Gider Ekle</button>
+      </div>
+    </div>
+
+    ${renderAccRecent(8)}
+  `;
+}
+
+/* Son işlemler listesi (düzenle + sil) */
+function renderAccRecent(limit) {
+  const acc = state.accounting;
+  const all = [...(acc.incomes || []).map(i => ({ ...i, txType: "income" })), ...(acc.expenses || []).map(e => ({ ...e, txType: "expense" }))]
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, limit || 15);
+  return `<div class="card p4 mb3">
+    <p style="font-size:13px;font-weight:700;margin:0 0 10px;">📋 Son İşlemler (${all.length})</p>
+    ${all.length === 0 ? '<p class="footnote">Henüz kayıt yok.</p>' : all.map(tx => {
+      const kdv = accNum(tx.kdv), stopaj = accNum(tx.stopaj);
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:12px;margin:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${tx.txType === "income" ? "💰" : "📉"} ${escapeHtml(tx.description || "")}</p>
+          <p style="font-size:10px;color:var(--muted);margin:2px 0 0;">${escapeHtml(tx.category || "")}${tx.firm ? " · " + escapeHtml(tx.firm) : ""} · ${escapeHtml(tx.date || "")}${tx.invoiceNo ? " · F:" + escapeHtml(tx.invoiceNo) : ""}</p>
+          ${(kdv || stopaj) ? `<p style="font-size:9px;color:#888;margin:1px 0 0;">KDV ${accTL(kdv)} · Stopaj ${accTL(stopaj)}</p>` : ""}
+        </div>
+        <div style="text-align:right;display:flex;align-items:center;gap:5px;flex-shrink:0;">
+          <p style="font-size:12.5px;font-weight:700;color:${tx.txType === "income" ? "#2E7D32" : "#C62828"};margin:0;">${tx.txType === "income" ? "+" : "-"}${accTL0(tx.amount)}</p>
+          <button data-action="acc-edit" data-id="${tx.id}" data-type="${tx.txType}" style="background:#E3F2FD;border:none;border-radius:6px;padding:5px 7px;cursor:pointer;font-size:11px;">✏️</button>
+          <button data-action="acc-delete" data-id="${tx.id}" data-type="${tx.txType}" style="background:#FFEBEE;border:none;border-radius:6px;padding:5px 7px;cursor:pointer;font-size:11px;color:#C62828;">🗑️</button>
+        </div>
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+
+/* ---------------- GELİR / GİDER SEKMESİ ---------------- */
+
+function renderAccIslem() {
+  const acc = state.accounting;
+  const edit = state.accEdit;
+  let editHtml = "";
+  if (edit) {
+    const src = edit.type === "income" ? (acc.incomes || []) : (acc.expenses || []);
+    const r = src.find(x => x.id === edit.id);
+    if (r) {
+      editHtml = `<div class="card p4 mb3" style="border:2px solid var(--teal);background:#F1F8FE;">
+        <p style="font-size:13px;font-weight:700;margin:0 0 10px;">✏️ ${edit.type === "income" ? "Gelir" : "Gider"} Kaydını Düzenle</p>
+        <div class="field"><label>Tarih</label><input class="input" type="date" id="ed-date" value="${escapeAttr(r.date || "")}" /></div>
+        <div class="field"><label>Açıklama</label><input class="input" id="ed-desc" value="${escapeAttr(r.description || "")}" /></div>
+        <div class="field"><label>Tutar (₺)</label><input class="input" type="number" step="0.01" id="ed-amount" value="${accNum(r.amount)}" /></div>
+        <div class="field"><label>Kategori</label><input class="input" id="ed-cat" value="${escapeAttr(r.category || "")}" list="acc-cats" /></div>
+        <datalist id="acc-cats">
+          ${["Muayene", "Dolgu", "Kanal Tedavisi", "İmplant", "Zirkonyum", "Beyazlatma", "Ortodonti", "Protez", "Diş Taşı Temizliği", "Kira", "Personel Maaş", "SGK Primi", "Malzeme", "Vergi", "Damga Vergisi", "Sigorta", "Elektrik/Su/İnternet", "Cihaz Bakım", "Muhasebeci", "Bağ-Kur", "Diğer"].map(c => `<option value="${c}"></option>`).join("")}
+        </datalist>
+        <div class="field"><label>Firma / Hasta</label><input class="input" id="ed-firm" value="${escapeAttr(r.firm || "")}" /></div>
+        <div class="field"><label>Fatura No</label><input class="input" id="ed-invoice" value="${escapeAttr(r.invoiceNo || "")}" /></div>
+        ${edit.type === "income" ? `
+        <div class="field"><label>Ödeme Şekli</label>
+          <select class="input" id="ed-payment">
+            ${["Nakit", "Kredi Kartı", "POS", "Temassız", "Karekod", "Havale/EFT"].map(p => `<option ${r.paymentMethod === p ? "selected" : ""}>${p}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field"><label>Hasta Tipi (stopaj)</label>
+          <select class="input" id="ed-ptype">
+            <option value="kisi" ${r.patientType === "kisi" ? "selected" : ""}>Şahıs (Stopaj yok)</option>
+            <option value="mukellef" ${r.patientType === "mukellef" ? "selected" : ""}>Vergi Mükellefi (Stopaj %20)</option>
+          </select>
+        </div>` : ""}
+        <div style="display:flex;gap:8px;">
+          <button class="btn-primary" style="background:#2E7D32;" data-action="acc-edit-save" data-id="${edit.id}" data-type="${edit.type}">💾 Güncelle</button>
+          <button class="btn-primary" style="background:#757575;" data-action="acc-edit-cancel">İptal</button>
+        </div>
+      </div>`;
+    }
+  }
+
+  return `
+    ${editHtml}
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#1A237E,#283593);color:white;border:none;">
+      <p style="font-size:14px;font-weight:700;margin:0 0 8px;">💳 Gelir Ekle / Ödeme Al</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <input class="input" id="pos-desc" placeholder="Açıklama / Hasta" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);" />
+        <input class="input" id="pos-amount" type="number" placeholder="Tutar (₺)" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;">
+        <select class="input" id="pos-category" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;">
+          <option>Muayene</option><option>Dolgu</option><option>Kanal Tedavisi</option><option>İmplant</option><option>Zirkonyum</option><option>Beyazlatma</option><option>Ortodonti</option><option>Protez</option><option>Diş Taşı Temizliği</option><option>Diğer</option>
+        </select>
+        <select class="input" id="pos-payment" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;">
+          <option>Kredi Kartı</option><option>Temassız</option><option>Karekod</option><option>Nakit</option><option>Havale/EFT</option>
+        </select>
+        <select class="input" id="pos-patient-type" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;">
+          <option value="kisi">Şahıs (Stopaj Yok)</option><option value="mukellef">Vergi Mükellefi (Stopaj %20)</option>
+        </select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+        <input class="input" id="pos-firm" placeholder="Firma (isteğe bağlı)" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;" />
+        <input class="input" id="pos-tc" placeholder="TC / Vergi No" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;" />
+      </div>
+      <button class="btn-primary" style="margin-top:10px;background:linear-gradient(135deg,#4CAF50,#66BB6A);font-size:14px;font-weight:700;" data-action="pos-pay">💳 Kaydet & Fatura Kes</button>
+      <p style="font-size:10px;margin:6px 0 0;opacity:0.7;">KDV %10 · Damga ‰9,48 · Stopaj mükelleften %20</p>
+    </div>
+
+    <div class="card p4 mb3">
+      <p style="font-size:13px;font-weight:700;color:var(--bad);margin:0 0 8px;">📉 Gider Ekle</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <input class="input" id="acc-exp-desc" placeholder="Açıklama (firma, detay)" style="font-size:12px;" />
+        <input class="input" id="acc-exp-amount" type="number" placeholder="Tutar (₺)" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;">
+        <select class="input" id="acc-exp-cat" style="font-size:11px;">
+          <option>Kira</option><option>Personel Maaş</option><option>SGK Primi</option><option>Malzeme</option><option>Vergi</option><option>Damga Vergisi</option><option>Sigorta</option><option>Elektrik/Su/İnternet</option><option>Cihaz Bakım</option><option>Muhasebeci</option><option>Bağ-Kur</option><option>Depozito</option><option>İade</option><option>Diğer</option>
+        </select>
+        <input class="input" id="acc-exp-firm" placeholder="Firma" style="font-size:11px;" />
+        <input class="input" id="acc-exp-invoice" placeholder="Fatura No" style="font-size:11px;" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">
+        <input class="input" id="acc-exp-date" type="date" value="${accToday()}" style="font-size:11px;" />
+        <input class="input" id="acc-exp-kdv" type="number" placeholder="KDV (₺, varsa)" style="font-size:11px;" />
+      </div>
+      <div style="margin-top:8px;">
+        <label style="font-size:11px;display:flex;align-items:center;gap:6px;">
+          <input type="checkbox" id="acc-exp-stopaj" /> Kira ödemesi (Stopaj %20 otomatik)
+        </label>
+      </div>
+      <button class="btn-primary" style="margin-top:10px;background:var(--bad);" data-action="acc-add-expense">📉 Gider Kaydet</button>
+    </div>
+
+    ${renderAccRecent(30)}
+  `;
+}
+
+/* ---------------- PERSONEL & SGK ---------------- */
+
+function renderAccPersonel() {
+  const s = sgkSet();
+  const list = (state.personnel || []);
+  const aktif = list.filter(p => p.aktif !== false);
+  const t = accPayrollTotal();
+
+  const rows = list.map(p => {
+    const c = accPayroll(p);
+    const pasif = p.aktif === false;
+    return `<div class="card p3 mb2" style="opacity:${pasif ? 0.55 : 1};">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:13px;font-weight:700;margin:0;">${escapeHtml(p.name || "-")} ${pasif ? "· (pasif)" : ""}</p>
+          <p style="font-size:10.5px;color:var(--muted);margin:2px 0 0;">${escapeHtml(p.position || "-")}${p.tcNo ? " · TC " + escapeHtml(p.tcNo) : ""} · ${c.gun} gün · Brüt ${accTL(c.brut)}</p>
+          <p style="font-size:10.5px;color:#6A1B9A;margin:3px 0 0;font-weight:600;">SGK primi: ${accTL(c.toplamSgk)} · Net: ${accTL(c.net)}</p>
+          <p style="font-size:10px;color:#888;margin:1px 0 0;">İşçi ${accTL(c.isciSgk + c.isciIssiz)} · İşveren ${accTL(c.isverenSgk + c.isverenIssiz)} · GV ${accTL(c.gelirVergisi)}</p>
+          ${c.uyari ? `<p style="font-size:9.5px;color:#E65100;margin:3px 0 0;">⚠️ ${c.uyari}</p>` : ""}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <button data-action="personel-edit" data-id="${p.id}" style="background:#E3F2FD;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px;">✏️</button>
+          <button data-action="personel-toggle" data-id="${p.id}" style="background:#FFF8E1;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px;">${pasif ? "▶️" : "⏸️"}</button>
+          <button data-action="personel-delete" data-id="${p.id}" style="background:#FFEBEE;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px;color:#C62828;">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("") || '<p class="footnote">Henüz personel eklenmedi.</p>';
+
+  const ed = state.personelEdit;
+  let formHtml = "";
+  if (ed !== null && ed !== undefined) {
+    const p = list.find(x => x.id === ed) || { id: "", name: "", tcNo: "", position: "", grossSalary: s.minWage, days: 30, tesvikli: true, startDate: "" };
+    formHtml = `<div class="card p4 mb3" style="border:2px solid #5E35B1;background:#F3E5F5;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 10px;color:#4527A0;">${p.id ? "✏️ Personeli Düzenle" : "➕ Yeni Personel"}</p>
+      <div class="field"><label>Ad Soyad</label><input class="input" id="pr-name" value="${escapeAttr(p.name || "")}" placeholder="Örn: Ayşe Yılmaz" /></div>
+      <div class="field"><label>TC Kimlik No</label><input class="input" id="pr-tc" value="${escapeAttr(p.tcNo || "")}" placeholder="11 haneli" maxlength="11" /></div>
+      <div class="field"><label>Görev / Unvan</label><input class="input" id="pr-position" value="${escapeAttr(p.position || "")}" placeholder="Örn: Diş Hekimi, Asistan, Sekreter" list="pos-list" /></div>
+      <datalist id="pos-list"><option value="Diş Hekimi"></option><option value="Asistan"></option><option value="Sekreter"></option><option value="Temizlik Personeli"></option><option value="Muhasebe"></option></datalist>
+      <div class="field"><label>Brüt Ücret (₺ / ay)</label><input class="input" type="number" id="pr-gross" value="${accNum(p.grossSalary)}" /></div>
+      <div class="field"><label>Çalışılan Gün (ay)</label><input class="input" type="number" id="pr-days" min="0" max="30" value="${accNum(p.days) || 30}" /></div>
+      <div class="field"><label>İşe Giriş Tarihi</label><input class="input" type="date" id="pr-start" value="${escapeAttr(p.startDate || "")}" /></div>
+      <label style="font-size:12px;display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <input type="checkbox" id="pr-tesvik" ${p.tesvikli !== false ? "checked" : ""} />
+        <span>5 puanlık işveren prim indirimi uygulanacak</span>
+      </label>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" style="background:#5E35B1;" data-action="personel-save" data-id="${p.id || ""}">💾 Kaydet</button>
+        <button class="btn-primary" style="background:#757575;" data-action="personel-cancel">İptal</button>
+      </div>
+    </div>`;
+  }
+
+  return `
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#4527A0,#5E35B1);color:white;border:none;">
+      <p style="font-size:14px;font-weight:700;margin:0 0 4px;">🏥 Aylık SGK Prim Özeti</p>
+      <p style="font-size:11px;opacity:.85;margin:0 0 10px;">${aktif.length} aktif personel · ${new Date().getFullYear()} parametreleri</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9.5px;margin:0;opacity:.85;">TOPLAM SGK PRİMİ</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0;">${accTL0(t.toplamSgk)}</p>
+        </div>
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9.5px;margin:0;opacity:.85;">İŞVEREN MALİYETİ</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0;">${accTL0(t.isvereneMaliyet)}</p>
+        </div>
+      </div>
+      <p style="font-size:10px;margin:8px 0 0;opacity:.8;">İşçi payı ${accTL0(t.isciSgk + t.isciIssiz)} · İşveren payı ${accTL0(t.isverenSgk + t.isverenIssiz)}</p>
+    </div>
+
+    <div class="card p3 mb3">
+      <p style="font-size:12px;font-weight:700;margin:0 0 8px;">🔗 SGK'ya Gönderim</p>
+      <p style="font-size:10.5px;color:var(--muted);margin:0 0 8px;line-height:1.5;">Aşağıdaki özeti kopyalayın, resmî e-Bildirge sistemine yapıştırıp onaylayın. (Güvenlik nedeniyle resmî sistemlere üçüncü taraf uygulamalardan doğrudan gönderim yapılamaz.)</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <a href="${ACC_LINKS.sgkEBildirge}" target="_blank" rel="noopener" class="btn-primary" style="text-decoration:none;background:#C62828;font-size:11.5px;padding:11px;">🔗 e-Bildirge</a>
+        <a href="${ACC_LINKS.sgkEDevlet}" target="_blank" rel="noopener" class="btn-primary" style="text-decoration:none;background:#1565C0;font-size:11.5px;padding:11px;">🔗 e-Devlet</a>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
+        <button class="btn-primary" style="background:#fff;color:var(--ink);border:1px solid var(--line);font-size:11.5px;padding:11px;" data-action="acc-copy-sgk">📋 Özeti Kopyala</button>
+        <button class="btn-primary" style="background:#fff;color:var(--ink);border:1px solid var(--line);font-size:11.5px;padding:11px;" data-action="acc-print-sgk">🖨️ Yazdır</button>
+      </div>
+      <button class="btn-primary" style="margin-top:6px;background:#5E35B1;font-size:11.5px;padding:11px;" data-action="acc-sgk-expense">➕ Bu Ayın Primini Gider Olarak Kaydet</button>
+    </div>
+
+    ${formHtml}
+    ${ed === null || ed === undefined ? `<button class="btn-primary mb3" style="background:#5E35B1;" data-action="personel-new">➕ Personel Ekle</button>` : ""}
+
+    <p class="section-label">Personel Listesi (${list.length})</p>
+    ${rows}
+
+    <div class="card p4 mb3" style="background:#F3E5F5;border:1px solid #CE93D8;">
+      <p style="font-size:12px;font-weight:700;color:#4527A0;margin:0 0 8px;">⚙️ SGK Parametreleri</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <div><label style="font-size:10px;color:#666;">Brüt Asgari Ücret</label><input class="input" type="number" id="sg-min" value="${s.minWage}" style="font-size:11px;padding:6px;" /></div>
+        <div><label style="font-size:10px;color:#666;">Tavan (kat)</label><input class="input" type="number" id="sg-carpan" value="${s.tavanCarpan}" style="font-size:11px;padding:6px;" /></div>
+        <div><label style="font-size:10px;color:#666;">İşçi SGK %</label><input class="input" type="number" step="0.01" id="sg-isci" value="${s.isciSgk}" style="font-size:11px;padding:6px;" /></div>
+        <div><label style="font-size:10px;color:#666;">İşçi İşsizlik %</label><input class="input" type="number" step="0.01" id="sg-isciis" value="${s.isciIssizlik}" style="font-size:11px;padding:6px;" /></div>
+        <div><label style="font-size:10px;color:#666;">İşveren SGK %</label><input class="input" type="number" step="0.01" id="sg-isveren" value="${s.isverenSgk}" style="font-size:11px;padding:6px;" /></div>
+        <div><label style="font-size:10px;color:#666;">İşveren İşsizlik %</label><input class="input" type="number" step="0.01" id="sg-isverenis" value="${s.isverenIssizlik}" style="font-size:11px;padding:6px;" /></div>
+        <div><label style="font-size:10px;color:#666;">Teşvik indirimi (puan)</label><input class="input" type="number" step="0.01" id="sg-tesvik" value="${s.tesvikPuan}" style="font-size:11px;padding:6px;" /></div>
+        <div><label style="font-size:10px;color:#666;">Damga oranı (‰)</label><input class="input" type="number" step="0.001" id="sg-damga" value="${(s.damgaOran * 1000).toFixed(3)}" style="font-size:11px;padding:6px;" /></div>
+      </div>
+      <button class="btn-primary" style="margin-top:8px;background:#5E35B1;font-size:11.5px;padding:10px;" data-action="sgk-settings-save">💾 Parametreleri Kaydet</button>
+      <p style="font-size:9.5px;color:#888;margin:6px 0 0;line-height:1.5;">2026 varsayılanları: brüt asgari ücret 33.030 ₺, tavan 9 kat. Asgari ücret değiştiğinde buradan güncelleyin.</p>
+    </div>
+  `;
+}
+
+/* ---------------- VERGİ & BEYANNAME ---------------- */
+
+function renderAccVergi() {
+  const inc = accInRange(state.accounting.incomes);
+  const exp = accInRange(state.accounting.expenses);
+  const brut = inc.reduce((s, i) => s + accNum(i.grossAmount || i.amount), 0);
+  const kdv = accSum(inc, "kdv");
+  const stopaj = accSum(inc, "stopaj");
+  const damga = accSum(inc, "damga");
+  const gider = accSum(exp, "amount");
+  const kdvGider = exp.reduce((s, e) => s + accNum(e.kdv), 0);
+  const odenecekKdv = Math.max(0, kdv - kdvGider);
+  const netKar = brut - gider;
+
+  const now = new Date();
+  const donem = String(now.getMonth() + 1).padStart(2, "0") + "/" + now.getFullYear();
+  const ceyrek = Math.floor(now.getMonth() / 3) + 1;
+
+  return `
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#E65100,#F57C00);color:white;border:none;">
+      <p style="font-size:14px;font-weight:700;margin:0 0 4px;">🧾 Beyanname Ön Özeti</p>
+      <p style="font-size:11px;opacity:.9;margin:0 0 10px;">Dönem: ${donem} · ${ceyrek}. çeyrek · ${accRangeLabel(state.accRange)}</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9.5px;margin:0;opacity:.85;">ÖDENECEK KDV</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0;">${accTL0(odenecekKdv)}</p>
+        </div>
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9.5px;margin:0;opacity:.85;">STOPAJ</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0;">${accTL0(stopaj)}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card p4 mb3">
+      <p style="font-size:13px;font-weight:700;margin:0 0 8px;">📄 Dönem Vergi Tablosu</p>
+      <table style="width:100%;font-size:11.5px;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid var(--line);"><td style="padding:5px 0;">Brüt Gelir</td><td style="text-align:right;font-weight:600;">${accTL(brut)}</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><td style="padding:5px 0;">Hesaplanan KDV (%10)</td><td style="text-align:right;color:#E65100;font-weight:600;">${accTL(kdv)}</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><td style="padding:5px 0;">İndirilecek KDV</td><td style="text-align:right;color:#2E7D32;font-weight:600;">-${accTL(kdvGider)}</td></tr>
+        <tr style="border-bottom:1px solid var(--line);background:#FFF3E0;"><td style="padding:5px 0;font-weight:700;">Ödenecek KDV</td><td style="text-align:right;font-weight:800;color:#E65100;">${accTL(odenecekKdv)}</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><td style="padding:5px 0;">Stopaj (%20)</td><td style="text-align:right;color:#1565C0;font-weight:600;">${accTL(stopaj)}</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><td style="padding:5px 0;">Damga Vergisi (‰9,48)</td><td style="text-align:right;color:#7B1FA2;font-weight:600;">${accTL(damga)}</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><td style="padding:5px 0;">Toplam Gider</td><td style="text-align:right;color:#C62828;font-weight:600;">-${accTL(gider)}</td></tr>
+        <tr><td style="padding:6px 0;font-weight:700;">Net Kâr</td><td style="text-align:right;font-weight:800;color:${netKar >= 0 ? "#2E7D32" : "#C62828"};">${accTL(netKar)}</td></tr>
+      </table>
+    </div>
+
+    <div class="card p4 mb3">
+      <p style="font-size:13px;font-weight:700;margin:0 0 8px;">🔗 GİB — Gelir İdaresi Başkanlığı</p>
+      <p style="font-size:10.5px;color:var(--muted);margin:0 0 10px;line-height:1.5;">Beyannameyi aşağıdaki resmî sistemden verip ödemeyi Dijital Vergi Dairesi'nden yapabilirsiniz.</p>
+      <a href="${ACC_LINKS.gibEBeyanname}" target="_blank" rel="noopener" class="btn-primary" style="text-decoration:none;background:#C62828;margin-bottom:6px;">📄 e-Beyanname (Beyanname Ver)</a>
+      <a href="${ACC_LINKS.gibDijital}" target="_blank" rel="noopener" class="btn-primary" style="text-decoration:none;background:#2E7D32;margin-bottom:6px;">💳 Dijital Vergi Dairesi (Ödeme)</a>
+      <a href="${ACC_LINKS.gibInteraktif}" target="_blank" rel="noopener" class="btn-primary" style="text-decoration:none;background:#1565C0;margin-bottom:6px;">🧾 İnteraktif Vergi Dairesi</a>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px;">
+        <button class="btn-primary" style="background:#fff;color:var(--ink);border:1px solid var(--line);font-size:11.5px;padding:11px;" data-action="acc-copy-vergi">📋 Özeti Kopyala</button>
+        <button class="btn-primary" style="background:#fff;color:var(--ink);border:1px solid var(--line);font-size:11.5px;padding:11px;" data-action="acc-print-vergi">🖨️ Yazdır</button>
+      </div>
+    </div>
+
+    <div class="card p4 mb3" style="background:#FFF8E1;border:1px solid #FFD54F;">
+      <p style="font-size:12px;font-weight:700;color:#E65100;margin:0 0 6px;">📅 Ödeme Takvimi Hatırlatması</p>
+      <p style="font-size:10.5px;color:#8D6E00;margin:0;line-height:1.6;">
+        • KDV / Muhtasar beyanname: her ayın <b>26'sı</b> akşamına kadar<br/>
+        • SGK aylık prim bildirgesi: her ayın <b>23'ü</b><br/>
+        • Ödeme: beyanname sonrası ayın <b>sonuna</b> kadar<br/>
+        • Yıllık gelir vergisi: Mart sonu
+      </p>
+      <p style="font-size:9.5px;color:#A1887F;margin:6px 0 0;">Bu tarihler genel bilgidir; resmî takvimi GİB/SGK'dan doğrulayın.</p>
+    </div>
+  `;
+}
+
+/* ---------------- RAPORLAR ---------------- */
+
+function renderAccRapor() {
+  const acc = state.accounting;
+  const inc = accInRange(acc.incomes);
+  const exp = accInRange(acc.expenses);
+  const gelir = accSum(inc, "amount");
+  const gider = accSum(exp, "amount");
+  const net = gelir - gider;
+
+  const incCats = accGroupBy(inc, "category");
+  const expCats = accGroupBy(exp, "category");
+  const maxInc = incCats.length ? incCats[0][1].toplam : 0;
+  const maxExp = expCats.length ? expCats[0][1].toplam : 0;
+
+  const bar = (name, data, max, color) => `
+    <div style="margin-bottom:7px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;">
+        <span style="font-weight:600;">${escapeHtml(name)}</span>
+        <span style="color:${color};font-weight:700;">${accTL0(data.toplam)} <span style="color:#aaa;font-weight:400;">(${data.adet})</span></span>
+      </div>
+      <div style="height:7px;background:#EEE;border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:${max ? Math.max(3, data.toplam / max * 100) : 0}%;background:${color};border-radius:4px;"></div>
+      </div>
+    </div>`;
+
+  /* Son 6 ay trendi */
+  const aylar = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() - i);
+    const y = d.getFullYear(), m = d.getMonth();
+    const i2 = (acc.incomes || []).filter(x => { const t = new Date(x.date); return t.getFullYear() === y && t.getMonth() === m; });
+    const e2 = (acc.expenses || []).filter(x => { const t = new Date(x.date); return t.getFullYear() === y && t.getMonth() === m; });
+    aylar.push({
+      etiket: d.toLocaleDateString("tr-TR", { month: "short", year: "2-digit" }),
+      gelir: accSum(i2, "amount"),
+      gider: accSum(e2, "amount")
+    });
+  }
+  const maxTrend = Math.max(1, ...aylar.map(a => Math.max(a.gelir, a.gider)));
+
+  const chip = (id, label) => `<button data-action="acc-range" data-range="${id}" style="flex:0 0 auto;padding:7px 13px;border-radius:20px;font-size:11.5px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${state.accRange === id ? "var(--teal)" : "var(--line)"};background:${state.accRange === id ? "var(--teal)" : "rgba(255,255,255,.7)"};color:${state.accRange === id ? "#fff" : "var(--ink)"};cursor:pointer;">${label}</button>`;
+  const chips = ["hafta", "ay", "3ay", "6ay", "yil"].map((k, i) => chip(k, ["Hafta", "Ay", "3 Ay", "6 Ay", "Yıl"][i])).join("");
+
+  return `
+    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;">${chips}</div>
+    <p style="font-size:11px;color:var(--muted);margin:0 0 10px;">Dönem: <b>${accRangeLabel(state.accRange)}</b></p>
+
+    <div class="card p4 mb3">
+      <p style="font-size:13px;font-weight:700;margin:0 0 10px;">💰 Gelir Dağılımı</p>
+      ${incCats.length ? incCats.map(([k, v]) => bar(k, v, maxInc, "#2E7D32")).join("") : '<p class="footnote">Bu dönemde gelir kaydı yok.</p>'}
+    </div>
+
+    <div class="card p4 mb3">
+      <p style="font-size:13px;font-weight:700;margin:0 0 10px;">📉 Gider Dağılımı</p>
+      ${expCats.length ? expCats.map(([k, v]) => bar(k, v, maxExp, "#C62828")).join("") : '<p class="footnote">Bu dönemde gider kaydı yok.</p>'}
+    </div>
+
+    <div class="card p4 mb3">
+      <p style="font-size:13px;font-weight:700;margin:0 0 10px;">📊 Son 6 Ay Trendi</p>
+      <div style="display:flex;align-items:flex-end;gap:8px;height:130px;padding-top:8px;">
+        ${aylar.map(a => `
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+            <div style="display:flex;gap:2px;align-items:flex-end;height:100%;width:100%;justify-content:center;">
+              <div title="Gelir: ${accTL0(a.gelir)}" style="width:40%;background:#2E7D32;border-radius:3px 3px 0 0;height:${Math.max(2, a.gelir / maxTrend * 100)}%;"></div>
+              <div title="Gider: ${accTL0(a.gider)}" style="width:40%;background:#C62828;border-radius:3px 3px 0 0;height:${Math.max(2, a.gider / maxTrend * 100)}%;"></div>
+            </div>
+            <span style="font-size:9px;color:#888;margin-top:4px;">${a.etiket}</span>
+          </div>`).join("")}
+      </div>
+      <div style="display:flex;gap:14px;justify-content:center;margin-top:8px;font-size:10px;">
+        <span><span style="display:inline-block;width:9px;height:9px;background:#2E7D32;border-radius:2px;"></span> Gelir</span>
+        <span><span style="display:inline-block;width:9px;height:9px;background:#C62828;border-radius:2px;"></span> Gider</span>
+      </div>
+    </div>
+
+    <div class="card p4 mb3">
+      <p style="font-size:13px;font-weight:700;margin:0 0 10px;">📋 Dönem Tablosu</p>
+      <table style="width:100%;font-size:11.5px;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid var(--line);"><td style="padding:5px 0;">Toplam Gelir</td><td style="text-align:right;font-weight:700;color:#2E7D32;">${accTL(gelir)}</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><td style="padding:5px 0;">Toplam Gider</td><td style="text-align:right;font-weight:700;color:#C62828;">${accTL(gider)}</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><td style="padding:5px 0;">Net</td><td style="text-align:right;font-weight:800;color:${net >= 0 ? "#0D47A1" : "#BF360C"};">${accTL(net)}</td></tr>
+        <tr style="border-bottom:1px solid var(--line);"><td style="padding:5px 0;">Ortalama günlük gelir</td><td style="text-align:right;">${accTL(gelir / Math.max(1, Math.round((accRangeEnd(state.accRange) - accRangeStart(state.accRange)) / 86400000)))}</td></tr>
+        <tr><td style="padding:5px 0;">Kayıt sayısı</td><td style="text-align:right;">${inc.length} gelir · ${exp.length} gider</td></tr>
+      </table>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <button class="btn-primary" style="background:#0E93AC;font-size:12px;padding:12px;" data-action="acc-export-csv">⬇️ CSV İndir</button>
+      <button class="btn-primary" style="background:#5E35B1;font-size:12px;padding:12px;" data-action="acc-print-rapor">🖨️ Rapor Yazdır</button>
+    </div>
+  `;
+}
+
+/* ---------------- OTOMATİK GİDERLER ---------------- */
+
+function renderAccOtomatik() {
+  const ae = state.autoExpenses || {};
+  const rows = [
+    ["kira", "🏠 Kira", 50000], ["elektrik", "⚡ Elektrik", 3000], ["su", "💧 Su", 1500],
+    ["dogalgaz", "🔥 Doğalgaz", 2000], ["sgk", "🏥 SGK/Prim", 8000], ["vergi", "📋 Vergi/Beyanname", 5000]
+  ];
+  return `
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#FFF3E0,#FFE0B2);border:1px solid #FFB74D;">
+      <p style="font-size:14px;font-weight:700;margin:0 0 6px;color:#E65100;">🔄 Otomatik Aylık Giderler</p>
+      <p style="font-size:11px;color:#BF360C;margin:0 0 10px;">Her ay tek dokunuşla muhasebeye işlenir. Tutarları güncelleyebilirsiniz.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        ${rows.map(([k, lbl, def]) => `
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="font-size:11px;flex:1;">${lbl}</span>
+            <input class="input" style="width:82px;padding:5px 6px;font-size:11px;text-align:right;" type="number" value="${accNum(ae[k]) || def}" data-auto="${k}" />
+          </div>`).join("")}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn-primary" style="flex:1;font-size:12px;background:var(--bad);" data-action="save-auto-expenses">💾 Kaydet</button>
+        <button class="btn-primary" style="flex:1;font-size:12px;background:#E65100;" data-action="run-auto-expenses">⚡ Bu Ay İşle</button>
+      </div>
+      <p style="font-size:10px;color:#888;margin:8px 0 0;">Toplam: ${accTL(rows.reduce((s, [k, , def]) => s + (accNum(ae[k]) || def), 0))}</p>
+    </div>
+    ${renderAccRecent(10)}
+  `;
+}
+
+/* ---------------- EK İŞLEMLER ---------------- */
+
+/* Kayıt düzenleme: gelirde vergi alanları yeniden hesaplanır */
+function accRecalcIncome(rec) {
+  const gross = rec.grossAmount != null ? accNum(rec.grossAmount) : accNum(rec.amount);
+  rec.grossAmount = gross;
+  rec.kdvOran = rec.kdvOran != null ? accNum(rec.kdvOran) : 0.10;
+  rec.kdv = gross * rec.kdvOran;
+  rec.stopajOran = rec.patientType === "mukellef" ? 0.20 : 0;
+  rec.stopaj = gross * rec.stopajOran;
+  rec.damga = gross * 0.00948;
+  rec.amount = gross - rec.stopaj + rec.kdv;
+  return rec;
+}
+
+function accPrint(title, bodyHtml) {
+  const w = window.open("", "_blank");
+  if (!w) { alert("Açılır pencere engellendi. Lütfen izin verin."); return; }
+  w.document.write(`<html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
+    <style>body{font-family:Arial,Helvetica,sans-serif;padding:24px;color:#222;font-size:13px;line-height:1.6;}
+    h2{margin:0 0 4px;font-size:20px;} .sub{color:#777;font-size:12px;margin-bottom:16px;}
+    table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12px;}
+    td,th{border-bottom:1px solid #ddd;padding:6px 4px;text-align:left;}
+    th{background:#f5f5f5;} .r{text-align:right;}
+    pre{background:#f7f7f7;padding:12px;border-radius:6px;font-size:12px;white-space:pre-wrap;}
+    @media print{.noprint{display:none;}}</style></head><body>
+    <h2>NUR DİŞ & DENTAL KLİNİK</h2>
+    <div class="sub">${escapeHtml(title)} · ${new Date().toLocaleString("tr-TR")}</div>
+    ${bodyHtml}
+    <p class="noprint" style="margin-top:24px;"><button onclick="window.print()" style="padding:10px 20px;font-size:14px;">🖨️ Yazdır</button></p>
+    </body></html>`);
+  w.document.close();
+}
+
+function accCsvDownload(filename, rows) {
+  const csv = rows.map(r => r.map(c => {
+    const s = String(c == null ? "" : c);
+    return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(";")).join("\r\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+/* ---------------- AKSİYON YÖNLENDİRİCİ ---------------- */
+
+function accAction(action, el) {
+  const A = (name) => action === name;
+
+  if (A("acc-tab")) {
+    state.accTab = el.dataset.tab;
+    state.accEdit = null; state.personelEdit = undefined;
+    render();
+    return true;
+  }
+  if (A("acc-range")) {
+    state.accRange = el.dataset.range;
+    render();
+    return true;
+  }
+  if (A("acc-range-apply")) {
+    state.accFrom = document.getElementById("acc-from")?.value || "";
+    state.accTo = document.getElementById("acc-to")?.value || "";
+    render();
+    return true;
+  }
+
+  /* ---- düzenleme ---- */
+  if (A("acc-edit")) {
+    state.accEdit = { type: el.dataset.type, id: el.dataset.id };
+    state.accTab = "islem";
+    render();
+    window.scrollTo(0, 0);
+    return true;
+  }
+  if (A("acc-edit-cancel")) {
+    state.accEdit = null;
+    render();
+    return true;
+  }
+  if (A("acc-edit-save")) {
+    const type = el.dataset.type, id = el.dataset.id;
+    const acc = state.accounting;
+    const arr = type === "income" ? acc.incomes : acc.expenses;
+    const rec = (arr || []).find(x => x.id === id);
+    if (!rec) { state.accEdit = null; render(); return true; }
+
+    rec.date = document.getElementById("ed-date")?.value || rec.date;
+    rec.description = (document.getElementById("ed-desc")?.value || "").trim() || rec.description;
+    rec.category = (document.getElementById("ed-cat")?.value || "").trim() || rec.category;
+    rec.firm = (document.getElementById("ed-firm")?.value || "").trim();
+    rec.invoiceNo = (document.getElementById("ed-invoice")?.value || "").trim();
+
+    if (type === "income") {
+      rec.paymentMethod = document.getElementById("ed-payment")?.value || rec.paymentMethod;
+      const newType = document.getElementById("ed-ptype")?.value || rec.patientType || "kisi";
+      const oldAmount = accNum(rec.amount);
+      rec.patientType = newType;
+      const gross = accNum(document.getElementById("ed-amount")?.value);
+      if (gross > 0) {
+        // Kullanıcı net tahsil edilen tutarı değiştirdiyse brüt'ü geri hesapla
+        rec.grossAmount = Math.abs(gross - oldAmount) > 0.005 ? gross : accNum(rec.grossAmount);
+      }
+      accRecalcIncome(rec);
+      if (rec.invoiceNo) {
+        const inv = (acc.invoices || []).find(v => v.no === rec.invoiceNo);
+        if (inv) {
+          inv.date = rec.date; inv.description = rec.description; inv.category = rec.category;
+          inv.grossAmount = rec.grossAmount; inv.kdv = rec.kdv; inv.stopaj = rec.stopaj;
+          inv.damga = rec.damga; inv.netAmount = rec.amount; inv.firm = rec.firm;
+          inv.paymentMethod = rec.paymentMethod;
+        }
+      }
+    } else {
+      rec.amount = accNum(document.getElementById("ed-amount")?.value) || rec.amount;
+      rec.grossAmount = rec.amount;
+    }
+
+    localStorage.setItem("nurdis_accounting", JSON.stringify(acc));
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    state.accEdit = null;
+    alert("✅ Kayıt güncellendi.");
+    render();
+    return true;
+  }
+
+  /* ---- SGK ---- */
+  if (A("personel-new")) { state.personelEdit = ""; render(); window.scrollTo(0, 0); return true; }
+  if (A("personel-edit")) { state.personelEdit = el.dataset.id; render(); window.scrollTo(0, 0); return true; }
+  if (A("personel-cancel")) { state.personelEdit = undefined; render(); return true; }
+  if (A("personel-save")) {
+    const id = el.dataset.id;
+    const rec = {
+      id: id || ("prs_" + Date.now()),
+      name: (document.getElementById("pr-name")?.value || "").trim(),
+      tcNo: (document.getElementById("pr-tc")?.value || "").trim(),
+      position: (document.getElementById("pr-position")?.value || "").trim(),
+      grossSalary: accNum(document.getElementById("pr-gross")?.value),
+      days: accNum(document.getElementById("pr-days")?.value) || 30,
+      startDate: document.getElementById("pr-start")?.value || "",
+      tesvikli: !!document.getElementById("pr-tesvik")?.checked,
+      aktif: true
+    };
+    if (!rec.name) { alert("Personel adı gerekli."); return true; }
+    if (rec.tcNo && rec.tcNo.length !== 11) { alert("TC kimlik no 11 haneli olmalı."); return true; }
+    if (!(rec.grossSalary > 0)) { alert("Brüt ücret giriniz."); return true; }
+
+    if (!state.personnel) state.personnel = [];
+    if (id) {
+      const old = state.personnel.find(p => p.id === id);
+      Object.assign(old, rec, { aktif: old.aktif !== false });
+    } else {
+      state.personnel.push(rec);
+    }
+    localStorage.setItem("nurdis_personnel", JSON.stringify(state.personnel));
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    state.personelEdit = undefined;
+    alert("✅ Personel kaydedildi. SGK primi otomatik hesaplandı.");
+    render();
+    return true;
+  }
+  if (A("personel-toggle")) {
+    const p = (state.personnel || []).find(x => x.id === el.dataset.id);
+    if (p) {
+      p.aktif = p.aktif === false;
+      localStorage.setItem("nurdis_personnel", JSON.stringify(state.personnel));
+      if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+      render();
+    }
+    return true;
+  }
+  if (A("personel-delete")) {
+    if (!confirm("Bu personeli silmek istediğinize emin misiniz?")) return true;
+    state.personnel = (state.personnel || []).filter(x => x.id !== el.dataset.id);
+    localStorage.setItem("nurdis_personnel", JSON.stringify(state.personnel));
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    render();
+    return true;
+  }
+  if (A("sgk-settings-save")) {
+    const s = state.sgkSettings || {};
+    s.minWage = accNum(document.getElementById("sg-min")?.value) || SGK_DEFAULTS.minWage;
+    s.tavanCarpan = accNum(document.getElementById("sg-carpan")?.value) || SGK_DEFAULTS.tavanCarpan;
+    s.isciSgk = accNum(document.getElementById("sg-isci")?.value);
+    s.isciIssizlik = accNum(document.getElementById("sg-isciis")?.value);
+    s.isverenSgk = accNum(document.getElementById("sg-isveren")?.value);
+    s.isverenIssizlik = accNum(document.getElementById("sg-isverenis")?.value);
+    s.tesvikPuan = accNum(document.getElementById("sg-tesvik")?.value);
+    s.damgaOran = accNum(document.getElementById("sg-damga")?.value) / 1000;
+    if (!s.vergiDilimleri) s.vergiDilimleri = SGK_DEFAULTS.vergiDilimleri;
+    state.sgkSettings = s;
+    localStorage.setItem("nurdis_sgk_settings", JSON.stringify(s));
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    alert("✅ SGK parametreleri kaydedildi.");
+    render();
+    return true;
+  }
+  if (A("acc-sgk-expense")) {
+    const t = accPayrollTotal();
+    if (!t.kisi) { alert("Önce personel ekleyin."); return true; }
+    if (t.toplamSgk <= 0) { alert("Hesaplanan prim yok."); return true; }
+    if (!confirm("Bu ayın SGK primini (" + accTL(t.toplamSgk) + ") gider olarak kaydetmek istiyor musunuz?")) return true;
+    const d = new Date();
+    const ayAdi = d.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+    if (!state.accounting) state.accounting = { incomes: [], expenses: [], firms: [], bankAccounts: [], invoices: [] };
+    state.accounting.expenses.push({
+      id: "exp_sgk_" + Date.now(),
+      description: "SGK Prim Ödemesi — " + ayAdi + " (" + t.kisi + " personel)",
+      amount: Math.round(t.toplamSgk * 100) / 100,
+      category: "SGK Primi",
+      firm: "SGK",
+      date: accToday(),
+      invoiceNo: "",
+      createdAt: new Date().toISOString()
+    });
+    localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting));
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    alert("✅ SGK primi gider olarak kaydedildi: " + accTL(t.toplamSgk));
+    render();
+    return true;
+  }
+
+  /* ---- kopyala / yazdır ---- */
+  if (A("acc-copy-sgk")) { accCopy(accSgkOzetMetni()); return true; }
+  if (A("acc-copy-vergi")) { accCopy(accVergiOzetMetni()); return true; }
+  if (A("acc-print-sgk")) {
+    accPrint("SGK Aylık Prim ve Hizmet Özeti", "<pre>" + escapeHtml(accSgkOzetMetni()) + "</pre>");
+    return true;
+  }
+  if (A("acc-print-vergi")) {
+    accPrint("Beyanname Ön Özeti", "<pre>" + escapeHtml(accVergiOzetMetni()) + "</pre>");
+    return true;
+  }
+
+  /* ---- dışa aktarım ---- */
+  if (A("acc-export-csv")) {
+    const inc = accInRange(state.accounting.incomes);
+    const exp = accInRange(state.accounting.expenses);
+    const rows = [["Tür", "Tarih", "Açıklama", "Kategori", "Firma", "Fatura No", "Tutar", "KDV", "Stopaj", "Ödeme"]];
+    inc.forEach(i => rows.push(["Gelir", i.date || "", i.description || "", i.category || "", i.firm || "", i.invoiceNo || "", accNum(i.amount), accNum(i.kdv), accNum(i.stopaj), i.paymentMethod || ""]));
+    exp.forEach(e => rows.push(["Gider", e.date || "", e.description || "", e.category || "", e.firm || "", e.invoiceNo || "", accNum(e.amount), accNum(e.kdv), 0, ""]));
+    accCsvDownload("nur-dis-muhasebe-" + accRangeLabel(state.accRange).replace(/[^a-z0-9]/gi, "-").toLowerCase() + ".csv", rows);
+    return true;
+  }
+  if (A("acc-print-rapor")) {
+    const inc = accInRange(state.accounting.incomes);
+    const exp = accInRange(state.accounting.expenses);
+    const gelir = accSum(inc, "amount"), gider = accSum(exp, "amount");
+    let h = `<p><b>Dönem:</b> ${escapeHtml(accRangeLabel(state.accRange))}</p>`;
+    h += `<table><tr><th>Özet</th><th class="r">Tutar</th></tr>
+      <tr><td>Toplam Gelir</td><td class="r">${accTL(gelir)}</td></tr>
+      <tr><td>Toplam Gider</td><td class="r">${accTL(gider)}</td></tr>
+      <tr><td><b>Net</b></td><td class="r"><b>${accTL(gelir - gider)}</b></td></tr></table>`;
+    h += `<h3 style="font-size:14px;margin-top:18px;">Gelirler</h3><table><tr><th>Tarih</th><th>Açıklama</th><th>Kategori</th><th class="r">Tutar</th></tr>`;
+    inc.forEach(i => h += `<tr><td>${escapeHtml(i.date || "")}</td><td>${escapeHtml(i.description || "")}</td><td>${escapeHtml(i.category || "")}</td><td class="r">${accTL(i.amount)}</td></tr>`);
+    h += `</table><h3 style="font-size:14px;margin-top:18px;">Giderler</h3><table><tr><th>Tarih</th><th>Açıklama</th><th>Kategori</th><th class="r">Tutar</th></tr>`;
+    exp.forEach(e => h += `<tr><td>${escapeHtml(e.date || "")}</td><td>${escapeHtml(e.description || "")}</td><td>${escapeHtml(e.category || "")}</td><td class="r">${accTL(e.amount)}</td></tr>`);
+    h += `</table>`;
+    accPrint("Muhasebe Raporu", h);
+    return true;
+  }
+
+  return false;
+}
+
 function renderAdminPanel() {
   const tabs = [
     { id: "appointments", label: "📅 Randevular", count: state.appointments.length },
@@ -1545,186 +2583,9 @@ function renderAdminPanel() {
   }
 
   if (state.adminTab === "accounting") {
-    const acc = state.accounting || { incomes:[], expenses:[], firms:[], bankAccounts:[], invoices:[] };
-    const now = new Date();
-    const thisMonth = now.getMonth();
-    const thisYear = now.getFullYear();
-    const monthIncomes = (acc.incomes||[]).filter(i => { const d = new Date(i.date); return d.getMonth()===thisMonth && d.getFullYear()===thisYear; });
-    const monthExpenses = (acc.expenses||[]).filter(e => { const d = new Date(e.date); return d.getMonth()===thisMonth && d.getFullYear()===thisYear; });
-    const yearIncomes = (acc.incomes||[]).filter(i => { const d = new Date(i.date); return d.getFullYear()===thisYear; });
-    const yearExpenses = (acc.expenses||[]).filter(e => { const d = new Date(e.date); return d.getFullYear()===thisYear; });
-    const totalIncome = monthIncomes.reduce((s,i) => s + (parseFloat(i.amount)||0), 0);
-    const totalExpense = monthExpenses.reduce((s,e) => s + (parseFloat(e.amount)||0), 0);
-    const totalKDV = monthIncomes.reduce((s,i) => s + (parseFloat(i.kdv)||0), 0);
-    const totalStopaj = monthIncomes.reduce((s,i) => s + (parseFloat(i.stopaj)||0), 0);
-    const profit = totalIncome - totalExpense;
-    const yearIncome = yearIncomes.reduce((s,i) => s + (parseFloat(i.amount)||0), 0);
-    const yearExpense = yearExpenses.reduce((s,e) => s + (parseFloat(e.amount)||0), 0);
-    const yearProfit = yearIncome - yearExpense;
-
-    // Yıllık gelir vergisi hesaplama (2026 dilimleri)
-    let vergi = 0;
-    if (yearProfit > 0) {
-      if (yearProfit <= 190000) vergi = yearProfit * 0.15;
-      else if (yearProfit <= 400000) vergi = 28500 + (yearProfit - 190000) * 0.20;
-      else if (yearProfit <= 1000000) vergi = 70500 + (yearProfit - 400000) * 0.27;
-      else if (yearProfit <= 5300000) vergi = 232500 + (yearProfit - 1000000) * 0.35;
-      else vergi = 1737500 + (yearProfit - 5300000) * 0.40;
-    }
-
-    // Otomatik fatura no oluştur
-    const monthStr = String(now.getMonth()+1).padStart(2,'0');
-    const yearStr = String(now.getFullYear());
-    const thisMonthInvoices = (acc.invoices||[]).filter(inv => inv.no && inv.no.startsWith(yearStr + '-' + monthStr));
-    const nextInvoiceNo = yearStr + '-' + monthStr + '-' + String((thisMonthInvoices.length || 0) + 1).padStart(5, '0');
-
-    // Son işlemler
-    const recentTx = [...(acc.incomes||[]).map(i=>({...i,txType:'income'})), ...(acc.expenses||[]).map(e=>({...e,txType:'expense'}))]
-      .sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0,15);
-
-    // POS modal (göster/gizle)
-    const showPOS = state._showPOS || false;
-
-    tabContent = `
-      <!-- Dashboard -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-        <div class="card p3" style="text-align:center;background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border:1px solid #A5D6A7;">
-          <p style="font-size:10px;color:#2E7D32;margin:0;font-weight:600;">GELİR (Bu Ay)</p>
-          <p style="font-size:16px;font-weight:800;color:#1B5E20;margin:2px 0;">₺${totalIncome.toLocaleString('tr-TR',{minimumFractionDigits:2})}</p>
-        </div>
-        <div class="card p3" style="text-align:center;background:linear-gradient(135deg,#FFEBEE,#FFCDD2);border:1px solid #EF9A9A;">
-          <p style="font-size:10px;color:#C62828;margin:0;font-weight:600;">GİDER (Bu Ay)</p>
-          <p style="font-size:16px;font-weight:800;color:#B71C1C;margin:2px 0;">₺${totalExpense.toLocaleString('tr-TR',{minimumFractionDigits:2})}</p>
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px;">
-        <div class="card p2" style="text-align:center;">
-          <p style="font-size:9px;color:#666;margin:0;">KDV (%10)</p>
-          <p style="font-size:13px;font-weight:700;color:#E65100;margin:2px 0;">₺${totalKDV.toLocaleString('tr-TR',{minimumFractionDigits:2})}</p>
-        </div>
-        <div class="card p2" style="text-align:center;">
-          <p style="font-size:9px;color:#666;margin:0;">Stopaj (%20)</p>
-          <p style="font-size:13px;font-weight:700;color:#1565C0;margin:2px 0;">₺${totalStopaj.toLocaleString('tr-TR',{minimumFractionDigits:2})}</p>
-        </div>
-        <div class="card p2" style="text-align:center;background:${profit>=0?'#E3F2FD':'#FFF3E0'};">
-          <p style="font-size:9px;color:#666;margin:0;">${profit>=0?'NET KÂR':'ZARAR'}</p>
-          <p style="font-size:13px;font-weight:700;color:${profit>=0?'#0D47A1':'#BF360C'};margin:2px 0;">₺${Math.abs(profit).toLocaleString('tr-TR',{minimumFractionDigits:2})}</p>
-        </div>
-      </div>
-
-      <!-- Yıllık Vergi Özeti -->
-      <div class="card p3 mb3" style="background:linear-gradient(135deg,#FFF8E1,#FFECB3);border:1px solid #FFD54F;">
-        <p style="font-size:11px;font-weight:700;color:#E65100;margin:0 0 4px;">📊 YILLIK VERGİ TAHMİNİ (${yearStr})</p>
-        <div style="display:flex;justify-content:space-between;font-size:12px;">
-          <span>Yıllık Gelir: <b>₺${yearIncome.toLocaleString('tr-TR')}</b></span>
-          <span>Gider: <b>₺${yearExpense.toLocaleString('tr-TR')}</b></span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:4px;">
-          <span>Net Kâr: <b style="color:${yearProfit>=0?'#2E7D32':'#C62828'};">₺${yearProfit.toLocaleString('tr-TR')}</b></span>
-          <span>Tahmini GV: <b style="color:#E65100;">₺${vergi.toLocaleString('tr-TR',{maximumFractionDigits:0})}</b></span>
-        </div>
-      </div>
-
-      <!-- POS / Ödeme Al -->
-      <div class="card p4 mb3" style="background:linear-gradient(135deg,#1A237E,#283593);color:white;border:none;">
-        <p style="font-size:14px;font-weight:700;margin:0 0 8px;">💳 POS - Ödeme Al</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <input class="input" id="pos-desc" placeholder="Açıklama / Hasta" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);" />
-          <input class="input" id="pos-amount" type="number" placeholder="Tutar (₺)" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);" />
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;">
-          <select class="input" id="pos-category" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;">
-            <option>Muayene</option><option>Dolgu</option><option>Kanal Tedavisi</option><option>İmplant</option><option>Zirkonyum</option><option>Beyazlatma</option><option>Ortodonti</option><option>Protez</option><option>Diş Taşı Temizliği</option><option>Diğer</option>
-          </select>
-          <select class="input" id="pos-payment" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;">
-            <option>Kredi Kartı</option><option>Temassız</option><option>Karekod</option><option>Nakit</option><option>Havale/EFT</option>
-          </select>
-          <select class="input" id="pos-patient-type" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;">
-            <option value="kisi">Şahıs (Stopaj Yok)</option><option value="mukellef">Vergi Mükellefi (Stopaj %20)</option>
-          </select>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-          <input class="input" id="pos-firm" placeholder="Firma (isteğe bağlı)" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;" />
-          <input class="input" id="pos-tc" placeholder="TC / Vergi No (isteğe bağlı)" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;" />
-        </div>
-        <button class="btn-primary" style="margin-top:10px;background:linear-gradient(135deg,#4CAF50,#66BB6A);font-size:15px;font-weight:700;" data-action="pos-pay">💳 Ödeme Al & Fatura Kes</button>
-        <p style="font-size:10px;margin:6px 0 0;opacity:0.7;">Fatura No: ${nextInvoiceNo} | KDV: %10 | Otomatik vergi hesaplama</p>
-      </div>
-
-      <!-- Gider Ekle -->
-      <div class="card p4 mb3">
-        <p style="font-size:13px;font-weight:700;color:var(--bad);margin:0 0 8px;">📉 Gider Ekle</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <input class="input" id="acc-exp-desc" placeholder="Açıklama (firma, detay)" style="font-size:12px;" />
-          <input class="input" id="acc-exp-amount" type="number" placeholder="Tutar (₺)" />
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;">
-          <select class="input" id="acc-exp-cat" style="font-size:11px;">
-            <option>Kira</option><option>Personel Maaş</option><option>SGK Primi</option><option>Malzeme</option><option>Vergi</option><option>Damga Vergisi</option><option>Sigorta</option><option>Elektrik/Su/İnternet</option><option>Cihaz Bakım</option><option>Muhasebeci</option><option>Bağ-Kur</option><option>Depozito</option><option>İade</option><option>Diğer</option>
-          </select>
-          <input class="input" id="acc-exp-firm" placeholder="Firma" style="font-size:11px;" />
-          <input class="input" id="acc-exp-invoice" placeholder="Fatura No" style="font-size:11px;" />
-        </div>
-        <div style="margin-top:8px;">
-          <label style="font-size:11px;display:flex;align-items:center;gap:6px;">
-            <input type="checkbox" id="acc-exp-stopaj" /> Kira ödemesi (Stopaj %20 otomatik)
-          </label>
-        </div>
-        <button class="btn-primary" style="margin-top:10px;background:var(--bad);" data-action="acc-add-expense">📉 Gider Kaydet</button>
-      </div>
-
-      <!-- Son İşlemler -->
-      <div class="card p4 mb3">
-        <p style="font-size:13px;font-weight:700;margin:0 0 10px;">📋 Son İşlemler (${recentTx.length})</p>
-        ${recentTx.length === 0 ? '<p class="footnote">Henüz kayıt yok.</p>' : recentTx.map(tx => {
-          const kdv = tx.kdv ? parseFloat(tx.kdv) : 0;
-          const stopaj = tx.stopaj ? parseFloat(tx.stopaj) : 0;
-          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">' +
-            '<div style="flex:1;">' +
-              '<p style="font-size:12px;margin:0;font-weight:600;">' + (tx.txType==='income'?'💰':'📉') + ' ' + escapeHtml(tx.description||'') + '</p>' +
-              '<p style="font-size:10px;color:var(--muted);margin:2px 0 0;">' + escapeHtml(tx.category||'') + (tx.firm ? ' · '+escapeHtml(tx.firm) : '') + ' · ' + tx.date + (tx.invoiceNo ? ' · F:'+escapeHtml(tx.invoiceNo) : '') + '</p>' +
-              (kdv || stopaj ? '<p style="font-size:9px;color:#888;margin:1px 0 0;">KDV: ₺'+kdv.toFixed(2)+' | Stopaj: ₺'+stopaj.toFixed(2)+'</p>' : '') +
-            '</div>' +
-            '<div style="text-align:right;display:flex;align-items:center;gap:6px;">' +
-              '<p style="font-size:13px;font-weight:700;color:' + (tx.txType==='income'?'#2E7D32':'#C62828') + ';margin:0;">' + (tx.txType==='income'?'+':'-') + '₺' + (parseFloat(tx.amount)||0).toLocaleString('tr-TR') + '</p>' +
-              '<button data-action="acc-delete" data-id="' + tx.id + '" data-type="' + tx.txType + '" style="background:#FFEBEE;border:none;border-radius:6px;padding:4px 6px;cursor:pointer;font-size:10px;color:#C62828;">🗑️</button>' +
-            '</div>' +
-          '</div>';
-        }).join('')}
-      </div>
-
-      <!-- Aylık Vergi Detayı -->
-      <div class="card p4 mb3">
-        <p style="font-size:13px;font-weight:700;margin:0 0 8px;">🧾 ${monthStr}/${yearStr} Vergi Özeti</p>
-        <table style="width:100%;font-size:11px;border-collapse:collapse;">
-          <tr style="border-bottom:1px solid var(--line);"><td style="padding:4px 0;">Brüt Gelir</td><td style="text-align:right;font-weight:600;">₺${monthIncomes.reduce((s,i)=>s+(parseFloat(i.grossAmount||i.amount)||0),0).toLocaleString('tr-TR',{minimumFractionDigits:2})}</td></tr>
-          <tr style="border-bottom:1px solid var(--line);"><td style="padding:4px 0;">Hesaplanan KDV (%10)</td><td style="text-align:right;color:#E65100;font-weight:600;">₺${totalKDV.toLocaleString('tr-TR',{minimumFractionDigits:2})}</td></tr>
-          <tr style="border-bottom:1px solid var(--line);"><td style="padding:4px 0;">Kesilen Stopaj (%20)</td><td style="text-align:right;color:#1565C0;font-weight:600;">₺${totalStopaj.toLocaleString('tr-TR',{minimumFractionDigits:2})}</td></tr>
-          <tr style="border-bottom:1px solid var(--line);"><td style="padding:4px 0;">Damga Vergisi (‰9.48)</td><td style="text-align:right;color:#7B1FA2;font-weight:600;">₺${(monthIncomes.reduce((s,i)=>s+(parseFloat(i.damga||0)||0),0)).toLocaleString('tr-TR',{minimumFractionDigits:2})}</td></tr>
-          <tr><td style="padding:4px 0;font-weight:700;">Net Kâr/Zarar</td><td style="text-align:right;font-weight:800;color:${profit>=0?'#2E7D32':'#C62828'};">₺${profit.toLocaleString('tr-TR',{minimumFractionDigits:2})}</td></tr>
-        </table>
-      </div>
-
-      <!-- Otomatik Aylık Giderler -->
-      <div class="card p4 mb3" style="background:linear-gradient(135deg,#FFF3E0,#FFE0B2);border:1px solid #FFB74D;">
-        <p style="font-size:14px;font-weight:700;margin:0 0 8px;color:#E65100;">🔄 Otomatik Aylık Giderler</p>
-        <p style="font-size:11px;color:#BF360C;margin:0 0 10px;">Her ayın 5'inde otomatik muhasebeleştirilir. Tutarları ayarlayın.</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-          <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:11px;flex:1;">🏠 Kira</span><input class="input" style="width:80px;padding:4px 6px;font-size:11px;text-align:right;" type="number" value="${(state.autoExpenses||{}).kira||50000}" data-auto="kira" /></div>
-          <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:11px;flex:1;">⚡ Elektrik</span><input class="input" style="width:80px;padding:4px 6px;font-size:11px;text-align:right;" type="number" value="${(state.autoExpenses||{}).elektrik||3000}" data-auto="elektrik" /></div>
-          <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:11px;flex:1;">💧 Su</span><input class="input" style="width:80px;padding:4px 6px;font-size:11px;text-align:right;" type="number" value="${(state.autoExpenses||{}).su||1500}" data-auto="su" /></div>
-          <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:11px;flex:1;">🔥 Doğalgaz</span><input class="input" style="width:80px;padding:4px 6px;font-size:11px;text-align:right;" type="number" value="${(state.autoExpenses||{}).dogalgaz||2000}" data-auto="dogalgaz" /></div>
-          <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:11px;flex:1;">🏥 SGK/Prim</span><input class="input" style="width:80px;padding:4px 6px;font-size:11px;text-align:right;" type="number" value="${(state.autoExpenses||{}).sgk||8000}" data-auto="sgk" /></div>
-          <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:11px;flex:1;">📋 Vergi/Beyanname</span><input class="input" style="width:80px;padding:4px 6px;font-size:11px;text-align:right;" type="number" value="${(state.autoExpenses||{}).vergi||5000}" data-auto="vergi" /></div>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:10px;">
-          <button class="btn-primary" style="flex:1;font-size:12px;background:var(--bad);" data-action="save-auto-expenses">💾 Tutarları Kaydet</button>
-          <button class="btn-primary" style="flex:1;font-size:12px;background:#E65100;" data-action="run-auto-expenses">⚡ Şimdi Uygula (Bu Ay)</button>
-        </div>
-        <p style="font-size:10px;color:#888;margin:6px 0 0;">Toplam aylık otomatik gider: ₺${Object.values(state.autoExpenses||{kira:50000,elektrik:3000,su:1500,dogalgaz:2000,sgk:8000,vergi:5000}).reduce((s,v) => s + (parseFloat(v)||0), 0).toLocaleString('tr-TR')}</p>
-      </div>
-    `;
+    tabContent = renderAccounting();
   }
+
   return `${topbar("Yönetici Paneli","Menüden istediğiniz bölümü seçin.", {back:"home"})}
     <div class="content">
       <div class="admin-tabs">${tabButtons}</div>
@@ -1991,6 +2852,9 @@ document.addEventListener("click", (e) => {
 
   if (!_entrySoundPlayed) { _entrySoundPlayed = true; playSound("login"); }
   else if (action !== "send-chat") playSound("click"); // sendChat kendi tık sesini zaten çalıyor
+
+  // Muhasebe modülü kendi aksiyonlarını yönetir
+  if (typeof accAction === "function" && accAction(action, el)) return;
 
   if (action === "goto") {
     state.screen = el.dataset.screen;
@@ -2704,6 +3568,8 @@ document.addEventListener("click", (e) => {
     const firm = document.getElementById("acc-exp-firm")?.value?.trim() || "";
     const invoiceNo = document.getElementById("acc-exp-invoice")?.value?.trim() || "";
     const isKiraStopaj = document.getElementById("acc-exp-stopaj")?.checked;
+    const expDate = document.getElementById("acc-exp-date")?.value || new Date().toISOString().split('T')[0];
+    const expKdv = parseFloat(document.getElementById("acc-exp-kdv")?.value) || 0;
     if (!desc || !amount) { alert("Açıklama ve tutar gerekli!"); return; }
     if (!state.accounting) state.accounting = { incomes:[], expenses:[], firms:[], bankAccounts:[], invoices:[] };
 
@@ -2711,15 +3577,15 @@ document.addEventListener("click", (e) => {
     let stopaj = 0;
     let grossAmount = amount;
     if (isKiraStopaj) {
-      // Kira stopajı: Brüt × %20
       grossAmount = amount;
       stopaj = grossAmount * 0.20;
     }
 
     state.accounting.expenses.push({
       id: "exp_" + Date.now(), description: desc, amount: amount, grossAmount: grossAmount,
-      category: category, firm: firm, date: new Date().toISOString().split('T')[0],
+      category: category, firm: firm, date: expDate,
       invoiceNo: invoiceNo, stopaj: stopaj, isKiraStopaj: isKiraStopaj,
+      kdv: expKdv,
       createdAt: new Date().toISOString()
     });
     localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
@@ -2733,9 +3599,9 @@ document.addEventListener("click", (e) => {
     if (!confirm("Bu kaydı silmek istediğinize emin misiniz?")) return;
     if (!state.accounting) return;
     if (type === "income") {
-      state.accounting.incomes = (state.accounting.incomes||[]).filter(i => i.id !== id);
-      // İlgili faturayı da sil
+      // Önce silinecek kaydı bul (filtreden ÖNCE — yoksa fatura hiç temizlenmiyordu)
       const deletedIncome = (state.accounting.incomes||[]).find(i => i.id === id);
+      state.accounting.incomes = (state.accounting.incomes||[]).filter(i => i.id !== id);
       if (deletedIncome && deletedIncome.invoiceNo) {
         state.accounting.invoices = (state.accounting.invoices||[]).filter(inv => inv.no !== deletedIncome.invoiceNo);
       }
@@ -3183,7 +4049,9 @@ function saveAccountingToFirebase() {
       accounting: state.accounting,
       treatmentPrices: state.treatmentPrices,
       autoExpenses: state.autoExpenses,
-      treatments: state.treatments || []
+      treatments: state.treatments || [],
+      personnel: state.personnel || [],
+      sgkSettings: state.sgkSettings || null
     }).catch(() => {});
   }
 }
@@ -3349,6 +4217,8 @@ function startAdminSubscriptions() {
         if (data.treatmentPrices) state.treatmentPrices = data.treatmentPrices;
         if (data.autoExpenses) state.autoExpenses = data.autoExpenses;
         if (data.treatments) state.treatments = data.treatments;
+        if (data.personnel) { state.personnel = data.personnel; localStorage.setItem("nurdis_personnel", JSON.stringify(state.personnel)); }
+        if (data.sgkSettings) { state.sgkSettings = data.sgkSettings; localStorage.setItem("nurdis_sgk_settings", JSON.stringify(state.sgkSettings)); }
         localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_treatment_prices", JSON.stringify(state.treatmentPrices)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_auto_expenses", JSON.stringify(state.autoExpenses)); saveAccountingToFirebase();
@@ -3838,8 +4708,11 @@ function initSmile() {
   const retryBtn = document.getElementById("smile-retry");
   const status = document.getElementById("smile-status");
   
+  // Sayfa artık iframe tabanlı; eski form elemanları yoksa sessizce çık.
+  if (!upload || !fileInput || !img) return;
+
   let imageBase64 = null;
-  
+
   upload.onclick = () => fileInput.click();
   
   fileInput.onchange = (e) => {
