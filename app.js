@@ -320,6 +320,8 @@ let state = {
   randevuDonem: 30,
   verimDonem: 30,
   hhTab: "kontrol",
+  hhSablonAcik: false,
+  mesajSablon: null,
   hhAyar: null,
   bonusAyar: null,
   randevuAyar: null,
@@ -405,6 +407,7 @@ function loadAll() {
   try { state.randevuAyar = JSON.parse(localStorage.getItem("nurdis_randevu_ayar") || "null"); } catch(e){ state.randevuAyar = null; }
   try { state.bayatAyar = JSON.parse(localStorage.getItem("nurdis_bayat_ayar") || "null"); } catch(e){ state.bayatAyar = null; }
   try { state.hhAyar = JSON.parse(localStorage.getItem("nurdis_hh_ayar") || "null"); } catch(e){ state.hhAyar = null; }
+  try { state.mesajSablon = JSON.parse(localStorage.getItem("nurdis_mesaj_sablon") || "null"); } catch(e){ state.mesajSablon = null; }
   try { state.bonusAyar = JSON.parse(localStorage.getItem("nurdis_bonus_ayar") || "null"); } catch(e){ state.bonusAyar = null; }
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}
@@ -2943,6 +2946,53 @@ function yakinRandevular(gunAralik) {
   }).sort((a, b) => new Date(a.date) - new Date(b.date));
 }
 
+/* ---------------- MESAJ ŞABLONLARI ---------------- */
+
+const MESAJ_SABLON = {
+  kontrol:
+`İyi günler Sayın {ad}
+
+Nur Diş & Dental Klinik'ten yazıyoruz. Son işleminiz ({islem}) üzerinden {ay} ay geçti.
+
+Ücretsiz 6 aylık rutin kontrol için sizleri kliniğimize bekliyoruz.
+
+Randevu için bize dönüş sağlayın.`,
+
+  kayip:
+`İyi günler Sayın {ad}
+
+Nur Diş & Dental Klinik'ten yazıyoruz. Sizi {ay} aydır kliniğimizde göremedik.
+
+Ağız ve diş sağlığınız için ücretsiz kontrole bekliyoruz.
+
+Randevu için bize dönüş sağlayın.`,
+
+  randevu:
+`İyi günler Sayın {ad}
+
+{gun} saat {saat} randevunuzu hatırlatmak isteriz.
+
+Nur Diş & Dental Klinik
+Randevu için bize dönüş sağlayın.`
+};
+
+/* Kullanıcı şablonu varsa onu, yoksa varsayılanı döndür */
+function mesajSablonu(tip) {
+  const ozel = (state.mesajSablon || {})[tip];
+  return (ozel && ozel.trim()) ? ozel : MESAJ_SABLON[tip];
+}
+
+/* Şablonu değişkenlerle doldur */
+function mesajDoldur(tip, veri) {
+  let m = mesajSablonu(tip);
+  m = m.replace(/\{ad\}/g, veri.ad || "")
+       .replace(/\{islem\}/g, veri.islem || "tedavi")
+       .replace(/\{ay\}/g, veri.ay != null ? veri.ay : "")
+       .replace(/\{gun\}/g, veri.gun || "")
+       .replace(/\{saat\}/g, veri.saat || "");
+  return m;
+}
+
 function renderAccHastaHatirlatma() {
   const altTab = state.hhTab || "kontrol";
   const ayEsik = accNum((state.hhAyar || {}).ay) || 6;
@@ -2959,7 +3009,11 @@ function renderAccHastaHatirlatma() {
 
   if (altTab === "kontrol") {
     icerik = kontrol.length ? kontrol.map(h => {
-      const mesaj = `Sayın ${h.ad},\n\nNur Diş & Dental Klinik'ten yazıyoruz.\nSon işleminiz (${h.sonIslemAdi || "tedavi"}) üzerinden ${Math.floor(h.ayFark)} ay geçti.\n\n6 aylık rutin kontrol zamanınız geldi. Ağız ve diş sağlığınız için muayene olmanızı öneririz.\n\nRandevu için: 0505 105 03 02\nMardin Kızıltepe TOKİ`;
+      const mesaj = mesajDoldur("kontrol", {
+        ad: h.ad,
+        islem: h.sonIslemAdi || "tedavi",
+        ay: Math.floor(h.ayFark)
+      });
       return `<div class="card p3 mb2">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
           <div style="flex:1;min-width:0;">
@@ -2990,7 +3044,11 @@ function renderAccHastaHatirlatma() {
     icerik = randevu.length ? randevu.map(a => {
       const d = new Date(a.date);
       const gunAdi = d.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" });
-      const mesaj = `Sayın ${a.name},\n\n${gunAdi} saat ${a.time} randevunuzu hatırlatmak isteriz.\n\nNur Diş & Dental Klinik\nMardin Kızıltepe TOKİ\n0505 105 03 02`;
+      const mesaj = mesajDoldur("randevu", {
+        ad: a.name,
+        gun: gunAdi,
+        saat: a.time || ""
+      });
       return `<div class="card p3 mb2">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
           <div style="flex:1;min-width:0;">
@@ -3008,7 +3066,10 @@ function renderAccHastaHatirlatma() {
 
   if (altTab === "kayip") {
     icerik = kayip.length ? kayip.map(h => {
-      const mesaj = `Sayın ${h.ad},\n\nNur Diş & Dental Klinik'ten yazıyoruz.\n${Math.floor(h.gunFark / 30)} aydır sizi göremedik. Ağız sağlığınız için kontrol olmanızı öneririz.\n\nSize özel muayene randevusu: 0505 105 03 02`;
+      const mesaj = mesajDoldur("kayip", {
+        ad: h.ad,
+        ay: Math.floor(h.gunFark / 30)
+      });
       return `<div class="card p3 mb2" style="border-left:3px solid #C62828;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
           <div style="flex:1;min-width:0;">
@@ -3047,6 +3108,24 @@ function renderAccHastaHatirlatma() {
       ${chip("kontrol", "Kontrol Zamanı", kontrol.length)}
       ${chip("randevu", "Yaklaşan Randevu", randevu.length)}
       ${chip("kayip", "Kayıp Hasta", kayip.length)}
+    </div>
+
+    <!-- MESAJ ŞABLONU DÜZENLEME -->
+    <div class="card p4 mb3" style="background:#F1F8E9;border:1px solid #C5E1A5;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <p style="font-size:12px;font-weight:700;color:#33691E;margin:0;">✏️ Hazır Mesaj Metni</p>
+        <button data-action="hh-sablon-ac" style="background:#7CB342;border:none;border-radius:7px;color:#fff;padding:6px 11px;font-size:10.5px;font-weight:700;cursor:pointer;">${state.hhSablonAcik ? "Kapat" : "Düzenle"}</button>
+      </div>
+      ${state.hhSablonAcik ? `
+      <p style="font-size:9.5px;color:#558B2F;margin:0 0 8px;line-height:1.5;">
+        Değişkenler: <b>{ad}</b> hasta adı · <b>{islem}</b> tedavi · <b>{ay}</b> geçen ay
+      </p>
+      <textarea id="hh-sablon" style="width:100%;min-height:170px;font-size:11px;padding:9px;border:1px solid #C5E1A5;border-radius:8px;font-family:inherit;line-height:1.5;resize:vertical;">${escapeHtml(mesajSablonu(state.hhTab === "kayip" ? "kayip" : state.hhTab === "randevu" ? "randevu" : "kontrol"))}</textarea>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <button class="btn-primary" style="background:#558B2F;font-size:11px;padding:10px;flex:1;" data-action="hh-sablon-kaydet" data-tip="${state.hhTab === "kayip" ? "kayip" : state.hhTab === "randevu" ? "randevu" : "kontrol"}">💾 Kaydet</button>
+        <button class="btn-primary" style="background:#9E9E9E;font-size:11px;padding:10px;flex:1;" data-action="hh-sablon-sifirla" data-tip="${state.hhTab === "kayip" ? "kayip" : state.hhTab === "randevu" ? "randevu" : "kontrol"}">↺ Varsayılan</button>
+      </div>
+      ` : `<div style="background:#fff;border-radius:8px;padding:9px;font-size:10.5px;color:#33691E;line-height:1.55;white-space:pre-wrap;min-height:40px;">${escapeHtml(mesajSablonu(state.hhTab === "kayip" ? "kayip" : state.hhTab === "randevu" ? "randevu" : "kontrol").replace(/\{ad\}/g, "Ayşe K.").replace(/\{islem\}/g, "Dolgu").replace(/\{ay\}/g, "8").replace(/\{gun\}/g, "5 Kasım Çarşamba").replace(/\{saat\}/g, "14:00"))}</div>`}
     </div>
 
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
@@ -6154,6 +6233,29 @@ function accAction(action, el) {
 
   /* ---- HASTA HATIRLATMA ---- */
   if (A("hh-tab")) { state.hhTab = el.dataset.tab; render(); return true; }
+  if (A("hh-sablon-ac")) { state.hhSablonAcik = !state.hhSablonAcik; render(); return true; }
+  if (A("hh-sablon-kaydet")) {
+    const tip = el.dataset.tip;
+    const metin = document.getElementById("hh-sablon")?.value || "";
+    if (!state.mesajSablon) state.mesajSablon = {};
+    state.mesajSablon[tip] = metin.trim();
+    localStorage.setItem("nurdis_mesaj_sablon", JSON.stringify(state.mesajSablon));
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    state.hhSablonAcik = false;
+    alert("✅ Mesaj şablonu kaydedildi.\n\nArtık WhatsApp butonları bu metni kullanacak.");
+    render();
+    return true;
+  }
+  if (A("hh-sablon-sifirla")) {
+    const tip = el.dataset.tip;
+    if (!confirm("Mesajı varsayılana döndürmek istiyor musunuz?")) return true;
+    if (state.mesajSablon) delete state.mesajSablon[tip];
+    localStorage.setItem("nurdis_mesaj_sablon", JSON.stringify(state.mesajSablon || {}));
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    alert("✅ Varsayılan mesaj geri yüklendi.");
+    render();
+    return true;
+  }
   if (A("hh-esik")) {
     state.hhAyar = { ay: parseInt(el.dataset.ay) };
     localStorage.setItem("nurdis_hh_ayar", JSON.stringify(state.hhAyar));
@@ -8568,6 +8670,7 @@ function saveAccountingToFirebase() {
       tedaviMalzeme: state.tedaviMalzeme || {},
       kampanyalar: state.kampanyalar || [],
       hhAyar: state.hhAyar || null,
+      mesajSablon: state.mesajSablon || null,
       bonusAyar: state.bonusAyar || null
     }).catch(() => {});
   }
@@ -8744,6 +8847,7 @@ function startAdminSubscriptions() {
         if (data.tedaviMalzeme) { state.tedaviMalzeme = data.tedaviMalzeme; localStorage.setItem("nurdis_tedavi_malzeme", JSON.stringify(state.tedaviMalzeme)); }
         if (data.kampanyalar) { state.kampanyalar = data.kampanyalar; localStorage.setItem("nurdis_kampanyalar", JSON.stringify(state.kampanyalar)); }
         if (data.hhAyar) { state.hhAyar = data.hhAyar; localStorage.setItem("nurdis_hh_ayar", JSON.stringify(state.hhAyar)); }
+        if (data.mesajSablon) { state.mesajSablon = data.mesajSablon; localStorage.setItem("nurdis_mesaj_sablon", JSON.stringify(state.mesajSablon)); }
         if (data.bonusAyar) { state.bonusAyar = data.bonusAyar; localStorage.setItem("nurdis_bonus_ayar", JSON.stringify(state.bonusAyar)); }
         localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_treatment_prices", JSON.stringify(state.treatmentPrices)); saveAccountingToFirebase();
