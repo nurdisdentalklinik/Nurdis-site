@@ -941,6 +941,7 @@ function renderAccounting() {
     { id: "prim", label: "🎁 Prim / Bonus" },
     { id: "rwhatir", label: "⏰ Randevu Hatırlat" },
     { id: "anket", label: "⭐ Memnuniyet Anketi" },
+    { id: "yedek", label: "💾 Yedek" },
     { id: "cari", label: "💳 Cari Hesap" },
     { id: "demirbas", label: "🏗️ Amortisman" },
     { id: "bordro", label: "📄 Bordro" },
@@ -973,6 +974,7 @@ function renderAccounting() {
   else if (tab === "prim") body = renderAccPrim();
   else if (tab === "rwhatir") body = renderAccRandevuHatirlatma();
   else if (tab === "anket") body = renderAccAnket();
+  else if (tab === "yedek") body = renderAccYedek();
   else if (tab === "cari") body = renderAccCari();
   else if (tab === "demirbas") body = renderAccDemirbas();
   else if (tab === "bordro") body = renderAccBordro();
@@ -1592,6 +1594,9 @@ function accCsvDownload(filename, rows) {
 /* ---------------- AKSİYON YÖNLENDİRİCİ ---------------- */
 
 function accAction(action, el) {
+  // Yedekleme aksiyonları
+  if (typeof yedekAction === "function" && yedekAction(action, el)) return true;
+
   const A = (name) => action === name;
 
   if (A("acc-tab")) {

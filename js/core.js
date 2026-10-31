@@ -357,6 +357,7 @@ let state = {
   anketTab: "bekleyen",
   anketSablon: null,
   hatirlatmaLog: [],
+  yedekGecmis: [],
   hhSablonAcik: false,
   mesajSablon: null,
   hhAyar: null,
@@ -413,6 +414,16 @@ let state = {
 };
 
 /* ---------------- STORAGE ---------------- */
+
+/* ⚠️ ÖNEMLİ: loadAll() uygulama açılışında BİR KEZ çağrılmalı.
+   Bu çağrı olmadan localStorage'daki veriler state'e yüklenmez ve
+   offline açılışta tüm veriler kaybolmuş gibi görünür. */
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => { try { loadAll(); } catch (e) { console.error("loadAll hatası:", e); } });
+} else {
+  try { loadAll(); } catch (e) { console.error("loadAll hatası:", e); }
+}
+
 /* localStorage burada yalnızca Firebase bağlantısı kurulana kadar (ya da
    internetsizken) geçici/offline yedek olarak kullanılır. Firebase hazır
    olduğunda reviews/products/appointments/orders artık Firestore'dan
@@ -450,6 +461,7 @@ function loadAll() {
   try { state.anketler = JSON.parse(localStorage.getItem("nurdis_anketler") || "[]"); } catch(e){ state.anketler = []; }
   try { state.anketSablon = JSON.parse(localStorage.getItem("nurdis_anket_sablon") || "null"); } catch(e){ state.anketSablon = null; }
   try { state.hatirlatmaLog = JSON.parse(localStorage.getItem("nurdis_hatirlatma_log") || "[]"); } catch(e){ state.hatirlatmaLog = []; }
+  try { state.yedekGecmis = JSON.parse(localStorage.getItem("nurdis_yedek_gecmis") || "[]"); } catch(e){ state.yedekGecmis = []; }
   try { state.bonusAyar = JSON.parse(localStorage.getItem("nurdis_bonus_ayar") || "null"); } catch(e){ state.bonusAyar = null; }
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}

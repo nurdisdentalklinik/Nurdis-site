@@ -174,7 +174,7 @@ function checkBadges() {
 // Firebase'e accounting verilerini kaydet
 function saveAccountingToFirebase() {
   if (window.fb && window.fb.saveAccountingData) {
-    window.fb.saveAccountingData({
+    return window.fb.saveAccountingData({
       accounting: state.accounting,
       treatmentPrices: state.treatmentPrices,
       autoExpenses: state.autoExpenses,
@@ -195,8 +195,9 @@ function saveAccountingToFirebase() {
       anketler: (state.anketler || []).slice(0, 1500),
       anketSablon: state.anketSablon || null,
       bonusAyar: state.bonusAyar || null
-    }).catch(() => {});
+    });
   }
+  return Promise.resolve();
 }
 
 function wireFirebase() {
@@ -356,6 +357,26 @@ function startAdminSubscriptions() {
     window.fb.loadAccountingData().then(docSnap => {
       if (docSnap.exists()) {
         const data = docSnap.data();
+
+        /* KORUMA: Buluttaki veri tamamen boşsa ve yerelde veri varsa, yerel veriyi koru.
+           (Geri yükleme sonrası bulut henüz güncellenmemişse veri kaybını önler) */
+        const bulutBos = !(data.accounting && ((data.accounting.incomes||[]).length || (data.accounting.expenses||[]).length))
+                       && !(data.personnel && data.personnel.length)
+                       && !(data.stok && data.stok.length);
+        const yerelVar = (() => {
+          try {
+            const a = JSON.parse(localStorage.getItem("nurdis_accounting") || "{}");
+            const p = JSON.parse(localStorage.getItem("nurdis_personnel") || "[]");
+            return ((a.incomes||[]).length + (a.expenses||[]).length) > 0 || p.length > 0;
+          } catch (e) { return false; }
+        })();
+
+        if (bulutBos && yerelVar) {
+          console.warn("Bulut boş, yerel veri korunuyor. Yerel veri buluta gönderiliyor.");
+          try { saveAccountingToFirebase(); } catch (e) {}
+          return;   // yerel veriyi EZME
+        }
+
         if (data.accounting) state.accounting = data.accounting;
         if (data.treatmentPrices) state.treatmentPrices = data.treatmentPrices;
         if (data.autoExpenses) state.autoExpenses = data.autoExpenses;
@@ -466,6 +487,11 @@ const hash = window.location.hash.replace("#","");
 if (validScreens.includes(hash)) state.screen = hash;
 history.replaceState({ screen: state.screen }, "", "#" + state.screen);
 render();
+
+/* Otomatik yedek hatırlatması — günde bir kez, 5 sn sonra */
+setTimeout(() => {
+  try { if (typeof yedekHatirlatmaKontrol === "function") yedekHatirlatmaKontrol(); } catch (e) {}
+}, 5000);
 
 /* Android/tarayıcı GERİ tuşu: uygulamadan çıkmak yerine önceki ekrana dönsün.
    Zaten "home" ekranındaysak ve geri basılırsa, tarayıcının/uygulamanın

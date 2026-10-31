@@ -1,10 +1,10 @@
 /* Sürüm numarasını HER değişiklikte artır — eski önbellek otomatik silinir. */
-const CACHE_VERSION = "v15";
+const CACHE_VERSION = "v16";
 const CACHE_NAME = "nurdis-" + CACHE_VERSION;
 const ASSETS = [
   "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png",
   "./js/core.js", "./js/muhasebe.js", "./js/stok.js", "./js/crm.js", "./js/randevu.js",
-  "./js/anket.js", "./js/prim.js", "./js/mali.js", "./js/ekran.js", "./js/medya.js", "./js/firebase.js",
+  "./js/anket.js", "./js/prim.js", "./js/mali.js", "./js/ekran.js", "./js/medya.js", "./js/yedek.js", "./js/firebase.js",
   "./doctor-photo.jpg", "./clinic-hero.jpg", "./whitening-before-after.jpg",
   "./treatment-process.jpg", "./info-toothache.jpg",
   "./screenshot-1-home.png", "./screenshot-2-services.png", "./screenshot-3-booking.png"

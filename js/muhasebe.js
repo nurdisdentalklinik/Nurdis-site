@@ -696,6 +696,17 @@ function accUyarilar() {
     });
   }
 
+  /* 8.7) Yedek uyarısı */
+  const yedekGun = (typeof yedekYasGun === "function") ? yedekYasGun() : null;
+  if (yedekGun === null || yedekGun >= 7) {
+    u.push({
+      seviye: yedekGun === null ? "kritik" : "uyari",
+      baslik: yedekGun === null ? "Hiç yedek almadınız" : "Son yedek " + yedekGun + " gün önce",
+      mesaj: "Veri kaybına karşı haftada bir yedek alın.",
+      link: "yedek", linkAd: "Yedek Al →"
+    });
+  }
+
   /* 9) Bu ay hiç kayıt yok */
   const buAyKayit = (state.accounting.incomes || []).filter(x => {
     const d = new Date(x.date); return d.getFullYear() === yil && d.getMonth() + 1 === ay;
