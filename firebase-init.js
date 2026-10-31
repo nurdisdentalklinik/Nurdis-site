@@ -255,6 +255,13 @@ window.fb = {
   subscribeOrders: (cb) => subscribe("orders", cb),
   addOrder: (data) => addItem("orders", data),
   addMessage: (data) => addItem("messages", data),
+  // Hasta portalı
+  subscribePatientFiles: (cb) => subscribe("patient_files", cb, 200),
+  addPatientFile: (data) => addItem("patient_files", data),
+  deletePatientFile: (id) => deleteItem("patient_files", id),
+  subscribePatientNotes: (cb) => subscribe("patient_notes", cb, 200),
+  addPatientNote: (data) => addItem("patient_notes", data),
+  deletePatientNote: (id) => deleteItem("patient_notes", id),
   subscribeServiceVideos: (cb) => subscribeMap("service_videos", cb),
   setServiceVideo: (id, url) => setMapValue("service_videos", id, url),
   subscribeProductImages: (cb) => subscribeMap("product_images", cb),

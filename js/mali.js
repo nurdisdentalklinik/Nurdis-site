@@ -2694,6 +2694,7 @@ function renderAdminPanel() {
     { id: "treatments", label: "🦷 Tedaviler", count: state.treatments.length },
     { id: "tips", label: "💡 İpuçları", count: state.healthTips.length },
     { id: "announcements", label: "📢 Duyurular", count: state.announcements.length },
+    { id: "portal", label: "🏥 Hasta Portalı", count: (state.patientNotes || []).filter(n => !n.doktorYanit).length + (state.patientFiles || []).filter(f => !f.doktorGordu).length },
     { id: "accounting", label: "💰 Muhasebe", count: 0 }
   ];
 
@@ -2975,6 +2976,10 @@ function renderAdminPanel() {
       <p class="section-label">Mevcut Duyurular (${(state.announcements || []).length})</p>
       <div class="mb4">${annRows}</div>
     `;
+  }
+
+  if (state.adminTab === "portal") {
+    tabContent = renderAccPortal();
   }
 
   if (state.adminTab === "accounting") {

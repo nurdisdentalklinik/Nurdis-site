@@ -298,6 +298,20 @@ function wireFirebase() {
     render();
   });
 
+  // Hasta portalı — dosyalar ve notlar
+  if (window.fb.subscribePatientFiles) {
+    window.fb.subscribePatientFiles((items) => {
+      state.patientFiles = items;
+      render();
+    });
+  }
+  if (window.fb.subscribePatientNotes) {
+    window.fb.subscribePatientNotes((items) => {
+      state.patientNotes = items;
+      render();
+    });
+  }
+
   // Sağlık ipuçlarını yükle
   window.fb.subscribeHealthTips((tips) => {
     state.healthTips = tips;
@@ -481,7 +495,7 @@ const SCREEN_MAP = {
   address: renderAddress, contact: renderContact, info: renderInfo, chatbot: renderChatbot,
   "admin-login": renderAdminLogin, "admin-panel": renderAdminPanel, account: renderAccount,
   "profile-edit": renderProfileEdit, "brushing-video": renderBrushingVideo, "family-add": renderFamilyAdd,
-  settings: renderSettings, kvkk: renderKvkk,
+  settings: renderSettings, kvkk: renderKvkk, portal: renderPortal,
 };
 
 const validScreens = Object.keys(SCREEN_MAP);

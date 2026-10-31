@@ -173,6 +173,7 @@ const MORE_ITEMS = [
   { id:"contact", label:"İletişim", img:"icon-contact.png" },
   { id:"info", label:"Diş Sağlığı Bilgileri", img:"icon-info.png" },
   { id:"admin-login", label:"Yönetici Girişi", img:"icon-admin.png" },
+  { id:"portal", label:"Hasta Portalı", img:"icon-account.png" },
   { id:"kvkk", label:"Gizlilik & KVKK", img:"icon-admin.png" },
   { id:"settings", label:"Ayarlar", img:"icon-settings.png" },
 ];
@@ -364,6 +365,10 @@ let state = {
   mesajSaatAyar: null,
   mesajKuyrugu: [],
   stokOtoAktif: true,
+  portalTab: "tedaviler",
+  portalAdminTab: "notlar",
+  patientFiles: [],
+  patientNotes: [],
   hhSablonAcik: false,
   mesajSablon: null,
   hhAyar: null,
@@ -472,6 +477,8 @@ function loadAll() {
   try { state.mesajSaatAyar = JSON.parse(localStorage.getItem("nurdis_mesaj_saat") || "null"); } catch(e){ state.mesajSaatAyar = null; }
   try { state.mesajKuyrugu = JSON.parse(localStorage.getItem("nurdis_mesaj_kuyrugu") || "[]"); } catch(e){ state.mesajKuyrugu = []; }
   try { const so = localStorage.getItem("nurdis_stok_oto"); if (so !== null) state.stokOtoAktif = so === "1"; } catch(e){}
+  try { state.patientFiles = JSON.parse(localStorage.getItem("nurdis_patient_files") || "[]"); } catch(e){ state.patientFiles = []; }
+  try { state.patientNotes = JSON.parse(localStorage.getItem("nurdis_patient_notes") || "[]"); } catch(e){ state.patientNotes = []; }
   try { state.bonusAyar = JSON.parse(localStorage.getItem("nurdis_bonus_ayar") || "null"); } catch(e){ state.bonusAyar = null; }
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}
@@ -940,7 +947,10 @@ function renderAccount() {
 
       <!-- Tedavi Geçmişi -->
       <div class="card p4 mb4">
-        <p class="section-label" style="margin:0 0 12px;">🦷 Tedavi Geçmişim</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 12px;">
+          <p class="section-label" style="margin:0;">🦷 Tedavi Geçmişim</p>
+          <button data-action="goto" data-screen="portal" style="background:#00695C;border:none;border-radius:7px;color:#fff;padding:6px 11px;font-size:10px;font-weight:700;cursor:pointer;">Hasta Portalı →</button>
+        </div>
         ${(() => {
           const email = state.user?.email || "";
           const fullName = ((p.firstName || "") + " " + (p.lastName || "")).trim();
