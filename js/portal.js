@@ -55,6 +55,8 @@ function hastaFaturalari() {
   const adParca = norm(k.ad).split(" ")[0];
 
   return ((state.accounting || {}).incomes || []).filter(x => {
+    // Ödenmemiş (veresiye) kayıtlar hastaya gösterilmez — yalnızca yönetici görür
+    if (x.paid === false) return false;
     const hedef = norm((x.firm || "") + " " + (x.description || ""));
     if (adParca && adParca.length > 2 && hedef.includes(adParca)) return true;
     return false;
@@ -273,11 +275,10 @@ function renderPortal() {
             <div style="flex:1;min-width:0;">
               <p style="font-size:11.5px;font-weight:600;margin:0;">${escapeHtml(f.description || "")}</p>
               <p style="font-size:9.5px;color:var(--muted);margin:2px 0 0;">📅 ${accTarihTR(f.date)}${f.invoiceNo ? " · " + escapeHtml(f.invoiceNo) : ""}</p>
-              <p style="font-size:9.5px;color:#888;margin:2px 0 0;">KDV ${accTL0(f.kdv)} · ${f.paid === false ? "⚠️ Ödenmedi" : "✓ Ödendi"}</p>
+              <p style="font-size:9.5px;color:#888;margin:2px 0 0;">KDV dahil · ${accTarihTR(f.date)}</p>
             </div>
             <div style="text-align:right;flex-shrink:0;">
               <p style="font-size:11.5px;font-weight:700;margin:0;color:#00695C;">${accTL0(f.grossAmount || f.amount)}</p>
-              ${f.paid === false ? `<p style="font-size:9px;color:#C62828;margin:2px 0 0;font-weight:700;">Borç</p>` : ""}
             </div>
           </div>
         </div>`).join("")}` : ""}
