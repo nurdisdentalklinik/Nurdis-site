@@ -361,6 +361,9 @@ let state = {
   yedekGecmis: [],
   kvkkTab: "aydinlatma",
   kvkkTalepler: [],
+  mesajSaatAyar: null,
+  mesajKuyrugu: [],
+  stokOtoAktif: true,
   hhSablonAcik: false,
   mesajSablon: null,
   hhAyar: null,
@@ -466,6 +469,9 @@ function loadAll() {
   try { state.hatirlatmaLog = JSON.parse(localStorage.getItem("nurdis_hatirlatma_log") || "[]"); } catch(e){ state.hatirlatmaLog = []; }
   try { state.yedekGecmis = JSON.parse(localStorage.getItem("nurdis_yedek_gecmis") || "[]"); } catch(e){ state.yedekGecmis = []; }
   try { state.kvkkTalepler = JSON.parse(localStorage.getItem("nurdis_kvkk_talepler") || "[]"); } catch(e){ state.kvkkTalepler = []; }
+  try { state.mesajSaatAyar = JSON.parse(localStorage.getItem("nurdis_mesaj_saat") || "null"); } catch(e){ state.mesajSaatAyar = null; }
+  try { state.mesajKuyrugu = JSON.parse(localStorage.getItem("nurdis_mesaj_kuyrugu") || "[]"); } catch(e){ state.mesajKuyrugu = []; }
+  try { const so = localStorage.getItem("nurdis_stok_oto"); if (so !== null) state.stokOtoAktif = so === "1"; } catch(e){}
   try { state.bonusAyar = JSON.parse(localStorage.getItem("nurdis_bonus_ayar") || "null"); } catch(e){ state.bonusAyar = null; }
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}

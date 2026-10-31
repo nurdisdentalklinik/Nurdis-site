@@ -942,6 +942,7 @@ function renderAccounting() {
     { id: "rwhatir", label: "⏰ Randevu Hatırlat" },
     { id: "anket", label: "⭐ Memnuniyet Anketi" },
     { id: "yedek", label: "💾 Yedek" },
+    { id: "otomasyon", label: "⚙️ Otomasyon" },
     { id: "kvkk", label: "🔒 KVKK" },
     { id: "cari", label: "💳 Cari Hesap" },
     { id: "demirbas", label: "🏗️ Amortisman" },
@@ -976,6 +977,7 @@ function renderAccounting() {
   else if (tab === "rwhatir") body = renderAccRandevuHatirlatma();
   else if (tab === "anket") body = renderAccAnket();
   else if (tab === "yedek") body = renderAccYedek();
+  else if (tab === "otomasyon") body = renderAccOtomasyon();
   else if (tab === "kvkk") body = renderAccKvkk();
   else if (tab === "cari") body = renderAccCari();
   else if (tab === "demirbas") body = renderAccDemirbas();
@@ -1774,8 +1776,97 @@ function accAction(action, el) {
     return true;
   }
 
+  /* ---- RANDEVU MESAJ / KONUM (gece kuralı) ---- */
+  if (A("rv-mesaj")) {
+    const r = (state.appointments || []).find(x => x.id === el.dataset.id);
+    if (!r) return true;
+    const res = guvenliWhatsApp(r.phone, randevuMesaj("onay", r), "Randevu bilgisi — " + r.name);
+    render();
+    return true;
+  }
+  if (A("rv-konum")) {
+    const r = (state.appointments || []).find(x => x.id === el.dataset.id);
+    if (!r) return true;
+    guvenliWhatsApp(r.phone, randevuMesaj("konum", r), "Konum — " + r.name);
+    render();
+    return true;
+  }
+
+  /* ---- OTOMASYON ---- */
+  if (A("otomasyon-saat-kaydet")) {
+    const bas = parseInt(document.getElementById("ms-bas")?.value);
+    const son = parseInt(document.getElementById("ms-son")?.value);
+    const kapali = !!document.getElementById("ms-kapali")?.checked;
+    if (bas < 0 || bas > 23 || son < 0 || son > 23) { alert("Saat 0-23 arası olmalı."); return true; }
+    if (bas >= son) { alert("Başlangıç saati bitişten küçük olmalı."); return true; }
+    state.mesajSaatAyar = { bas, son, kapali };
+    localStorage.setItem("nurdis_mesaj_saat", JSON.stringify(state.mesajSaatAyar));
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    alert("✅ Mesaj saatleri kaydedildi.\n\nGönderim aralığı: " + bas + ":00 – " + son + ":00" + (kapali ? "\n(Kural kapalı)" : ""));
+    render();
+    return true;
+  }
+  if (A("otomasyon-stok-kaydet")) {
+    state.stokOtoAktif = !!document.getElementById("stok-oto")?.checked;
+    localStorage.setItem("nurdis_stok_oto", state.stokOtoAktif ? "1" : "0");
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    alert("✅ Stok otomatik düşüm " + (state.stokOtoAktif ? "AÇIK" : "KAPALI"));
+    render();
+    return true;
+  }
+  if (A("google-link-kaydet")) {
+    const link = (document.getElementById("gy-link")?.value || "").trim();
+    state.konumAyar = Object.assign({}, state.konumAyar || {}, { googleYorum: link });
+    localStorage.setItem("nurdis_konum_ayar", JSON.stringify(state.konumAyar));
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    alert("✅ Google yorum bağlantısı kaydedildi.");
+    render();
+    return true;
+  }
+  if (A("kuyruk-gonder")) {
+    const m2 = (state.mesajKuyrugu || []).find(x => x.id === el.dataset.id);
+    if (!m2) return true;
+    window.open(waLink(m2.veri.tel, m2.veri.mesaj), "_blank");
+    m2.gonderildi = true;
+    localStorage.setItem("nurdis_mesaj_kuyrugu", JSON.stringify(state.mesajKuyrugu));
+    render();
+    return true;
+  }
+  if (A("kuyruk-sil")) {
+    state.mesajKuyrugu = (state.mesajKuyrugu || []).filter(x => x.id !== el.dataset.id);
+    localStorage.setItem("nurdis_mesaj_kuyrugu", JSON.stringify(state.mesajKuyrugu));
+    render();
+    return true;
+  }
+  if (A("kuyruk-hepsi")) {
+    const liste = mesajKuyruguListesi();
+    if (!liste.length) return true;
+    if (!confirm(liste.length + " mesaj gönderilecek. Devam?")) return true;
+    liste.forEach((m2, i) => setTimeout(() => {
+      window.open(waLink(m2.veri.tel, m2.veri.mesaj), "_blank");
+      m2.gonderildi = true;
+      localStorage.setItem("nurdis_mesaj_kuyrugu", JSON.stringify(state.mesajKuyrugu));
+    }, i * 700));
+    setTimeout(() => render(), 1500);
+    return true;
+  }
+
   /* ---- ANKET ---- */
   if (A("anket-tab")) { state.anketTab = el.dataset.tab; render(); return true; }
+
+  if (A("anket-gonder")) {
+    const a = (state.anketler || []).find(x => x.id === el.dataset.id);
+    if (!a) return true;
+    const r = guvenliWhatsApp(a.phone, anketMesaj(a.name), "Memnuniyet anketi");
+    if (r.gonderildi) {
+      a.gonderildi = true;
+      a.gonderimTarihi = new Date().toISOString();
+      anketKaydet();
+      setTimeout(() => { state.anketTab = "yanit"; render(); }, 400);
+    }
+    render();
+    return true;
+  }
 
   if (A("anket-gonderildi")) {
     const a = (state.anketler || []).find(x => x.id === el.dataset.id);
@@ -1795,10 +1886,23 @@ function accAction(action, el) {
     a.yanitTarihi = new Date().toISOString();
     anketKaydet();
     const p = a.puan;
-    if (p <= 3) {
-      // Düşük puan → telafi mesajı öner
+
+    if (p >= 4) {
+      // ⭐ YÜKSEK PUAN → Google yorum daveti
+      if (a.phone && typeof googleYorumMesaji === "function") {
+        if (confirm("🌟 " + p + " yıldız alındı!\n\n" + a.name + " adlı hastaya Google'da yorum bırakması için davet mesajı gönderilsin mi?\n\n(Google yorumları yeni hasta kazandırır)")) {
+          const r = guvenliWhatsApp(a.phone, googleYorumMesaji(a.name), "Google yorum daveti");
+          if (r.gonderildi) {
+            a.googleDavet = true;
+            a.googleDavetTarihi = new Date().toISOString();
+            anketKaydet();
+          }
+        }
+      }
+    } else {
+      // 🔴 DÜŞÜK PUAN → telafi mesajı
       if (a.phone && confirm("Düşük puan (" + p + "⭐) alındı.\n\nHastaya özür/telafi mesajı gönderilsin mi?")) {
-        window.open(waLink(a.phone, anketMesaj(a.name, true)), "_blank");
+        guvenliWhatsApp(a.phone, anketMesaj(a.name, true), "Telafi mesajı");
       }
     }
     render();

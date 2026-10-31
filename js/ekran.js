@@ -623,6 +623,26 @@ document.addEventListener("click", (e) => {
     // Tedavi kaydını Firebase'e ekle
     const treatmentData = { userName, treatmentName, date, notes, amount: grossAmount, paymentMethod: payment, patientType };
 
+    /* STOK OTOMATİK DÜŞÜM — tedaviye tanımlı malzemeler stoktan düşer */
+    let stokMesaji = "";
+    if (state.stokOtoAktif !== false && typeof stokOtomatikDusum === "function") {
+      try {
+        const islemId = "tr_" + Date.now();
+        const sd = stokOtomatikDusum(treatmentName, islemId);
+        if (sd && sd.yapildi && sd.detay && sd.detay.length) {
+          const eksik = sd.detay.filter(d => d.yetersiz);
+          const tamam = sd.detay.filter(d => !d.yetersiz);
+          if (tamam.length) {
+            stokMesaji += "\n\n📦 Stoktan düşüldü:\n" + tamam.map(d => "  • " + d.ad + " " + d.dusecek.toFixed(2) + " " + d.birim + " (kalan " + d.kalan.toFixed(2) + ")").join("\n");
+          }
+          if (eksik.length) {
+            stokMesaji += "\n\n⚠️ Stok yetersiz:\n" + eksik.map(d => "  • " + d.ad + " (mevcut " + d.mevcut + " " + d.birim + ", gereken " + d.istenen.toFixed(2) + ")").join("\n");
+          }
+          treatmentData.stokDusum = sd.detay;
+        }
+      } catch (err) { console.warn("Stok düşüm hatası:", err); }
+    }
+
     // Otomatik fatura + muhasebe
     if (grossAmount > 0) {
       if (!state.accounting) state.accounting = { incomes:[], expenses:[], firms:[], bankAccounts:[], invoices:[] };
@@ -652,6 +672,7 @@ document.addEventListener("click", (e) => {
       window.fb.addTreatment(treatmentData).then(() => {
         let msg = "✅ Tedavi kaydedildi: " + treatmentName;
         if (grossAmount > 0) msg += "\n💰 ₺" + grossAmount.toLocaleString('tr-TR') + (treatmentData.invoiceNo ? "\n🧾 Fatura: " + treatmentData.invoiceNo : "");
+        msg += stokMesaji;
         alert(msg);
         render();
       }).catch(() => alert("Kaydedilemedi."));

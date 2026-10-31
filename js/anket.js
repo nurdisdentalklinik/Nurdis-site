@@ -108,9 +108,8 @@ function renderAccAnket() {
             <p style="font-size:9.5px;color:#888;margin:2px 0 0;">${escapeHtml(a.phone || "telefon yok")}</p>
           </div>
           ${a.phone
-            ? `<a href="${waLink(a.phone, anketMesaj(a.name))}" target="_blank" rel="noopener"
-                 data-action="anket-gonderildi" data-id="${a.id}"
-                 style="background:#25D366;color:#fff;text-decoration:none;border-radius:7px;padding:7px 10px;font-size:10.5px;font-weight:700;flex-shrink:0;">💬 Gönder</a>`
+            ? `<button data-action="anket-gonder" data-id="${a.id}"
+                 style="background:#25D366;color:#fff;border:none;border-radius:7px;padding:7px 10px;font-size:10.5px;font-weight:700;flex-shrink:0;cursor:pointer;">💬 Gönder</button>`
             : `<span style="font-size:18px;opacity:.3;">💬</span>`}
         </div>
       </div>`).join("") : `<div class="card p4" style="text-align:center;background:#E8F5E9;border:1px solid #A5D6A7;">
@@ -401,10 +400,10 @@ function renderAppointmentsAdmin() {
           ? `<a href="tel:+9${tel.startsWith("0") ? tel : "0" + tel}" style="background:#E8F5E9;border:none;border-radius:7px;padding:8px 2px;text-align:center;text-decoration:none;font-size:13px;">📞</a>`
           : `<span style="background:#F5F5F5;border-radius:7px;padding:8px 2px;text-align:center;opacity:.3;font-size:13px;">📞</span>`}
         ${telOk
-          ? `<a href="${waLink(r.phone, randevuMesaj("onay", r))}" target="_blank" rel="noopener" style="background:#E8F5E9;border:none;border-radius:7px;padding:8px 2px;text-align:center;text-decoration:none;font-size:13px;">💬</a>`
+          ? `<button data-action="rv-mesaj" data-id="${r.id}" style="background:#E8F5E9;border:none;border-radius:7px;padding:8px 2px;cursor:pointer;text-align:center;font-size:13px;">💬</button>`
           : `<span style="background:#F5F5F5;border-radius:7px;padding:8px 2px;text-align:center;opacity:.3;font-size:13px;">💬</span>`}
         ${telOk
-          ? `<a href="${waLink(r.phone, randevuMesaj("konum", r))}" target="_blank" rel="noopener" style="background:#E3F2FD;border:none;border-radius:7px;padding:8px 2px;text-align:center;text-decoration:none;font-size:13px;">📍</a>`
+          ? `<button data-action="rv-konum" data-id="${r.id}" style="background:#E3F2FD;border:none;border-radius:7px;padding:8px 2px;cursor:pointer;text-align:center;font-size:13px;">📍</button>`
           : `<span style="background:#F5F5F5;border-radius:7px;padding:8px 2px;text-align:center;opacity:.3;font-size:13px;">📍</span>`}
         <button data-action="rv-edit" data-id="${r.id}" style="background:#FFF3E0;border:none;border-radius:7px;padding:8px 2px;cursor:pointer;font-size:13px;">✏️</button>
         <button data-action="rv-delete" data-id="${r.id}" style="background:#FFEBEE;border:none;border-radius:7px;padding:8px 2px;cursor:pointer;font-size:13px;color:#C62828;">🗑️</button>
