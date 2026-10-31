@@ -309,6 +309,9 @@ let state = {
   tabloYil: null,
   firmaBilgi: null,
   mutabakatSonuc: null,
+  stok: [],
+  stokHareket: [],
+  stokEdit: undefined,
   kdvYil: null,
   kdvAy: null,
   gvDonem: 1,
@@ -381,6 +384,8 @@ function loadAll() {
   try { state.demirbaslar = JSON.parse(localStorage.getItem("nurdis_demirbaslar") || "[]"); } catch(e){ state.demirbaslar = []; }
   try { state.accTamamlanan = JSON.parse(localStorage.getItem("nurdis_beyan_tamam") || "{}"); } catch(e){ state.accTamamlanan = {}; }
   try { state.firmaBilgi = JSON.parse(localStorage.getItem("nurdis_firma_bilgi") || "null"); } catch(e){ state.firmaBilgi = null; }
+  try { state.stok = JSON.parse(localStorage.getItem("nurdis_stok") || "[]"); } catch(e){ state.stok = []; }
+  try { state.stokHareket = JSON.parse(localStorage.getItem("nurdis_stok_hareket") || "[]"); } catch(e){ state.stokHareket = []; }
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}
   
@@ -1955,6 +1960,17 @@ function accUyarilar() {
     });
   }
 
+  /* 8.5) Kritik stok uyarısı */
+  const kritikStok = stokKritikler();
+  if (kritikStok.length) {
+    u.push({
+      seviye: kritikStok.some(s => accNum(s.miktar) <= 0) ? "kritik" : "uyari",
+      baslik: kritikStok.length + " malzeme kritik seviyede",
+      mesaj: kritikStok.slice(0, 3).map(s => s.ad + " (" + accNum(s.miktar) + " " + s.birim + ")").join(", ") + (kritikStok.length > 3 ? "…" : ""),
+      link: "stok", linkAd: "Stok →"
+    });
+  }
+
   /* 9) Bu ay hiç kayıt yok */
   const buAyKayit = (state.accounting.incomes || []).filter(x => {
     const d = new Date(x.date); return d.getFullYear() === yil && d.getMonth() + 1 === ay;
@@ -2522,6 +2538,301 @@ function accBordroHTML(b) {
       </div>
     </div>
   </div>`;
+}
+
+/* =========================================================
+   NUR DİŞ — STOK VE MALZEME TAKİBİ v5
+   • Gider kaydından otomatik stoğa aktarma
+   • Giriş / çıkış / sayım hareketleri
+   • Kritik seviye uyarısı, stok değeri, tedarikçi takibi
+========================================================= */
+
+const STOK_BIRIMLER = ["Adet", "Kutu", "Paket", "Şişe", "Tüp", "Kg", "Litre", "Metre", "Rulo", "Takım"];
+
+const STOK_KATEGORI = [
+  "Sarf Malzeme", "Anestezi / İlaç", "Ölçü Malzemesi", "Kanal Tedavisi",
+  "İmplant Malzemesi", "Protez / Kaide", "Beyazlatma", "Dezenfeksiyon",
+  "Eldiven / Maske", "Röntgen Filmi", "Kırtasiye", "Temizlik", "Diğer"
+];
+
+/* ---------------- YARDIMCILAR ---------------- */
+
+function stokBul(id) {
+  return (state.stok || []).find(x => x.id === id);
+}
+
+function stokDeger(x) {
+  return accNum(x.miktar) * accNum(x.birimFiyat);
+}
+
+function stokToplamDeger() {
+  return (state.stok || []).reduce((s, x) => s + stokDeger(x), 0);
+}
+
+/* Kritik seviyede veya altında olanlar */
+function stokKritikler() {
+  return (state.stok || []).filter(x => accNum(x.miktar) <= accNum(x.minSeviye) && accNum(x.minSeviye) > 0);
+}
+
+/* Son hareket tarihi */
+function stokSonHareket(stokId) {
+  const h = (state.stokHareket || []).filter(x => x.stokId === stokId)
+    .sort((a, b) => new Date(b.tarih) - new Date(a.tarih));
+  return h[0] || null;
+}
+
+/* Hareket ekle (giriş +, çıkış −) */
+function stokHareketEkle(stokId, tip, miktar, aciklama, birimFiyat, ekstra) {
+  if (!state.stokHareket) state.stokHareket = [];
+  const s = stokBul(stokId);
+  if (!s) return null;
+
+  const m = accNum(miktar);
+  if (m <= 0) return null;
+
+  if (tip === "giris") {
+    s.miktar = accNum(s.miktar) + m;
+    // Ağırlıklı ortalama maliyet
+    if (accNum(birimFiyat) > 0) {
+      const eskiDeger = accNum(s.miktar) - m > 0 ? (accNum(s.miktar) - m) * accNum(s.birimFiyat) : 0;
+      s.birimFiyat = (eskiDeger + m * accNum(birimFiyat)) / accNum(s.miktar);
+    }
+    s.sonAlim = accToday();
+  } else if (tip === "cikis") {
+    s.miktar = Math.max(0, accNum(s.miktar) - m);
+    s.sonKullanim = accToday();
+  } else if (tip === "sayim") {
+    s.miktar = m;
+  }
+
+  const hareket = {
+    id: "sth_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5),
+    stokId, tip, miktar: m,
+    birimFiyat: accNum(birimFiyat) || accNum(s.birimFiyat),
+    tarih: accToday(),
+    aciklama: aciklama || (tip === "giris" ? "Stok girişi" : tip === "cikis" ? "Stok kullanımı" : "Sayım düzeltmesi"),
+    kalan: accNum(s.miktar),
+    ...(ekstra || {})
+  };
+  state.stokHareket.unshift(hareket);
+  return hareket;
+}
+
+/* Stok adından otomatik bul veya oluştur (gider→stok köprüsü için) */
+function stokBulVeyaOlustur(ad, kategori, birim) {
+  if (!state.stok) state.stok = [];
+  const normalize = s => (s || "").toLowerCase().trim();
+  let s = state.stok.find(x => normalize(x.ad) === normalize(ad));
+  if (s) return s;
+
+  s = {
+    id: "stk_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5),
+    ad: ad,
+    kategori: kategori || "Sarf Malzeme",
+    birim: birim || "Adet",
+    miktar: 0,
+    minSeviye: 0,
+    birimFiyat: 0,
+    tedarikci: "",
+    notlar: "",
+    olusturma: accToday()
+  };
+  state.stok.push(s);
+  return s;
+}
+
+function stokKaydet() {
+  localStorage.setItem("nurdis_stok", JSON.stringify(state.stok || []));
+  localStorage.setItem("nurdis_stok_hareket", JSON.stringify((state.stokHareket || []).slice(0, 800)));
+  if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+}
+
+/* =========================================================
+   RENDER: STOK SEKMESİ
+========================================================= */
+
+function renderAccStok() {
+  const liste = state.stok || [];
+  const kritik = stokKritikler();
+  const toplamDeger = stokToplamDeger();
+  const toplamKalem = liste.length;
+  const buAyHareket = (state.stokHareket || []).filter(h => accKey(h.tarih) === accKey()).length;
+
+  const ed = state.stokEdit;
+  let formHtml = "";
+  if (ed !== null && ed !== undefined) {
+    const s = liste.find(x => x.id === ed) || { id: "", ad: "", kategori: "Sarf Malzeme", birim: "Adet", miktar: "", minSeviye: "", birimFiyat: "", tedarikci: "", notlar: "" };
+    formHtml = `<div class="card p4 mb3" style="border:2px solid #00838F;background:#E0F7FA;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 10px;color:#006064;">${s.id ? "✏️ Malzemeyi Düzenle" : "➕ Yeni Malzeme"}</p>
+      <div class="field"><label>Malzeme adı</label><input class="input" id="st-ad" value="${escapeAttr(s.ad || "")}" placeholder="Örn: Kompozit dolgu A2" /></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="field"><label>Kategori</label>
+          <select class="input" id="st-kategori">
+            ${STOK_KATEGORI.map(k => `<option ${s.kategori === k ? "selected" : ""}>${k}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field"><label>Birim</label>
+          <select class="input" id="st-birim">
+            ${STOK_BIRIMLER.map(b => `<option ${s.birim === b ? "selected" : ""}>${b}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="field"><label>Mevcut miktar</label><input class="input" type="number" id="st-miktar" value="${accNum(s.miktar)}" /></div>
+        <div class="field"><label>Kritik seviye</label><input class="input" type="number" id="st-min" value="${accNum(s.minSeviye)}" placeholder="Altına düşünce uyarır" /></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="field"><label>Birim fiyat (₺)</label><input class="input" type="number" step="0.01" id="st-fiyat" value="${accNum(s.birimFiyat)}" /></div>
+        <div class="field"><label>Tedarikçi</label><input class="input" id="st-tedarikci" value="${escapeAttr(s.tedarikci || "")}" /></div>
+      </div>
+      <div class="field"><label>Not</label><input class="input" id="st-not" value="${escapeAttr(s.notlar || "")}" placeholder="Marka, lot no, raf..." /></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" style="background:#00838F;" data-action="stok-save" data-id="${s.id || ""}">💾 Kaydet</button>
+        <button class="btn-primary" style="background:#757575;" data-action="stok-cancel">İptal</button>
+      </div>
+    </div>`;
+  }
+
+  const satirlar = liste.slice().sort((a, b) => {
+    const ka = accNum(a.miktar) <= accNum(a.minSeviye) ? 0 : 1;
+    const kb = accNum(b.miktar) <= accNum(b.minSeviye) ? 0 : 1;
+    return ka - kb || (a.ad || "").localeCompare(b.ad || "", "tr");
+  }).map(s => {
+    const miktar = accNum(s.miktar);
+    const min = accNum(s.minSeviye);
+    const kritikMi = min > 0 && miktar <= min;
+    const bitmis = miktar <= 0;
+    const renk = bitmis ? "#C62828" : kritikMi ? "#E65100" : "#2E7D32";
+    const bg = bitmis ? "#FFEBEE" : kritikMi ? "#FFF8E1" : "transparent";
+    const oran = min > 0 ? Math.min(100, (miktar / (min * 3)) * 100) : 100;
+
+    return `<div class="card p3 mb2" style="background:${bg};">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:12.5px;font-weight:700;margin:0;">${bitmis ? "🔴" : kritikMi ? "🟠" : "🟢"} ${escapeHtml(s.ad)}</p>
+          <p style="font-size:10px;color:var(--muted);margin:2px 0 0;">${escapeHtml(s.kategori || "")}${s.tedarikci ? " · " + escapeHtml(s.tedarikci) : ""}</p>
+          <p style="font-size:13px;font-weight:800;color:${renk};margin:4px 0 0;">${miktar.toLocaleString("tr-TR")} ${escapeHtml(s.birim || "")}${kritikMi ? " ⚠️" : ""}</p>
+          ${min > 0 ? `<div style="height:5px;background:#EEE;border-radius:3px;margin-top:5px;overflow:hidden;">
+            <div style="height:100%;width:${oran}%;background:${renk};border-radius:3px;"></div>
+          </div>
+          <p style="font-size:9px;color:#888;margin:3px 0 0;">Kritik: ${min} ${escapeHtml(s.birim || "")}</p>` : ""}
+          ${accNum(s.birimFiyat) > 0 ? `<p style="font-size:9.5px;color:#666;margin:2px 0 0;">Değer: ${accTL(stokDeger(s))} · Birim: ${accTL(accNum(s.birimFiyat))}</p>` : ""}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+          <button data-action="stok-giris" data-id="${s.id}" title="Stok girişi" style="background:#E8F5E9;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px;">➕</button>
+          <button data-action="stok-cikis" data-id="${s.id}" title="Kullanım" style="background:#FFF3E0;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px;">➖</button>
+          <button data-action="stok-edit" data-id="${s.id}" style="background:#E0F7FA;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px;">✏️</button>
+          <button data-action="stok-delete" data-id="${s.id}" style="background:#FFEBEE;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px;color:#C62828;">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("") || `<div class="card p4" style="text-align:center;"><p class="footnote" style="margin:0;">Henüz malzeme eklenmedi.<br/>Gider kaydı eklerken <b>"stoğa da ekle"</b> işaretleyerek başlayabilirsiniz.</p></div>`;
+
+  /* Son hareketler */
+  const hareketler = (state.stokHareket || []).slice(0, 12).map(h => {
+    const s = stokBul(h.stokId);
+    const tipRenk = h.tip === "giris" ? "#2E7D32" : h.tip === "cikis" ? "#E65100" : "#1565C0";
+    const tipIkon = h.tip === "giris" ? "➕" : h.tip === "cikis" ? "➖" : "📋";
+    return `<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);">
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:11.5px;margin:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${tipIkon} ${escapeHtml(s ? s.ad : "Silinmiş malzeme")}</p>
+        <p style="font-size:9.5px;color:var(--muted);margin:2px 0 0;">${accTarihTR(h.tarih)} · ${escapeHtml(h.aciklama || "")}</p>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <p style="font-size:11.5px;font-weight:700;margin:0;color:${tipRenk};">${h.tip === "cikis" ? "−" : "+"}${accNum(h.miktar).toLocaleString("tr-TR")} ${escapeHtml(s ? s.birim : "")}</p>
+        <p style="font-size:9px;color:#999;margin:1px 0 0;">Kalan: ${accNum(h.kalan).toLocaleString("tr-TR")}</p>
+      </div>
+    </div>`;
+  }).join("") || `<p class="footnote">Hareket kaydı yok.</p>`;
+
+  return `
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#004D40,#00695C);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 2px;">📦 Stok ve Malzeme Takibi</p>
+      <p style="font-size:10.5px;opacity:.85;margin:0 0 10px;">${toplamKalem} kalem · bu ay ${buAyHareket} hareket</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9px;margin:0;opacity:.85;">STOK DEĞERİ</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0 0;">${accTL0(toplamDeger)}</p>
+        </div>
+        <div style="background:rgba(255,255,255,.${kritik.length ? "3" : "15"});border-radius:10px;padding:8px;${kritik.length ? "border:1px solid rgba(255,180,180,.5);" : ""}">
+          <p style="font-size:9px;margin:0;opacity:.85;">KRİTİK KALEM</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0 0;">${kritik.length}${kritik.length ? " ⚠️" : ""}</p>
+        </div>
+      </div>
+      ${kritik.length ? `<p style="font-size:10px;margin:8px 0 0;opacity:.95;">⚠️ Sipariş vermeniz gereken: ${kritik.slice(0, 3).map(x => x.ad).join(", ")}${kritik.length > 3 ? " ve " + (kritik.length - 3) + " tane daha" : ""}</p>` : ""}
+    </div>
+
+    ${formHtml}
+    ${ed === null || ed === undefined ? `<button class="btn-primary mb3" style="background:#00838F;" data-action="stok-new">➕ Yeni Malzeme Ekle</button>` : ""}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;">
+      <button class="btn-primary" style="background:#0E93AC;font-size:11.5px;padding:11px;" data-action="stok-csv">⬇️ CSV İndir</button>
+      <button class="btn-primary" style="background:#00695C;font-size:11.5px;padding:11px;" data-action="stok-yazdir">🖨️ Stok Listesi</button>
+    </div>
+
+    <p class="section-label">Malzemeler (${liste.length})</p>
+    ${satirlar}
+
+    <p class="section-label" style="margin-top:16px;">📋 Son Hareketler</p>
+    <div class="card p4 mb3">${hareketler}</div>
+
+    <div class="card p4 mb3" style="background:#E0F7FA;border:1px solid #80DEEA;">
+      <p style="font-size:11.5px;font-weight:700;color:#006064;margin:0 0 6px;">💡 Nasıl çalışır?</p>
+      <p style="font-size:10.5px;color:#00838F;margin:0;line-height:1.65;">
+        <b>Gider eklerken</b> "Stoğa da ekle" kutusunu işaretlersen, aldığın malzeme
+        otomatik buraya düşer — muhasebe ve stok tek işlemde güncellenir.<br/>
+        <b>➕</b> ile dışarıdan gelen malzeme, <b>➖</b> ile kullanım (tedavi sırasında harcanan) kaydı girersin.
+        Kritik seviyeye düşen malzeme <b>uyarı merkezinde</b> görünür.
+      </p>
+    </div>
+  `;
+}
+
+/* =========================================================
+   GİDER FORMUNA "STOĞA EKLE" ALANI
+========================================================= */
+
+function stokGiderFormu() {
+  return `
+    <div style="margin-top:10px;padding:10px;background:#E0F7FA;border:1px solid #80DEEA;border-radius:10px;">
+      <label style="font-size:12px;display:flex;align-items:center;gap:8px;font-weight:700;color:#006064;cursor:pointer;">
+        <input type="checkbox" id="exp-stok-ekle" onchange="document.getElementById('exp-stok-alanlari').style.display=this.checked?'block':'none';" />
+        <span>📦 Bu alımı stoğa da ekle</span>
+      </label>
+      <div id="exp-stok-alanlari" style="display:none;margin-top:9px;">
+        <div class="field" style="margin-bottom:8px;">
+          <label style="font-size:10px;color:#00838F;">Malzeme adı</label>
+          <input class="input" id="exp-stok-ad" placeholder="Örn: Kompozit dolgu A2" style="font-size:11.5px;padding:8px;" list="stok-adlari" />
+          <datalist id="stok-adlari">${(state.stok || []).map(s => `<option value="${escapeAttr(s.ad)}"></option>`).join("")}</datalist>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+          <div>
+            <label style="font-size:10px;color:#00838F;">Miktar</label>
+            <input class="input" type="number" id="exp-stok-miktar" placeholder="10" style="font-size:11.5px;padding:8px;" />
+          </div>
+          <div>
+            <label style="font-size:10px;color:#00838F;">Birim</label>
+            <select class="input" id="exp-stok-birim" style="font-size:11.5px;padding:8px;">
+              ${STOK_BIRIMLER.map(b => `<option>${b}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label style="font-size:10px;color:#00838F;">Kategori</label>
+            <select class="input" id="exp-stok-kategori" style="font-size:11.5px;padding:8px;">
+              ${STOK_KATEGORI.map(k => `<option>${k}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin:8px 0 0;">
+          <label style="font-size:10px;color:#00838F;">Kritik seviye (altına düşünce uyarır)</label>
+          <input class="input" type="number" id="exp-stok-min" placeholder="Örn: 3" style="font-size:11.5px;padding:8px;" />
+        </div>
+        <p style="font-size:9.5px;color:#00838F;margin:7px 0 0;line-height:1.5;">
+          Malzeme adı daha önce eklenmişse mevcut kayda <b>eklenir</b>, yoksa yeni oluşturulur.
+          Birim fiyat gider tutarından otomatik hesaplanır.
+        </p>
+      </div>
+    </div>`;
 }
 
 function renderAccBordro() {
@@ -3403,6 +3714,7 @@ function renderAccounting() {
     { id: "kdv", label: "📑 KDV Beyanı" },
     { id: "gv", label: "🧮 Gelir Vergisi" },
     { id: "personel", label: "👥 Personel & SGK" },
+    { id: "stok", label: "📦 Stok" },
     { id: "cari", label: "💳 Cari Hesap" },
     { id: "demirbas", label: "🏗️ Amortisman" },
     { id: "bordro", label: "📄 Bordro" },
@@ -3423,6 +3735,7 @@ function renderAccounting() {
   else if (tab === "kdv") body = renderAccKdv();
   else if (tab === "gv") body = renderAccGv();
   else if (tab === "personel") body = renderAccPersonel();
+  else if (tab === "stok") body = renderAccStok();
   else if (tab === "cari") body = renderAccCari();
   else if (tab === "demirbas") body = renderAccDemirbas();
   else if (tab === "bordro") body = renderAccBordro();
@@ -3486,6 +3799,16 @@ function renderAccOzet() {
       <div class="card p2" style="text-align:center;"><p style="font-size:9px;color:#666;margin:0;">KDV</p><p style="font-size:12.5px;font-weight:700;color:#E65100;margin:2px 0;">${accTL0(kdv)}</p></div>
       <div class="card p2" style="text-align:center;"><p style="font-size:9px;color:#666;margin:0;">Stopaj</p><p style="font-size:12.5px;font-weight:700;color:#1565C0;margin:2px 0;">${accTL0(stopaj)}</p></div>
       <div class="card p2" style="text-align:center;background:#F3E5F5;border:1px solid #CE93D8;"><p style="font-size:9px;color:#6A1B9A;margin:0;">SGK Primi</p><p style="font-size:12.5px;font-weight:700;color:#4A148C;margin:2px 0;">${accTL0(bekleyenSGK)}</p></div>
+    </div>
+
+    <div class="card p3 mb3" style="background:${stokKritikler().length ? "#FFF3E0" : "#E0F7FA"};border:1px solid ${stokKritikler().length ? "#FFB74D" : "#80DEEA"};">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <p style="font-size:11.5px;font-weight:700;color:#006064;margin:0;">📦 Stok Durumu</p>
+          <p style="font-size:10px;color:#00838F;margin:2px 0 0;">${(state.stok||[]).length} kalem · ${accTL0(stokToplamDeger())} değer${stokKritikler().length ? " · ⚠️ " + stokKritikler().length + " kritik" : ""}</p>
+        </div>
+        <button data-action="acc-tab" data-tab="stok" style="background:#00838F;border:none;border-radius:7px;color:#fff;padding:7px 11px;font-size:10.5px;font-weight:700;cursor:pointer;">Aç →</button>
+      </div>
     </div>
 
     <div class="card p3 mb3" style="background:#EDE7F6;border:1px solid #B39DDB;">
@@ -3664,6 +3987,7 @@ function renderAccIslem() {
           <input type="checkbox" id="acc-exp-stopaj" /> Kira ödemesi (Stopaj %20 otomatik)
         </label>
       </div>
+      ${stokGiderFormu()}
       <button class="btn-primary" style="margin-top:10px;background:var(--bad);" data-action="acc-add-expense">📉 Gider Kaydet</button>
     </div>
 
@@ -4199,6 +4523,109 @@ function accAction(action, el) {
     if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
     alert("✅ SGK primi gider olarak kaydedildi: " + accTL(t.toplamSgk));
     render();
+    return true;
+  }
+
+  /* ---- STOK ---- */
+  if (A("stok-new")) { state.stokEdit = ""; render(); window.scrollTo(0, 0); return true; }
+  if (A("stok-edit")) { state.stokEdit = el.dataset.id; render(); window.scrollTo(0, 0); return true; }
+  if (A("stok-cancel")) { state.stokEdit = undefined; render(); return true; }
+  if (A("stok-save")) {
+    const id = el.dataset.id;
+    const rec = {
+      id: id || ("stk_" + Date.now()),
+      ad: (document.getElementById("st-ad")?.value || "").trim(),
+      kategori: document.getElementById("st-kategori")?.value || "Sarf Malzeme",
+      birim: document.getElementById("st-birim")?.value || "Adet",
+      miktar: accNum(document.getElementById("st-miktar")?.value),
+      minSeviye: accNum(document.getElementById("st-min")?.value),
+      birimFiyat: accNum(document.getElementById("st-fiyat")?.value),
+      tedarikci: (document.getElementById("st-tedarikci")?.value || "").trim(),
+      notlar: (document.getElementById("st-not")?.value || "").trim()
+    };
+    if (!rec.ad) { alert("Malzeme adı gerekli."); return true; }
+    if (!state.stok) state.stok = [];
+    if (id) {
+      const old = state.stok.find(x => x.id === id);
+      const eskiMiktar = accNum(old.miktar);
+      Object.assign(old, rec);
+      if (Math.abs(rec.miktar - eskiMiktar) > 0.001) {
+        if (!state.stokHareket) state.stokHareket = [];
+        state.stokHareket.unshift({
+          id: "sth_" + Date.now(), stokId: id, tip: "sayim",
+          miktar: rec.miktar, birimFiyat: rec.birimFiyat, tarih: accToday(),
+          aciklama: "Manuel düzeltme (" + eskiMiktar + " → " + rec.miktar + ")", kalan: rec.miktar
+        });
+      }
+    } else {
+      state.stok.push(rec);
+      if (rec.miktar > 0) stokHareketEkle(rec.id, "giris", rec.miktar, "İlk kayıt", rec.birimFiyat);
+    }
+    stokKaydet();
+    state.stokEdit = undefined;
+    alert("✅ Malzeme kaydedildi.");
+    render();
+    return true;
+  }
+  if (A("stok-delete")) {
+    const id = el.dataset.id;
+    const s = stokBul(id);
+    if (!s) return true;
+    if (!confirm("\"" + s.ad + "\" silinsin mi?\n\nStok hareketleri de silinir.")) return true;
+    state.stok = (state.stok || []).filter(x => x.id !== id);
+    state.stokHareket = (state.stokHareket || []).filter(h => h.stokId !== id);
+    stokKaydet();
+    render();
+    return true;
+  }
+  if (A("stok-giris") || A("stok-cikis")) {
+    const s = stokBul(el.dataset.id);
+    if (!s) return true;
+    const giris = A("stok-giris");
+    const soru = giris
+      ? "📦 " + s.ad + "\n\nKaç " + s.birim + " geldi?\n(Mevcut: " + accNum(s.miktar) + " " + s.birim + ")"
+      : "➖ " + s.ad + "\n\nKaç " + s.birim + " kullanıldı?\n(Mevcut: " + accNum(s.miktar) + " " + s.birim + ")";
+    const cevap = prompt(soru, "1");
+    if (cevap === null) return true;
+    const miktar = accNum(cevap);
+    if (miktar <= 0) { alert("Geçerli bir miktar girin."); return true; }
+    if (!giris && miktar > accNum(s.miktar)) {
+      alert("Stokta yeterli malzeme yok.\nMevcut: " + accNum(s.miktar) + " " + s.birim);
+      return true;
+    }
+    const neden = prompt(giris ? "Nereden geldi? (tedarikçi / not)" : "Nerede kullanıldı? (tedavi / not)", giris ? (s.tedarikci || "Alım") : "Tedavi");
+    stokHareketEkle(s.id, giris ? "giris" : "cikis", miktar, neden || (giris ? "Stok girişi" : "Kullanım"), s.birimFiyat);
+    stokKaydet();
+    alert("✅ " + (giris ? "Giriş" : "Çıkış") + " kaydedildi.\nYeni stok: " + accNum(s.miktar) + " " + s.birim);
+    render();
+    return true;
+  }
+  if (A("stok-csv")) {
+    const rows = [["Malzeme", "Kategori", "Birim", "Miktar", "Kritik Seviye", "Birim Fiyat", "Toplam Değer", "Tedarikçi", "Not"]];
+    (state.stok || []).forEach(s => rows.push([
+      s.ad, s.kategori || "", s.birim || "", accNum(s.miktar), accNum(s.minSeviye),
+      accNum(s.birimFiyat).toFixed(2), stokDeger(s).toFixed(2), s.tedarikci || "", s.notlar || ""
+    ]));
+    accCsvDownload("stok-" + accToday() + ".csv", rows);
+    return true;
+  }
+  if (A("stok-yazdir")) {
+    const liste = state.stok || [];
+    let h = '<p style="font-size:12px;margin:0 0 12px;">Toplam ' + liste.length + ' kalem · Stok değeri: <b>' + accTL(stokToplamDeger()) + '</b></p>';
+    h += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+    h += '<tr style="background:#f0f0f0;"><th style="padding:5px;border:1px solid #ddd;text-align:left;">Malzeme</th><th style="padding:5px;border:1px solid #ddd;">Kategori</th><th style="padding:5px;border:1px solid #ddd;text-align:right;">Miktar</th><th style="padding:5px;border:1px solid #ddd;text-align:right;">Kritik</th><th style="padding:5px;border:1px solid #ddd;text-align:right;">Değer</th></tr>';
+    liste.sort((a, b) => (a.ad || "").localeCompare(b.ad || "", "tr")).forEach(s => {
+      const krit = accNum(s.minSeviye) > 0 && accNum(s.miktar) <= accNum(s.minSeviye);
+      h += '<tr' + (krit ? ' style="background:#FFF3E0;"' : '') + '>';
+      h += '<td style="padding:4px;border:1px solid #ddd;">' + escapeHtml(s.ad) + (krit ? ' ⚠️' : '') + '</td>';
+      h += '<td style="padding:4px;border:1px solid #ddd;">' + escapeHtml(s.kategori || "") + '</td>';
+      h += '<td style="padding:4px;border:1px solid #ddd;text-align:right;">' + accNum(s.miktar).toLocaleString("tr-TR") + ' ' + escapeHtml(s.birim || "") + '</td>';
+      h += '<td style="padding:4px;border:1px solid #ddd;text-align:right;">' + accNum(s.minSeviye) + '</td>';
+      h += '<td style="padding:4px;border:1px solid #ddd;text-align:right;">' + accTL(stokDeger(s)) + '</td>';
+      h += '</tr>';
+    });
+    h += '</table>';
+    accPrint("Stok Listesi", h);
     return true;
   }
 
@@ -5790,6 +6217,7 @@ document.addEventListener("click", (e) => {
     const isKiraStopaj = document.getElementById("acc-exp-stopaj")?.checked;
     const expDate = document.getElementById("acc-exp-date")?.value || new Date().toISOString().split('T')[0];
     const expKdv = parseFloat(document.getElementById("acc-exp-kdv")?.value) || 0;
+    const netFiyat = Math.max(0, amount - expKdv);
     if (!desc || !amount) { alert("Açıklama ve tutar gerekli!"); return; }
     if (!state.accounting) state.accounting = { incomes:[], expenses:[], firms:[], bankAccounts:[], invoices:[] };
 
@@ -5808,8 +6236,34 @@ document.addEventListener("click", (e) => {
       kdv: expKdv,
       createdAt: new Date().toISOString()
     });
+    const giderId = state.accounting.expenses[state.accounting.expenses.length - 1].id;
+
+    // ---- STOĞA DA EKLE ----
+    let stokMesaji = "";
+    const stokEkle = !!document.getElementById("exp-stok-ekle")?.checked;
+    if (stokEkle) {
+      const stokAd = (document.getElementById("exp-stok-ad")?.value || "").trim() || desc;
+      const stokMiktar = accNum(document.getElementById("exp-stok-miktar")?.value);
+      const stokBirim = document.getElementById("exp-stok-birim")?.value || "Adet";
+      const stokKat = document.getElementById("exp-stok-kategori")?.value || "Sarf Malzeme";
+      const stokMin = accNum(document.getElementById("exp-stok-min")?.value);
+
+      if (stokMiktar <= 0) {
+        stokMesaji = "\n\n⚠️ Gider kaydedildi ancak stoğa eklenmedi: miktar girilmedi.";
+      } else {
+        const s = stokBulVeyaOlustur(stokAd, stokKat, stokBirim);
+        if (!s.tedarikci && firm) s.tedarikci = firm;
+        if (stokMin > 0) s.minSeviye = stokMin;
+        const birimFiyat = (netFiyat > 0 && stokMiktar > 0) ? (netFiyat / stokMiktar) : (amount / stokMiktar);
+        stokHareketEkle(s.id, "giris", stokMiktar, "Gider kaydından: " + desc, birimFiyat, { giderId, tedarikci: firm });
+        stokKaydet();
+        stokMesaji = "\n\n📦 Stoğa eklendi: " + stokMiktar.toLocaleString("tr-TR") + " " + stokBirim + " " + stokAd +
+          "\nYeni stok: " + accNum(s.miktar).toLocaleString("tr-TR") + " " + stokBirim;
+      }
+    }
+
     localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
-    alert("✅ Gider kaydedildi: ₺" + amount.toLocaleString('tr-TR') + (stopaj > 0 ? "\nStopaj (%20): ₺" + stopaj.toLocaleString('tr-TR',{minimumFractionDigits:2}) : ""));
+    alert("✅ Gider kaydedildi: ₺" + amount.toLocaleString('tr-TR') + (stopaj > 0 ? "\nStopaj (%20): ₺" + stopaj.toLocaleString('tr-TR',{minimumFractionDigits:2}) : "") + stokMesaji);
     render();
   }
 
@@ -6274,7 +6728,9 @@ function saveAccountingToFirebase() {
       sgkSettings: state.sgkSettings || null,
       demirbaslar: state.demirbaslar || [],
       accTamamlanan: state.accTamamlanan || {},
-      firmaBilgi: state.firmaBilgi || null
+      firmaBilgi: state.firmaBilgi || null,
+      stok: state.stok || [],
+      stokHareket: (state.stokHareket || []).slice(0, 800)
     }).catch(() => {});
   }
 }
@@ -6445,6 +6901,8 @@ function startAdminSubscriptions() {
         if (data.demirbaslar) { state.demirbaslar = data.demirbaslar; localStorage.setItem("nurdis_demirbaslar", JSON.stringify(state.demirbaslar)); }
         if (data.accTamamlanan) { state.accTamamlanan = data.accTamamlanan; localStorage.setItem("nurdis_beyan_tamam", JSON.stringify(state.accTamamlanan)); }
         if (data.firmaBilgi) { state.firmaBilgi = data.firmaBilgi; localStorage.setItem("nurdis_firma_bilgi", JSON.stringify(state.firmaBilgi)); }
+        if (data.stok) { state.stok = data.stok; localStorage.setItem("nurdis_stok", JSON.stringify(state.stok)); }
+        if (data.stokHareket) { state.stokHareket = data.stokHareket; localStorage.setItem("nurdis_stok_hareket", JSON.stringify(state.stokHareket)); }
         localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_treatment_prices", JSON.stringify(state.treatmentPrices)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_auto_expenses", JSON.stringify(state.autoExpenses)); saveAccountingToFirebase();
