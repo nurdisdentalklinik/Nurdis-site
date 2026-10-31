@@ -173,6 +173,7 @@ const MORE_ITEMS = [
   { id:"contact", label:"İletişim", img:"icon-contact.png" },
   { id:"info", label:"Diş Sağlığı Bilgileri", img:"icon-info.png" },
   { id:"admin-login", label:"Yönetici Girişi", img:"icon-admin.png" },
+  { id:"kvkk", label:"Gizlilik & KVKK", img:"icon-admin.png" },
   { id:"settings", label:"Ayarlar", img:"icon-settings.png" },
 ];
 
@@ -358,6 +359,8 @@ let state = {
   anketSablon: null,
   hatirlatmaLog: [],
   yedekGecmis: [],
+  kvkkTab: "aydinlatma",
+  kvkkTalepler: [],
   hhSablonAcik: false,
   mesajSablon: null,
   hhAyar: null,
@@ -371,7 +374,7 @@ let state = {
   gvDonem: 1,
   treatmentPrices: {},
   autoExpenses: { kira:50000, elektrik:3000, su:1500, dogalgaz:2000, sgk:8000, vergi:5000 },
-  bookingForm: { date:"", time:"", name:"", phone:"", note:"" },
+  bookingForm: { date:"", time:"", name:"", phone:"", note:"", kvkk:false },
   bookingStatus: "idle",
   contactForm: { name:"", phone:"", msg:"" },
   contactStatus: "idle",
@@ -462,6 +465,7 @@ function loadAll() {
   try { state.anketSablon = JSON.parse(localStorage.getItem("nurdis_anket_sablon") || "null"); } catch(e){ state.anketSablon = null; }
   try { state.hatirlatmaLog = JSON.parse(localStorage.getItem("nurdis_hatirlatma_log") || "[]"); } catch(e){ state.hatirlatmaLog = []; }
   try { state.yedekGecmis = JSON.parse(localStorage.getItem("nurdis_yedek_gecmis") || "[]"); } catch(e){ state.yedekGecmis = []; }
+  try { state.kvkkTalepler = JSON.parse(localStorage.getItem("nurdis_kvkk_talepler") || "[]"); } catch(e){ state.kvkkTalepler = []; }
   try { state.bonusAyar = JSON.parse(localStorage.getItem("nurdis_bonus_ayar") || "null"); } catch(e){ state.bonusAyar = null; }
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}

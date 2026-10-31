@@ -942,6 +942,7 @@ function renderAccounting() {
     { id: "rwhatir", label: "⏰ Randevu Hatırlat" },
     { id: "anket", label: "⭐ Memnuniyet Anketi" },
     { id: "yedek", label: "💾 Yedek" },
+    { id: "kvkk", label: "🔒 KVKK" },
     { id: "cari", label: "💳 Cari Hesap" },
     { id: "demirbas", label: "🏗️ Amortisman" },
     { id: "bordro", label: "📄 Bordro" },
@@ -975,6 +976,7 @@ function renderAccounting() {
   else if (tab === "rwhatir") body = renderAccRandevuHatirlatma();
   else if (tab === "anket") body = renderAccAnket();
   else if (tab === "yedek") body = renderAccYedek();
+  else if (tab === "kvkk") body = renderAccKvkk();
   else if (tab === "cari") body = renderAccCari();
   else if (tab === "demirbas") body = renderAccDemirbas();
   else if (tab === "bordro") body = renderAccBordro();

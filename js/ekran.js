@@ -61,7 +61,7 @@ function render() {
 
 function refreshDisabled() {
   const map = {
-    "submit-booking": () => !(state.bookingForm.date && state.bookingForm.time && state.bookingForm.name && state.bookingForm.phone),
+    "submit-booking": () => !(state.bookingForm.date && state.bookingForm.time && state.bookingForm.name && state.bookingForm.phone && state.bookingForm.kvkk),
     "submit-contact": () => !(state.contactForm.name && state.contactForm.msg),
     "submit-review": () => !(state.reviewForm.name && state.reviewForm.text),
     "submit-order": () => !(state.checkoutForm.name && state.checkoutForm.phone && state.checkoutForm.address),
@@ -76,10 +76,11 @@ function bindFieldEvents() {
   const $ = id => document.getElementById(id);
   /* smile scale slider kaldırıldı */
   if (state.screen === "booking") {
-    const d=$("f-date"), n=$("f-name"), p=$("f-phone");
+    const d=$("f-date"), n=$("f-name"), p=$("f-phone"), k=$("f-kvkk");
     if (d) d.onchange = e => { state.bookingForm.date = e.target.value; state.bookingStatus="idle"; render(); };
     if (n) n.oninput = e => { state.bookingForm.name = e.target.value; refreshDisabled(); };
     if (p) p.oninput = e => { state.bookingForm.phone = e.target.value; refreshDisabled(); };
+    if (k) k.onchange = e => { state.bookingForm.kvkk = e.target.checked; render(); };
   }
   if (state.screen === "contact") {
     const n=$("c-name"), p=$("c-phone"), m=$("c-msg");
@@ -252,6 +253,9 @@ document.addEventListener("click", (e) => {
   if (!_entrySoundPlayed) { _entrySoundPlayed = true; playSound("login"); }
   else if (action !== "send-chat") playSound("click"); // sendChat kendi tık sesini zaten çalıyor
 
+  // KVKK modülü
+  if (typeof kvkkAction === "function" && kvkkAction(action, el)) return;
+
   // Muhasebe modülü kendi aksiyonlarını yönetir
   if (typeof accAction === "function" && accAction(action, el)) return;
 
@@ -289,6 +293,7 @@ document.addEventListener("click", (e) => {
   if (action === "submit-booking") {
     const f = state.bookingForm;
     if (!(f.date && f.time && f.name && f.phone)) return;
+    if (!f.kvkk) { alert("Devam etmek için KVKK aydınlatma metnini onaylamanız gerekir."); return; }
 
     const booker = state.user || guestUser();
     const note = document.getElementById("f-note")?.value?.trim() || "";
@@ -299,6 +304,8 @@ document.addEventListener("click", (e) => {
       date: f.date, time: f.time, name: f.name, phone: f.phone,
       note, service: "Muayene",
       status: "bekliyor",
+      kvkkOnay: true,
+      kvkkTarih: new Date().toISOString(),
       uid: booker.uid,
       misafir: !state.user || state.user.isGuest,
       createdAt: new Date().toISOString()
@@ -321,7 +328,7 @@ document.addEventListener("click", (e) => {
       state.lastBooking = entry;
       state.myAppointments.push({ id: Date.now(), ...entry });
       state.bookingStatus = "done";
-      state.bookingForm = { date: "", time: "", name: "", phone: "", note: "" };
+      state.bookingForm = { date: "", time: "", name: "", phone: "", note: "", kvkk: false };
       playSound("success");
       render();
       window.scrollTo(0, 0);

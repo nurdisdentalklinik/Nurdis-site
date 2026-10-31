@@ -194,7 +194,8 @@ function saveAccountingToFirebase() {
       randevuSablon: state.randevuSablon || null,
       anketler: (state.anketler || []).slice(0, 1500),
       anketSablon: state.anketSablon || null,
-      bonusAyar: state.bonusAyar || null
+      bonusAyar: state.bonusAyar || null,
+      kvkkTalepler: (state.kvkkTalepler || []).slice(0, 200)
     });
   }
   return Promise.resolve();
@@ -397,6 +398,7 @@ function startAdminSubscriptions() {
         if (data.anketler) { state.anketler = data.anketler; localStorage.setItem("nurdis_anketler", JSON.stringify(state.anketler)); }
         if (data.anketSablon) { state.anketSablon = data.anketSablon; localStorage.setItem("nurdis_anket_sablon", JSON.stringify(state.anketSablon)); }
         if (data.bonusAyar) { state.bonusAyar = data.bonusAyar; localStorage.setItem("nurdis_bonus_ayar", JSON.stringify(state.bonusAyar)); }
+        if (data.kvkkTalepler) { state.kvkkTalepler = data.kvkkTalepler; localStorage.setItem("nurdis_kvkk_talepler", JSON.stringify(state.kvkkTalepler)); }
         localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_treatment_prices", JSON.stringify(state.treatmentPrices)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_auto_expenses", JSON.stringify(state.autoExpenses)); saveAccountingToFirebase();
@@ -479,7 +481,7 @@ const SCREEN_MAP = {
   address: renderAddress, contact: renderContact, info: renderInfo, chatbot: renderChatbot,
   "admin-login": renderAdminLogin, "admin-panel": renderAdminPanel, account: renderAccount,
   "profile-edit": renderProfileEdit, "brushing-video": renderBrushingVideo, "family-add": renderFamilyAdd,
-  settings: renderSettings,
+  settings: renderSettings, kvkk: renderKvkk,
 };
 
 const validScreens = Object.keys(SCREEN_MAP);

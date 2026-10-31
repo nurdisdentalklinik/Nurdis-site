@@ -208,9 +208,22 @@ function renderBookingV2() {
         <div class="field"><label>Telefon</label><input class="input" id="f-phone" type="tel" placeholder="05xx xxx xx xx" value="${escapeAttr(f.phone)}" /></div>
         <div class="field"><label>Not (isteğe bağlı)</label><input class="input" id="f-note" placeholder="Örn: diş ağrım var" value="${escapeAttr(f.note || "")}" /></div>
 
-        <button class="btn-primary" data-action="submit-booking" ${!canSubmit || state.bookingStatus === "saving" ? "disabled" : ""}>
+        <div style="background:#F1F8E9;border:1px solid #C5E1A5;border-radius:10px;padding:10px;margin-bottom:12px;">
+          <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;">
+            <input type="checkbox" id="f-kvkk" ${f.kvkk ? "checked" : ""} style="margin-top:2px;flex-shrink:0;" />
+            <span style="font-size:10.5px;color:#33691E;line-height:1.6;">
+              <b>Kişisel verilerimin işlenmesine onay veriyorum.</b><br/>
+              Randevu ve tedavi amacıyla ad, telefon ve sağlık bilgilerimin
+              <button type="button" data-action="goto" data-screen="kvkk" style="background:none;border:none;padding:0;color:#2E7D32;text-decoration:underline;font-size:10.5px;cursor:pointer;font-weight:700;">KVKK Aydınlatma Metni</button>
+              kapsamında işlenmesini kabul ediyorum.
+            </span>
+          </label>
+        </div>
+
+        <button class="btn-primary" data-action="submit-booking" ${!canSubmit || !f.kvkk || state.bookingStatus === "saving" ? "disabled" : ""}>
           ${state.bookingStatus === "saving" ? "Kaydediliyor…" : "📅 Randevuyu Onayla"}
         </button>
+        ${canSubmit && !f.kvkk ? `<p style="font-size:10.5px;color:#C62828;text-align:center;margin:8px 0 0;">⚠️ Devam etmek için KVKK onayını işaretleyin</p>` : ""}
         ${statusHtml}
       </div>
 
