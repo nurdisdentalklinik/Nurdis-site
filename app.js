@@ -319,6 +319,9 @@ let state = {
   nakitAy: 3,
   randevuDonem: 30,
   verimDonem: 30,
+  hhTab: "kontrol",
+  hhAyar: null,
+  bonusAyar: null,
   randevuAyar: null,
   kampanyalar: [],
   kampanyaEdit: undefined,
@@ -401,6 +404,8 @@ function loadAll() {
   try { state.kampanyalar = JSON.parse(localStorage.getItem("nurdis_kampanyalar") || "[]"); } catch(e){ state.kampanyalar = []; }
   try { state.randevuAyar = JSON.parse(localStorage.getItem("nurdis_randevu_ayar") || "null"); } catch(e){ state.randevuAyar = null; }
   try { state.bayatAyar = JSON.parse(localStorage.getItem("nurdis_bayat_ayar") || "null"); } catch(e){ state.bayatAyar = null; }
+  try { state.hhAyar = JSON.parse(localStorage.getItem("nurdis_hh_ayar") || "null"); } catch(e){ state.hhAyar = null; }
+  try { state.bonusAyar = JSON.parse(localStorage.getItem("nurdis_bonus_ayar") || "null"); } catch(e){ state.bonusAyar = null; }
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}
   
@@ -2857,6 +2862,396 @@ function randevuAnaliz(donemGun) {
   };
 }
 
+/* =========================================================
+   NUR DİŞ — HASTA İLİŞKİLERİ ve PRİM v8
+   1) Hasta Hatırlatma (kontrol zamanı, randevu, geri kazanım)
+   2) Personel Prim / Bonus Hesabı
+========================================================= */
+
+/* =========================================================
+   1) HASTA HATIRLATMA
+========================================================= */
+
+/* Hasta adından telefon bul (randevu kayıtlarından) */
+function hastaTelefon(ad) {
+  const norm = s => (s || "").toLowerCase().replace(/[^a-zğüşıöç0-9]/g, "");
+  const hedef = norm(ad).split(" ")[0];
+  if (!hedef || hedef.length < 3) return "";
+
+  const aday = (state.appointments || [])
+    .filter(a => a.phone && a.name)
+    .filter(a => {
+      const n = norm(a.name);
+      return n.includes(hedef) || hedef.includes(n.split(" ")[0]);
+    })
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  return aday.length ? aday[0].phone : "";
+}
+
+/* WhatsApp bağlantısı */
+function waLink(tel, mesaj) {
+  const d = String(tel || "").replace(/\D/g, "");
+  let num = d;
+  if (d.length === 11 && d.startsWith("0")) num = "9" + d;
+  else if (d.length === 10) num = "90" + d;
+  return "https://wa.me/" + num + "?text=" + encodeURIComponent(mesaj);
+}
+
+/* Kontrol zamanı gelenler: son işlemden bu yana > 180 gün */
+function hastaKontrolListesi(ayEsik) {
+  const esik = ayEsik || 6;
+  const hasta = accHastaListesi();
+  const bugun = new Date();
+
+  return hasta.map(h => {
+    const gunFark = h.sonTarih ? Math.round((bugun - new Date(h.sonTarih)) / 86400000) : null;
+    const ayFark = gunFark !== null ? gunFark / 30 : null;
+    const gecti = ayFark !== null && ayFark >= esik;
+    const tel = hastaTelefon(h.ad);
+    // Yapılan son tedavi
+    const sonIslem = h.islemler.slice().sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    return {
+      ...h, gunFark, ayFark, kontrolGecti: gecti, tel,
+      sonIslemAdi: sonIslem ? sonIslem.category || sonIslem.description : "",
+      sonIslemTarihi: sonIslem ? sonIslem.date : null
+    };
+  }).filter(h => h.kontrolGecti)
+    .sort((a, b) => b.gunFark - a.gunFark);
+}
+
+/* Uzun süredir gelmeyen (kayıp riski) */
+function hastaKayipListesi(ayEsik) {
+  const esik = ayEsik || 12;
+  const hasta = accHastaListesi();
+  const bugun = new Date();
+  return hasta.map(h => {
+    const gunFark = h.sonTarih ? Math.round((bugun - new Date(h.sonTarih)) / 86400000) : null;
+    return { ...h, gunFark, tel: hastaTelefon(h.ad) };
+  }).filter(h => h.gunFark !== null && h.gunFark >= esik * 30)
+    .sort((a, b) => b.toplam - a.toplam);
+}
+
+/* Yaklaşan randevular (hatırlatma için) */
+function yakinRandevular(gunAralik) {
+  const aralik = gunAralik || 3;
+  const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+  const son = new Date(bugun.getTime() + aralik * 86400000);
+  return (state.appointments || []).filter(a => {
+    if (!a.date) return false;
+    const d = new Date(a.date); d.setHours(0, 0, 0, 0);
+    return d >= bugun && d <= son;
+  }).sort((a, b) => new Date(a.date) - new Date(b.date));
+}
+
+function renderAccHastaHatirlatma() {
+  const altTab = state.hhTab || "kontrol";
+  const ayEsik = accNum((state.hhAyar || {}).ay) || 6;
+  const kontrol = hastaKontrolListesi(ayEsik);
+  const kayip = hastaKayipListesi(12);
+  const randevu = yakinRandevular(3);
+
+  const chip = (id, label, adet) => {
+    const aktif = altTab === id;
+    return `<button data-action="hh-tab" data-tab="${id}" style="flex:1;padding:8px 4px;border-radius:10px;font-size:10.5px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${aktif ? "#00695C" : "var(--line)"};background:${aktif ? "#00695C" : "rgba(255,255,255,.7)"};color:${aktif ? "#fff" : "var(--ink)"};cursor:pointer;line-height:1.3;">${label}<br/><span style="font-size:12px;">${adet}</span></button>`;
+  };
+
+  let icerik = "";
+
+  if (altTab === "kontrol") {
+    icerik = kontrol.length ? kontrol.map(h => {
+      const mesaj = `Sayın ${h.ad},\n\nNur Diş & Dental Klinik'ten yazıyoruz.\nSon işleminiz (${h.sonIslemAdi || "tedavi"}) üzerinden ${Math.floor(h.ayFark)} ay geçti.\n\n6 aylık rutin kontrol zamanınız geldi. Ağız ve diş sağlığınız için muayene olmanızı öneririz.\n\nRandevu için: 0505 105 03 02\nMardin Kızıltepe TOKİ`;
+      return `<div class="card p3 mb2">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="flex:1;min-width:0;">
+            <p style="font-size:12.5px;font-weight:700;margin:0;">${escapeHtml(h.ad)}</p>
+            <p style="font-size:10px;color:var(--muted);margin:2px 0 0;">${escapeHtml(h.sonIslemAdi || "")} · ${accTarihTR(h.sonIslemTarihi)}</p>
+            <p style="font-size:10.5px;color:#E65100;font-weight:700;margin:3px 0 0;">${Math.floor(h.ayFark)} ay geçti (${h.gunFark} gün)</p>
+            <p style="font-size:9.5px;color:#888;margin:2px 0 0;">${h.adet} işlem · ${accTL0(h.toplam)} ciro${h.tel ? " · " + escapeHtml(h.tel) : " · ⚠️ telefon yok"}</p>
+          </div>
+          ${h.tel
+            ? `<a href="${waLink(h.tel, mesaj)}" target="_blank" rel="noopener" style="background:#25D366;color:#fff;text-decoration:none;border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;flex-shrink:0;">💬</a>`
+            : `<span style="font-size:18px;opacity:.3;">💬</span>`}
+        </div>
+      </div>`;
+    }).join("") : `<div class="card p4" style="text-align:center;background:#E8F5E9;border:1px solid #A5D6A7;">
+        <p style="font-size:12.5px;margin:0;color:#1B5E20;font-weight:700;">✅ Kontrol zamanı gelen hasta yok</p>
+        <p style="font-size:10px;color:#2E7D32;margin:4px 0 0;">Son ${ayEsik} ay içinde tüm hastalar geldi.</p>
+      </div>`;
+
+    if (kontrol.length) {
+      icerik += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;">
+        <button class="btn-primary" style="background:#00695C;font-size:11px;padding:10px;" data-action="hh-kopyala" data-tip="kontrol">📋 Tümünü Kopyala</button>
+        <button class="btn-primary" style="background:#0E93AC;font-size:11px;padding:10px;" data-action="hh-yazdir" data-tip="kontrol">🖨️ Liste Yazdır</button>
+      </div>`;
+    }
+  }
+
+  if (altTab === "randevu") {
+    icerik = randevu.length ? randevu.map(a => {
+      const d = new Date(a.date);
+      const gunAdi = d.toLocaleDateString("tr-TR", { weekday: "long", day: "numeric", month: "long" });
+      const mesaj = `Sayın ${a.name},\n\n${gunAdi} saat ${a.time} randevunuzu hatırlatmak isteriz.\n\nNur Diş & Dental Klinik\nMardin Kızıltepe TOKİ\n0505 105 03 02`;
+      return `<div class="card p3 mb2">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="flex:1;min-width:0;">
+            <p style="font-size:12.5px;font-weight:700;margin:0;">${escapeHtml(a.name)}</p>
+            <p style="font-size:10.5px;color:#0277BD;font-weight:700;margin:2px 0 0;">${gunAdi} · ${escapeHtml(a.time || "")}</p>
+            <p style="font-size:9.5px;color:#888;margin:2px 0 0;">${escapeHtml(a.phone || "telefon yok")}</p>
+          </div>
+          ${a.phone
+            ? `<a href="${waLink(a.phone, mesaj)}" target="_blank" rel="noopener" style="background:#25D366;color:#fff;text-decoration:none;border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;flex-shrink:0;">💬</a>`
+            : `<span style="font-size:18px;opacity:.3;">💬</span>`}
+        </div>
+      </div>`;
+    }).join("") : `<div class="card p4" style="text-align:center;"><p class="footnote" style="margin:0;">Gelecek 3 günde randevu yok.</p></div>`;
+  }
+
+  if (altTab === "kayip") {
+    icerik = kayip.length ? kayip.map(h => {
+      const mesaj = `Sayın ${h.ad},\n\nNur Diş & Dental Klinik'ten yazıyoruz.\n${Math.floor(h.gunFark / 30)} aydır sizi göremedik. Ağız sağlığınız için kontrol olmanızı öneririz.\n\nSize özel muayene randevusu: 0505 105 03 02`;
+      return `<div class="card p3 mb2" style="border-left:3px solid #C62828;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="flex:1;min-width:0;">
+            <p style="font-size:12.5px;font-weight:700;margin:0;">${escapeHtml(h.ad)}</p>
+            <p style="font-size:10.5px;color:#C62828;font-weight:700;margin:2px 0 0;">${Math.floor(h.gunFark / 30)} ay gelmedi</p>
+            <p style="font-size:9.5px;color:#888;margin:2px 0 0;">${h.adet} işlem · ${accTL0(h.toplam)} toplam ciro</p>
+          </div>
+          ${h.tel
+            ? `<a href="${waLink(h.tel, mesaj)}" target="_blank" rel="noopener" style="background:#25D366;color:#fff;text-decoration:none;border-radius:7px;padding:7px 10px;font-size:11px;font-weight:700;flex-shrink:0;">💬</a>`
+            : `<span style="font-size:18px;opacity:.3;">💬</span>`}
+        </div>
+      </div>`;
+    }).join("") : `<div class="card p4" style="text-align:center;"><p class="footnote" style="margin:0;">Kayıp hasta yok.</p></div>`;
+  }
+
+  const kayipCiro = kayip.reduce((s, h) => s + h.toplam, 0);
+  const kontrolPotansiyel = kontrol.length * (kontrol.length ? kontrol.reduce((s, h) => s + h.ortalama, 0) / kontrol.length : 0);
+
+  return `
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#004D40,#00695C);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 2px;">🔔 Hasta Hatırlatma</p>
+      <p style="font-size:10.5px;opacity:.85;margin:0 0 10px;">${kontrol.length} kontrol · ${randevu.length} randevu · ${kayip.length} kayıp</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9px;margin:0;opacity:.85;">KONTROL POTANSİYELİ</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0 0;">${accTL0(kontrolPotansiyel)}</p>
+        </div>
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9px;margin:0;opacity:.85;">KAYIP HASTA CİROSU</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0 0;">${accTL0(kayipCiro)}</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:5px;margin-bottom:12px;">
+      ${chip("kontrol", "Kontrol Zamanı", kontrol.length)}
+      ${chip("randevu", "Yaklaşan Randevu", randevu.length)}
+      ${chip("kayip", "Kayıp Hasta", kayip.length)}
+    </div>
+
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+      <span style="font-size:10px;color:#666;">Kontrol eşiği:</span>
+      ${[6, 12, 18, 24].map(v => `<button data-action="hh-esik" data-ay="${v}" style="padding:5px 10px;border-radius:14px;font-size:10px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${(state.hhAyar||{}).ay === v || (!state.hhAyar && v === 6) ? "#00695C" : "var(--line)"};background:${(state.hhAyar||{}).ay === v || (!state.hhAyar && v === 6) ? "#00695C" : "rgba(255,255,255,.7)"};color:${(state.hhAyar||{}).ay === v || (!state.hhAyar && v === 6) ? "#fff" : "var(--ink)"};cursor:pointer;">${v} ay</button>`).join("")}
+    </div>
+
+    ${icerik}
+
+    <div class="card p4 mb3" style="background:#E0F2F1;border:1px solid #80CBC4;margin-top:12px;">
+      <p style="font-size:11.5px;font-weight:700;color:#00695C;margin:0 0 6px;">💡 Kontrol hatırlatması neden önemli?</p>
+      <p style="font-size:10.5px;color:#00897B;margin:0;line-height:1.65;">
+        6 ayda bir kontrol, hem ağız sağlığı hem de klinik cirosu için kritik.
+        <b>Yeni hasta bulmak, eski hastayı geri getirmekten 5 kat pahalıdır.</b>
+        Her hatırlatma mesajı ortalama <b>%10-15 geri dönüş</b> sağlar.
+      </p>
+    </div>
+  `;
+}
+
+/* =========================================================
+   2) PERSONEL PRİM / BONUS
+========================================================= */
+
+/* Bonus tipleri:
+   - "yuzde"    : cironun %X'i
+   - "esik"     : eşik üstü cironun %X'i
+   - "kademeli" : dilimli prim
+   - "sabit"    : sabit tutar
+*/
+const BONUS_TIPLERI = [
+  { id: "yuzde", ad: "Cironun Yüzdesi", aciklama: "Aylık cironun %X'i" },
+  { id: "esik", ad: "Eşik Üstü Yüzde", aciklama: "Belirlenen cironun üstünün %X'i" },
+  { id: "kademeli", ad: "Kademeli Prim", aciklama: "Hedefin üstünde artan oran" },
+  { id: "sabit", ad: "Sabit Prim", aciklama: "Aylık sabit tutar" }
+];
+
+function bonusAyarlar() {
+  return state.bonusAyar || {
+    tip: "esik",
+    oran: 5,
+    esik: 100000,
+    hedef: 150000,
+    sabit: 5000,
+    personelOzel: {}
+  };
+}
+
+/* Bir personel için prim hesapla (aylık ciro bazlı) */
+function primHesapla(p) {
+  const ayar = bonusAyarlar();
+  const ozel = (ayar.personelOzel || {})[p.id] || {};
+  const tip = ozel.tip || ayar.tip || "esik";
+  const oran = accNum(ozel.oran != null ? ozel.oran : ayar.oran);
+  const esik = accNum(ozel.esik != null ? ozel.esik : ayar.esik);
+  const hedef = accNum(ozel.hedef != null ? ozel.hedef : ayar.hedef);
+  const sabit = accNum(ozel.sabit != null ? ozel.sabit : ayar.sabit);
+
+  const v = personelVerimlilik().find(x => x.personel.id === p.id);
+  const ciro = v ? v.ciro : 0;
+
+  let prim = 0, aciklama = "";
+
+  if (tip === "yuzde") {
+    prim = ciro * oran / 100;
+    aciklama = "Cironun %" + oran + "'i";
+  } else if (tip === "esik") {
+    const fazla = Math.max(0, ciro - esik);
+    prim = fazla * oran / 100;
+    aciklama = accTL0(esik) + " üstü cironun %" + oran + "'i";
+  } else if (tip === "kademeli") {
+    // Hedefin altı: yarı oran, hedefin üstü: tam oran
+    if (ciro >= hedef) {
+      prim = (ciro * oran / 100);
+      aciklama = "Hedef (" + accTL0(hedef) + ") aşıldı → %" + oran;
+    } else if (ciro >= hedef * 0.75) {
+      prim = (ciro * oran / 200);
+      aciklama = "Hedefin %75'i → yarı oran (%" + (oran / 2) + ")";
+    } else {
+      prim = 0;
+      aciklama = "Hedefin altında → prim yok";
+    }
+  } else {
+    prim = sabit;
+    aciklama = "Sabit aylık prim";
+  }
+
+  const maliyet = (v ? v.aylikMaliyet : accPayroll(p).isvereneMaliyet);
+  const toplamMaliyet = maliyet + prim;
+  const primOran = ciro > 0 ? (prim / ciro) * 100 : 0;
+
+  return {
+    personel: p, ad: p.name, gorev: p.position || "",
+    ciro, tip, oran, esik, hedef, sabit,
+    prim, aciklama, primOran,
+    maliyet, toplamMaliyet,
+    netKar: ciro - toplamMaliyet   // (malzeme hariç, basit görünüm)
+  };
+}
+
+function renderAccPrim() {
+  const ayar = bonusAyarlar();
+  const personeller = (state.personnel || []).filter(p => p.aktif !== false);
+  const hesaplar = personeller.map(primHesapla);
+  const toplamPrim = hesaplar.reduce((s, x) => s + x.prim, 0);
+  const toplamCiro = hesaplar.reduce((s, x) => s + x.ciro, 0);
+  const toplamMaliyet = hesaplar.reduce((s, x) => s + x.toplamMaliyet, 0);
+  const primOran = toplamCiro > 0 ? (toplamPrim / toplamCiro) * 100 : 0;
+
+  const tipChip = BONUS_TIPLERI.map(t => {
+    const aktif = ayar.tip === t.id;
+    return `<button data-action="prim-tip" data-tip="${t.id}" style="flex:1;padding:8px 3px;border-radius:9px;font-size:9.5px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${aktif ? "#6A1B9A" : "var(--line)"};background:${aktif ? "#6A1B9A" : "rgba(255,255,255,.7)"};color:${aktif ? "#fff" : "var(--ink)"};cursor:pointer;line-height:1.25;">${t.ad}</button>`;
+  }).join("");
+
+  const kartlar = hesaplar.map(h => {
+    const renk = h.prim > 0 ? "#2E7D32" : "#999";
+    return `<div class="card p3 mb2">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:12.5px;font-weight:700;margin:0;">${escapeHtml(h.ad)}</p>
+          <p style="font-size:10px;color:var(--muted);margin:2px 0 0;">${escapeHtml(h.gorev)}</p>
+          <p style="font-size:10.5px;color:#555;margin:4px 0 0;">Aylık ciro: <b>${accTL0(h.ciro)}</b></p>
+          <p style="font-size:9.5px;color:#888;margin:2px 0 0;">${escapeHtml(h.aciklama)}</p>
+          <p style="font-size:9.5px;color:#888;margin:2px 0 0;">Maaş ${accTL0(h.maliyet)} + Prim ${accTL0(h.prim)} = ${accTL0(h.toplamMaliyet)}</p>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <p style="font-size:15px;font-weight:800;margin:0;color:${renk};">${accTL0(h.prim)}</p>
+          <p style="font-size:8.5px;color:#999;margin:1px 0 0;">prim</p>
+          <p style="font-size:9px;color:${renk};margin:3px 0 0;font-weight:700;">%${h.primOran.toFixed(1)} ciro</p>
+        </div>
+      </div>
+    </div>`;
+  }).join("") || `<p class="footnote">Aktif personel yok.</p>`;
+
+  return `
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#4A148C,#6A1B9A);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 2px;">🎁 Personel Prim / Bonus</p>
+      <p style="font-size:10.5px;opacity:.85;margin:0 0 10px;">${personeller.length} personel · ${BONUS_TIPLERI.find(t => t.id === ayar.tip)?.ad || ""}</p>
+      <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;">
+        <p style="font-size:9.5px;margin:0;opacity:.85;">BU AY TOPLAM PRİM</p>
+        <p style="font-size:22px;font-weight:800;margin:2px 0 0;">${accTL(toplamPrim)}</p>
+      </div>
+      <p style="font-size:10px;margin:8px 0 0;opacity:.9;">Ciroya oranı: <b>%${primOran.toFixed(1)}</b> · Toplam personel maliyeti: ${accTL0(toplamMaliyet)}</p>
+    </div>
+
+    <p class="section-label">Prim Sistemi</p>
+    <div style="display:flex;gap:4px;margin-bottom:12px;">${tipChip}</div>
+
+    <div class="card p4 mb3">
+      <p style="font-size:12px;font-weight:700;margin:0 0 10px;color:#4A148C;">⚙️ Prim Ayarları</p>
+      ${ayar.tip === "yuzde" ? `
+        <div class="field"><label>Ciro yüzdesi (%)</label><input class="input" type="number" step="0.5" id="pb-oran" value="${accNum(ayar.oran)}" /></div>
+      ` : ayar.tip === "esik" ? `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="field"><label>Eşik ciro (₺)</label><input class="input" type="number" id="pb-esik" value="${accNum(ayar.esik)}" /></div>
+          <div class="field"><label>Eşik üstü (%)</label><input class="input" type="number" step="0.5" id="pb-oran" value="${accNum(ayar.oran)}" /></div>
+        </div>
+      ` : ayar.tip === "kademeli" ? `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="field"><label>Hedef ciro (₺)</label><input class="input" type="number" id="pb-hedef" value="${accNum(ayar.hedef)}" /></div>
+          <div class="field"><label>Tam oran (%)</label><input class="input" type="number" step="0.5" id="pb-oran" value="${accNum(ayar.oran)}" /></div>
+        </div>
+        <p class="footnote" style="margin:-6px 0 10px;">Hedefin %75'i → yarı oran · Hedef aşılırsa → tam oran · Altında → prim yok</p>
+      ` : `
+        <div class="field"><label>Aylık sabit prim (₺)</label><input class="input" type="number" id="pb-sabit" value="${accNum(ayar.sabit)}" /></div>
+      `}
+      <button class="btn-primary" style="background:#6A1B9A;font-size:12px;padding:11px;" data-action="prim-kaydet">💾 Ayarları Kaydet</button>
+    </div>
+
+    <p class="section-label">Personel Primleri</p>
+    ${kartlar}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;">
+      <button class="btn-primary" style="background:#6A1B9A;font-size:11.5px;padding:11px;" data-action="prim-yazdir">🖨️ Prim Bordrosu</button>
+      <button class="btn-primary" style="background:#0E93AC;font-size:11.5px;padding:11px;" data-action="prim-csv">⬇️ CSV İndir</button>
+    </div>
+
+    <div class="card p4 mb3" style="background:#F3E5F5;border:1px solid #CE93D8;">
+      <p style="font-size:11.5px;font-weight:700;color:#4A148C;margin:0 0 8px;">📊 4 prim modeli</p>
+      <table style="width:100%;font-size:10px;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid #E1BEE7;">
+          <td style="padding:5px 0;font-weight:700;">Cironun Yüzdesi</td>
+          <td style="padding:5px 0;color:#6A1B9A;">Aylık cironun %X'i — basit ve şeffaf</td>
+        </tr>
+        <tr style="border-bottom:1px solid #E1BEE7;">
+          <td style="padding:5px 0;font-weight:700;">Eşik Üstü</td>
+          <td style="padding:5px 0;color:#6A1B9A;">Belirlenen cironun üstünün %X'i — maliyet güvenli</td>
+        </tr>
+        <tr style="border-bottom:1px solid #E1BEE7;">
+          <td style="padding:5px 0;font-weight:700;">Kademeli</td>
+          <td style="padding:5px 0;color:#6A1B9A;">Hedefe yaklaştıkça artan — motivasyon yüksek</td>
+        </tr>
+        <tr>
+          <td style="padding:5px 0;font-weight:700;">Sabit</td>
+          <td style="padding:5px 0;color:#6A1B9A;">Her ay aynı tutar — öngörülebilir</td>
+        </tr>
+      </table>
+      <p style="font-size:9.5px;color:#8E24AA;margin:8px 0 0;line-height:1.5;">
+        Personel bazlı farklı oran için ileride "Personel Özel" ayarı eklenecek.
+        Prim, personel maliyetine eklenerek toplam maliyet hesaplanır.
+      </p>
+    </div>
+  `;
+}
+
 function renderAccRandevu() {
   const donem = state.randevuDonem || 30;
   const r = randevuAnaliz(donem);
@@ -4931,6 +5326,8 @@ function renderAccounting() {
     { id: "verimlilik", label: "👥 Personel Verim" },
     { id: "kampanya", label: "🎯 Kampanya" },
     { id: "bayat", label: "📦 Bayat Stok" },
+    { id: "hatirlatma", label: "🔔 Hasta Hatırlatma" },
+    { id: "prim", label: "🎁 Prim / Bonus" },
     { id: "cari", label: "💳 Cari Hesap" },
     { id: "demirbas", label: "🏗️ Amortisman" },
     { id: "bordro", label: "📄 Bordro" },
@@ -4959,6 +5356,8 @@ function renderAccounting() {
   else if (tab === "verimlilik") body = renderAccVerimlilik();
   else if (tab === "kampanya") body = renderAccKampanya();
   else if (tab === "bayat") body = renderAccBayat();
+  else if (tab === "hatirlatma") body = renderAccHastaHatirlatma();
+  else if (tab === "prim") body = renderAccPrim();
   else if (tab === "cari") body = renderAccCari();
   else if (tab === "demirbas") body = renderAccDemirbas();
   else if (tab === "bordro") body = renderAccBordro();
@@ -5750,6 +6149,106 @@ function accAction(action, el) {
     if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
     alert("✅ SGK primi gider olarak kaydedildi: " + accTL(t.toplamSgk));
     render();
+    return true;
+  }
+
+  /* ---- HASTA HATIRLATMA ---- */
+  if (A("hh-tab")) { state.hhTab = el.dataset.tab; render(); return true; }
+  if (A("hh-esik")) {
+    state.hhAyar = { ay: parseInt(el.dataset.ay) };
+    localStorage.setItem("nurdis_hh_ayar", JSON.stringify(state.hhAyar));
+    render();
+    return true;
+  }
+  if (A("hh-kopyala")) {
+    const ayEsik = accNum((state.hhAyar || {}).ay) || 6;
+    const liste = hastaKontrolListesi(ayEsik);
+    const metin = "NUR DİŞ — KONTROL ZAMANI GELEN HASTALAR\n" +
+      "Tarih: " + accTarihTR() + "\n" + "-".repeat(40) + "\n" +
+      liste.map((h, i) => (i + 1) + ". " + h.ad + " | " + (h.tel || "tel yok") + " | " + Math.floor(h.ayFark) + " ay | Son: " + (h.sonIslemAdi || "-")).join("\n") +
+      "\n" + "-".repeat(40) + "\nToplam: " + liste.length + " hasta";
+    accCopy(metin);
+    return true;
+  }
+  if (A("hh-yazdir")) {
+    const ayEsik = accNum((state.hhAyar || {}).ay) || 6;
+    const liste = hastaKontrolListesi(ayEsik);
+    let h = '<p style="font-size:12px;margin:0 0 12px;">Kontrol zamanı gelen ' + liste.length + ' hasta (' + ayEsik + ' ay eşiği)</p>';
+    h += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+    h += '<tr style="background:#f0f0f0;"><th style="padding:5px;border:1px solid #ddd;text-align:left;">#</th><th style="padding:5px;border:1px solid #ddd;text-align:left;">Hasta</th><th style="padding:5px;border:1px solid #ddd;">Telefon</th><th style="padding:5px;border:1px solid #ddd;text-align:center;">Geçen</th><th style="padding:5px;border:1px solid #ddd;">Son İşlem</th><th style="padding:5px;border:1px solid #ddd;">Aranacak</th></tr>';
+    liste.forEach((x, i) => {
+      h += '<tr><td style="padding:4px;border:1px solid #ddd;">' + (i + 1) + '</td>';
+      h += '<td style="padding:4px;border:1px solid #ddd;">' + escapeHtml(x.ad) + '</td>';
+      h += '<td style="padding:4px;border:1px solid #ddd;">' + escapeHtml(x.tel || "-") + '</td>';
+      h += '<td style="padding:4px;border:1px solid #ddd;text-align:center;">' + Math.floor(x.ayFark) + ' ay</td>';
+      h += '<td style="padding:4px;border:1px solid #ddd;">' + escapeHtml(x.sonIslemAdi || "-") + '</td>';
+      h += '<td style="padding:4px;border:1px solid #ddd;">☐</td></tr>';
+    });
+    h += '</table>';
+    accPrint("Hasta Kontrol Listesi", h);
+    return true;
+  }
+
+  /* ---- PRİM / BONUS ---- */
+  if (A("prim-tip")) {
+    const tip = el.dataset.tip;
+    state.bonusAyar = Object.assign({}, bonusAyarlar(), { tip });
+    localStorage.setItem("nurdis_bonus_ayar", JSON.stringify(state.bonusAyar));
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    render();
+    return true;
+  }
+  if (A("prim-kaydet")) {
+    const ayar = bonusAyarlar();
+    const oran = accNum(document.getElementById("pb-oran")?.value);
+    const esik = accNum(document.getElementById("pb-esik")?.value);
+    const hedef = accNum(document.getElementById("pb-hedef")?.value);
+    const sabit = accNum(document.getElementById("pb-sabit")?.value);
+    if (oran > 0) ayar.oran = oran;
+    if (esik > 0) ayar.esik = esik;
+    if (hedef > 0) ayar.hedef = hedef;
+    if (sabit > 0) ayar.sabit = sabit;
+    state.bonusAyar = ayar;
+    localStorage.setItem("nurdis_bonus_ayar", JSON.stringify(ayar));
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    const toplam = (state.personnel || []).filter(p => p.aktif !== false).map(primHesapla).reduce((s, x) => s + x.prim, 0);
+    alert("✅ Prim ayarları kaydedildi.\n\nBu ay toplam prim: " + accTL(toplam));
+    render();
+    return true;
+  }
+  if (A("prim-yazdir")) {
+    const hesaplar = (state.personnel || []).filter(p => p.aktif !== false).map(primHesapla);
+    let h = '<p style="font-size:12px;margin:0 0 12px;">Dönem: ' + accAyAdi(new Date().getFullYear(), new Date().getMonth() + 1) + '</p>';
+    h += '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+    h += '<tr style="background:#f0f0f0;"><th style="padding:5px;border:1px solid #ddd;text-align:left;">Personel</th><th style="padding:5px;border:1px solid #ddd;">Görev</th><th style="padding:5px;border:1px solid #ddd;text-align:right;">Ciro</th><th style="padding:5px;border:1px solid #ddd;text-align:right;">Maaş</th><th style="padding:5px;border:1px solid #ddd;text-align:right;">Prim</th><th style="padding:5px;border:1px solid #ddd;text-align:right;">Toplam</th><th style="padding:5px;border:1px solid #ddd;">İmza</th></tr>';
+    let tc = 0, tm = 0, tp = 0;
+    hesaplar.forEach(x => {
+      tc += x.ciro; tm += x.maliyet; tp += x.prim;
+      h += '<tr><td style="padding:4px;border:1px solid #ddd;">' + escapeHtml(x.ad) + '</td>';
+      h += '<td style="padding:4px;border:1px solid #ddd;">' + escapeHtml(x.gorev) + '</td>';
+      h += '<td style="padding:4px;border:1px solid #ddd;text-align:right;">' + accTL0(x.ciro) + '</td>';
+      h += '<td style="padding:4px;border:1px solid #ddd;text-align:right;">' + accTL0(x.maliyet) + '</td>';
+      h += '<td style="padding:4px;border:1px solid #ddd;text-align:right;font-weight:bold;">' + accTL0(x.prim) + '</td>';
+      h += '<td style="padding:4px;border:1px solid #ddd;text-align:right;">' + accTL0(x.toplamMaliyet) + '</td>';
+      h += '<td style="padding:4px;border:1px solid #ddd;"></td></tr>';
+    });
+    h += '<tr style="background:#f3e5f5;font-weight:bold;"><td colspan="2" style="padding:5px;border:1px solid #ddd;">TOPLAM</td>';
+    h += '<td style="padding:5px;border:1px solid #ddd;text-align:right;">' + accTL0(tc) + '</td>';
+    h += '<td style="padding:5px;border:1px solid #ddd;text-align:right;">' + accTL0(tm) + '</td>';
+    h += '<td style="padding:5px;border:1px solid #ddd;text-align:right;">' + accTL0(tp) + '</td>';
+    h += '<td style="padding:5px;border:1px solid #ddd;text-align:right;">' + accTL0(tm + tp) + '</td><td style="border:1px solid #ddd;"></td></tr>';
+    h += '</table>';
+    accPrint("Personel Prim Bordrosu", h);
+    return true;
+  }
+  if (A("prim-csv")) {
+    const hesaplar = (state.personnel || []).filter(p => p.aktif !== false).map(primHesapla);
+    const rows = [["Personel", "Görev", "Aylık Ciro", "Maaş (işveren maliyeti)", "Prim", "Toplam Maliyet", "Prim Açıklaması"]];
+    hesaplar.forEach(x => rows.push([
+      x.ad, x.gorev, x.ciro.toFixed(2), x.maliyet.toFixed(2),
+      x.prim.toFixed(2), x.toplamMaliyet.toFixed(2), x.aciklama
+    ]));
+    accCsvDownload("prim-bordrosu-" + accKey() + ".csv", rows);
     return true;
   }
 
@@ -8067,7 +8566,9 @@ function saveAccountingToFirebase() {
       stok: state.stok || [],
       stokHareket: (state.stokHareket || []).slice(0, 800),
       tedaviMalzeme: state.tedaviMalzeme || {},
-      kampanyalar: state.kampanyalar || []
+      kampanyalar: state.kampanyalar || [],
+      hhAyar: state.hhAyar || null,
+      bonusAyar: state.bonusAyar || null
     }).catch(() => {});
   }
 }
@@ -8242,6 +8743,8 @@ function startAdminSubscriptions() {
         if (data.stokHareket) { state.stokHareket = data.stokHareket; localStorage.setItem("nurdis_stok_hareket", JSON.stringify(state.stokHareket)); }
         if (data.tedaviMalzeme) { state.tedaviMalzeme = data.tedaviMalzeme; localStorage.setItem("nurdis_tedavi_malzeme", JSON.stringify(state.tedaviMalzeme)); }
         if (data.kampanyalar) { state.kampanyalar = data.kampanyalar; localStorage.setItem("nurdis_kampanyalar", JSON.stringify(state.kampanyalar)); }
+        if (data.hhAyar) { state.hhAyar = data.hhAyar; localStorage.setItem("nurdis_hh_ayar", JSON.stringify(state.hhAyar)); }
+        if (data.bonusAyar) { state.bonusAyar = data.bonusAyar; localStorage.setItem("nurdis_bonus_ayar", JSON.stringify(state.bonusAyar)); }
         localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_treatment_prices", JSON.stringify(state.treatmentPrices)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_auto_expenses", JSON.stringify(state.autoExpenses)); saveAccountingToFirebase();
