@@ -317,6 +317,12 @@ let state = {
   hkSirala: "ciro",
   hkDetay: null,
   nakitAy: 3,
+  randevuDonem: 30,
+  verimDonem: 30,
+  randevuAyar: null,
+  kampanyalar: [],
+  kampanyaEdit: undefined,
+  bayatAyar: null,
   kdvYil: null,
   kdvAy: null,
   gvDonem: 1,
@@ -392,6 +398,9 @@ function loadAll() {
   try { state.stok = JSON.parse(localStorage.getItem("nurdis_stok") || "[]"); } catch(e){ state.stok = []; }
   try { state.stokHareket = JSON.parse(localStorage.getItem("nurdis_stok_hareket") || "[]"); } catch(e){ state.stokHareket = []; }
   try { state.tedaviMalzeme = JSON.parse(localStorage.getItem("nurdis_tedavi_malzeme") || "{}"); } catch(e){ state.tedaviMalzeme = {}; }
+  try { state.kampanyalar = JSON.parse(localStorage.getItem("nurdis_kampanyalar") || "[]"); } catch(e){ state.kampanyalar = []; }
+  try { state.randevuAyar = JSON.parse(localStorage.getItem("nurdis_randevu_ayar") || "null"); } catch(e){ state.randevuAyar = null; }
+  try { state.bayatAyar = JSON.parse(localStorage.getItem("nurdis_bayat_ayar") || "null"); } catch(e){ state.bayatAyar = null; }
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}
   
@@ -2711,6 +2720,614 @@ function tedaviKar(tedavi) {
   return { tedavi, fiyat, maliyet, kar, marj };
 }
 
+/* =========================================================
+   NUR DİŞ — İŞLETME ANALİZİ v7
+   1) Randevu & Ciro Tahmini (doluluk, no-show, beklenen ciro)
+   2) Personel Verimliliği (hekim başına ciro ve kârlılık)
+   3) Kampanya Yönetimi (indirim etki analizi)
+   4) Bayat Stok (hareketsiz malzeme, bağlı sermaye)
+========================================================= */
+
+/* =========================================================
+   1) RANDEVU & CİRO TAHMİNİ
+========================================================= */
+
+/* Günlük kapasite (TIME_SLOTS uzunluğu) — ayarlanabilir */
+function randevuKapasite() {
+  return accNum((state.randevuAyar || {}).gunlukKapasite) || TIME_SLOTS.length;
+}
+
+/* Bir tarihin kapalı olup olmadığı (Pazar kapalı varsayımı) */
+function randevuKapali(d) {
+  const ayar = state.randevuAyar || {};
+  const pazarKapali = ayar.pazarKapali !== false;
+  return pazarKapali && new Date(d).getDay() === 0;
+}
+
+/* Dönem içindeki çalışma günü sayısı */
+function calismaGunuSayisi(baslangic, bitis) {
+  let n = 0;
+  const d = new Date(baslangic);
+  const b = new Date(bitis);
+  while (d <= b) {
+    if (!randevuKapali(d)) n++;
+    d.setDate(d.getDate() + 1);
+  }
+  return n;
+}
+
+/* Randevu analizi */
+function randevuAnaliz(donemGun) {
+  const gun = donemGun || 30;
+  const bugun = new Date();
+  bugun.setHours(0, 0, 0, 0);
+  const gecmisBas = new Date(bugun.getTime() - gun * 86400000);
+  const gelecekSon = new Date(bugun.getTime() + gun * 86400000);
+
+  const randevular = (state.appointments || []).filter(a => a && a.date);
+  const gecmis = randevular.filter(a => { const d = new Date(a.date); return d >= gecmisBas && d < bugun; });
+  const gelecek = randevular.filter(a => { const d = new Date(a.date); return d >= bugun && d <= gelecekSon; });
+
+  const kapasite = randevuKapasite();
+  const gecmisGun = calismaGunuSayisi(gecmisBas, new Date(bugun.getTime() - 86400000));
+  const gelecekGun = calismaGunuSayisi(bugun, gelecekSon);
+  const gecmisKapasite = Math.max(1, gecmisGun * kapasite);
+  const gelecekKapasite = Math.max(1, gelecekGun * kapasite);
+
+  /* Gerçekleşen: randevu tarihinde aynı isimle tedavi kaydı var mı? */
+  const norm = s => (s || "").toLowerCase().replace(/[^a-zğüşıöç0-9]/g, "");
+  const inc = state.accounting.incomes || [];
+
+  const gecmisDetay = gecmis.map(a => {
+    const hastaAdi = norm((a.name || "").split(" ")[0]);
+    const eslesme = inc.find(x => {
+      const d = new Date(x.date);
+      const aD = new Date(a.date);
+      const gunFark = Math.abs((d - aD) / 86400000);
+      if (gunFark > 7) return false;
+      const desc = norm((x.firm || "") + " " + (x.description || ""));
+      return hastaAdi.length > 2 && desc.includes(hastaAdi);
+    });
+    return { ...a, geldi: !!eslesme, ciro: eslesme ? accNum(eslesme.grossAmount || eslesme.amount) : 0 };
+  });
+
+  const gelenSayisi = gecmisDetay.filter(x => x.geldi).length;
+  const noShowOrani = gecmis.length ? ((gecmis.length - gelenSayisi) / gecmis.length) * 100 : 0;
+  const doluluk = Math.min(100, (gecmis.length / gecmisKapasite) * 100);
+  const gelecekDoluluk = Math.min(100, (gelecek.length / gelecekKapasite) * 100);
+
+  /* Ortalama işlem değeri */
+  const son30 = inc.filter(x => new Date(x.date) >= gecmisBas);
+  const ortIslemDeger = son30.length ? son30.reduce((s, x) => s + accNum(x.grossAmount || x.amount), 0) / son30.length : 0;
+  const ortIslemSayisi = son30.length;
+
+  /* Geçmiş cironun randevuya bölümü (gerçek dönüşüm) */
+  const gecmisCiro = gecmisDetay.reduce((s, x) => s + x.ciro, 0);
+  const eslesmeOrani = gecmis.length ? (gelenSayisi / gecmis.length) : 0;
+
+  /* Randevu başına ciro — güvenilir hesap:
+     Az sayıda eşleşme varsa istatistik yanıltıcı olur.
+     Bu yüzden genel ortalama işlem değeriyle harmanlanır (Bayes benzeri). */
+  const eslesmeSayisi = gecmisDetay.filter(x => x.geldi).length;
+  const eslesmeOrt = eslesmeSayisi > 0 ? gecmisCiro / eslesmeSayisi : 0;
+  const GUVEN_ESIK = 10;                       // 10 eşleşmeden az ise harmanla
+  const guven = Math.min(1, eslesmeSayisi / GUVEN_ESIK);
+  const randevuBasinaCiro = (guven * eslesmeOrt + (1 - guven) * ortIslemDeger) * eslesmeOrani;
+
+  /* Beklenen ciro: gelecek randevu × randevu başına ortalama ciro */
+  const beklenenCiro = gelecek.length * (randevuBasinaCiro || ortIslemDeger);
+  /* Potansiyel: boş slotların gerçekçi kısmı dolarsa
+     (her slotun dolması gerçekçi değil — mevcut doluluk + %25 iyileşme hedefi) */
+  const bosSlot = Math.max(0, gelecekKapasite - gelecek.length);
+  const hedefDoluluk = Math.min(90, gelecekDoluluk + 25);          // %25 iyileşme hedefi
+  const ekRandevu = Math.max(0, Math.round(gelecekKapasite * hedefDoluluk / 100) - gelecek.length);
+  const potansiyelCiro = beklenenCiro + ekRandevu * (randevuBasinaCiro || ortIslemDeger);
+  const teorikMaks = beklenenCiro + bosSlot * (randevuBasinaCiro || ortIslemDeger);
+
+  /* En yoğun günler */
+  const gunDagilim = {};
+  gecmis.forEach(a => {
+    const d = new Date(a.date).getDay();
+    gunDagilim[d] = (gunDagilim[d] || 0) + 1;
+  });
+  const gunAdlari = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+
+  /* Saat dağılımı */
+  const saatDagilim = {};
+  gecmis.forEach(a => { saatDagilim[a.time] = (saatDagilim[a.time] || 0) + 1; });
+
+  /* Haftalık projeksiyon (gelecek 8 hafta) */
+  const haftalar = [];
+  for (let w = 0; w < 8; w++) {
+    const bas = new Date(bugun.getTime() + w * 7 * 86400000);
+    const bit = new Date(bas.getTime() + 7 * 86400000);
+    const haftaRandevu = gelecek.filter(a => { const d = new Date(a.date); return d >= bas && d < bit; });
+    haftalar.push({
+      etiket: bas.toLocaleDateString("tr-TR", { day: "numeric", month: "short" }),
+      adet: haftaRandevu.length,
+      ciro: haftaRandevu.length * (randevuBasinaCiro || ortIslemDeger)
+    });
+  }
+
+  return {
+    gecmis, gelecek, gecmisDetay, gelenSayisi, noShowOrani, doluluk, gelecekDoluluk,
+    ortIslemDeger, gecmisCiro, randevuBasinaCiro, beklenenCiro, potansiyelCiro,
+    bosSlot, gelecekKapasite, gecmisKapasite, gunDagilim, gunAdlari, saatDagilim, haftalar,
+    kapasite, hedefDoluluk, ekRandevu, teorikMaks
+  };
+}
+
+function renderAccRandevu() {
+  const donem = state.randevuDonem || 30;
+  const r = randevuAnaliz(donem);
+
+  const chip = (v, l) => {
+    const aktif = donem === v;
+    return `<button data-action="randevu-donem" data-gun="${v}" style="flex:1;padding:7px;border-radius:9px;font-size:11px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${aktif ? "#0277BD" : "var(--line)"};background:${aktif ? "#0277BD" : "rgba(255,255,255,.7)"};color:${aktif ? "#fff" : "var(--ink)"};cursor:pointer;">${l}</button>`;
+  };
+
+  const haftaBar = r.haftalar.map(h => {
+    const max = Math.max(1, ...r.haftalar.map(x => x.ciro));
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;">
+      <div style="width:70%;background:#0277BD;border-radius:3px 3px 0 0;height:${Math.max(4, h.ciro / max * 100)}%;" title="${accTL0(h.ciro)} — ${h.adet} randevu"></div>
+      <span style="font-size:8px;color:#888;margin-top:3px;">${h.etiket.split(" ")[0]}</span>
+    </div>`;
+  }).join("");
+
+  const gunBar = r.gunAdlari.map((ad, i) => {
+    const v = r.gunDagilim[i] || 0;
+    const max = Math.max(1, ...Object.values(r.gunDagilim));
+    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+      <span style="font-size:10px;width:64px;color:#666;">${ad}</span>
+      <div style="flex:1;height:14px;background:#F0F0F0;border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:${v / max * 100}%;background:#0277BD;border-radius:4px;"></div>
+      </div>
+      <span style="font-size:10px;font-weight:700;width:24px;text-align:right;color:#0277BD;">${v}</span>
+    </div>`;
+  }).join("");
+
+  const saatBar = TIME_SLOTS.map(t => {
+    const v = r.saatDagilim[t] || 0;
+    const max = Math.max(1, ...Object.values(r.saatDagilim));
+    return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+      <span style="font-size:9.5px;width:36px;color:#666;font-family:monospace;">${t}</span>
+      <div style="flex:1;height:11px;background:#F0F0F0;border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:${v / max * 100}%;background:#00838F;border-radius:3px;"></div>
+      </div>
+      <span style="font-size:9px;font-weight:700;width:20px;text-align:right;color:#00838F;">${v}</span>
+    </div>`;
+  }).join("");
+
+  const noShowRenk = r.noShowOrani > 25 ? "#C62828" : r.noShowOrani > 12 ? "#E65100" : "#2E7D32";
+
+  return `
+    <div style="display:flex;gap:5px;margin-bottom:12px;">
+      ${chip(30, "30 Gün")}${chip(60, "60 Gün")}${chip(90, "90 Gün")}
+    </div>
+
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#01579B,#0277BD);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 2px;">📅 Randevu &amp; Ciro Tahmini</p>
+      <p style="font-size:10.5px;opacity:.85;margin:0 0 10px;">Gelecek ${donem} gün · ${r.gelecek.length} randevu</p>
+      <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;">
+        <p style="font-size:9.5px;margin:0;opacity:.85;">BEKLENEN CİRO</p>
+        <p style="font-size:22px;font-weight:800;margin:2px 0 0;">${accTL(r.beklenenCiro)}</p>
+      </div>
+      <p style="font-size:10px;margin:8px 0 0;opacity:.9;">
+        ${r.ekRandevu > 0
+          ? "Boş " + r.bosSlot + " slottan " + r.ekRandevu + " tanesi dolarsa: <b>" + accTL(r.potansiyelCiro) + "</b>"
+          : "Randevular dolu görünüyor"}
+      </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px;">
+      <div class="card p2" style="text-align:center;">
+        <p style="font-size:8.5px;color:#666;margin:0;">DOLULUK</p>
+        <p style="font-size:14px;font-weight:800;color:#0277BD;margin:2px 0;">%${r.doluluk.toFixed(0)}</p>
+      </div>
+      <div class="card p2" style="text-align:center;background:#FFF8E1;">
+        <p style="font-size:8.5px;color:${noShowRenk};margin:0;">GELMEYEN</p>
+        <p style="font-size:14px;font-weight:800;color:${noShowRenk};margin:2px 0;">%${r.noShowOrani.toFixed(0)}</p>
+      </div>
+      <div class="card p2" style="text-align:center;">
+        <p style="font-size:8.5px;color:#666;margin:0;">İŞLEM ORT.</p>
+        <p style="font-size:14px;font-weight:800;color:#2E7D32;margin:2px 0;">${accTL0(r.ortIslemDeger)}</p>
+      </div>
+    </div>
+
+    ${r.noShowOrani > 20 ? `<div class="card p3 mb3" style="background:#FFEBEE;border:1px solid #EF9A9A;">
+      <p style="font-size:11.5px;font-weight:700;color:#C62828;margin:0;">⚠️ Randevuların %${r.noShowOrani.toFixed(0)}'ine gelinmiyor</p>
+      <p style="font-size:10px;color:#B71C1C;margin:3px 0 0;">Kayıp ciro (${donem} günde): <b>${accTL(r.gecmis.length * r.randevuBasinaCiro - r.gecmisCiro)}</b><br/>Hatırlatma SMS'i veya ön ödeme bu kaybı büyük ölçüde kapatır.</p>
+    </div>` : ""}
+
+    <div class="card p4 mb3">
+      <p style="font-size:12.5px;font-weight:700;margin:0 0 10px;">📈 Haftalık Ciro Projeksiyonu</p>
+      <div style="display:flex;align-items:flex-end;gap:6px;height:110px;">${haftaBar}</div>
+    </div>
+
+    <div class="card p4 mb3">
+      <p style="font-size:12.5px;font-weight:700;margin:0 0 8px;color:#0277BD;">📆 Hangi Gün Daha Yoğun?</p>
+      ${gunBar}
+    </div>
+
+    <div class="card p4 mb3">
+      <p style="font-size:12.5px;font-weight:700;margin:0 0 8px;color:#00838F;">🕐 Hangi Saat Daha Yoğun?</p>
+      ${saatBar}
+    </div>
+
+    <div class="card p4 mb3" style="background:#E1F5FE;border:1px solid #81D4FA;">
+      <p style="font-size:11.5px;font-weight:700;color:#01579B;margin:0 0 6px;">💡 Nasıl hesaplanıyor?</p>
+      <p style="font-size:10.5px;color:#0277BD;margin:0;line-height:1.65;">
+        <b>Beklenen ciro</b> = Gelecek randevu sayısı × randevu başına gerçek ciro<br/>
+        Randevu başına ciro, geçmişte randevuya gelen hastaların tedavi kayıtlarından hesaplanır.
+        Günlük kapasite <b>${r.kapasite} slot</b> (Ayarlar'dan değiştirilebilir).
+      </p>
+    </div>
+  `;
+}
+
+/* =========================================================
+   2) PERSONEL VERİMLİLİĞİ
+========================================================= */
+
+function personelVerimlilik() {
+  // ÖNEMLİ: Aylık personel maliyeti ile AYLIK ciro karşılaştırılır.
+  // Tüm zamanın cirosuyla aylık maliyeti bölmek yanlış sonuç verirdi.
+  const donemGun = accNum((state.verimDonem || 30)) || 30;
+  const esik = new Date(Date.now() - donemGun * 86400000);
+  const inc = (state.accounting.incomes || []).filter(x => new Date(x.date) >= esik);
+  const personel = state.personnel || [];
+  const ayKatsayi = 30 / donemGun; // ciro dönemini 30 güne normalize et
+
+  return personel.map(p => {
+    const maliyet = accPayroll(p);
+    // Hekime atanmış işlemler
+    const islemler = inc.filter(x => x.doctor === p.id || x.doctor === p.name);
+    const ciro = islemler.reduce((s, x) => s + accNum(x.grossAmount || x.amount), 0);
+    const islemSayisi = islemler.length;
+    const hastaSet = new Set(islemler.map(x => (x.firm || x.description || "").split(" - ")[0].trim()));
+    const hastaSayisi = hastaSet.size;
+    const ortalamaSepet = islemSayisi ? ciro / islemSayisi : 0;
+
+    // Malzeme maliyeti (atanmış işlemlerin)
+    const malzeme = islemler.reduce((s, x) => s + tedaviMalzemeMaliyeti(x.category || ""), 0);
+
+    const aylikMaliyet = maliyet.isvereneMaliyet;
+    const katki = (ciro - malzeme) * ayKatsayi;      // brüt katkı (aylığa normalize)
+    const net = katki - aylikMaliyet;                 // personel maliyeti düşüldükten sonra
+    const roi = aylikMaliyet > 0 ? (katki / aylikMaliyet) * 100 : 0;  // %
+    const verim = aylikMaliyet > 0 ? katki / aylikMaliyet : 0;        // kat sayı
+
+    return {
+      personel: p, ad: p.name, gorev: p.position || "",
+      ciro: ciro * ayKatsayi, islemSayisi, hastaSayisi, ortalamaSepet,
+      malzeme: malzeme * ayKatsayi, katki,
+      aylikMaliyet, net, roi, verim,
+      donemGun,
+      atanmis: islemSayisi > 0
+    };
+  }).sort((a, b) => b.ciro - a.ciro);
+}
+
+function renderAccVerimlilik() {
+  const liste = personelVerimlilik();
+  const atanmisCiro = liste.reduce((s, x) => s + x.ciro, 0);
+  const toplamIslem = (state.accounting.incomes || []).length;
+  const atanmisIslem = liste.reduce((s, x) => s + x.islemSayisi, 0);
+  const atamaOrani = toplamIslem ? (atanmisIslem / toplamIslem) * 100 : 0;
+  const toplamMaliyet = liste.reduce((s, x) => s + x.aylikMaliyet, 0);
+  const toplamKatki = liste.reduce((s, x) => s + x.katki, 0);
+
+  const kartlar = liste.map(x => {
+    const renk = x.verim >= 3 ? "#2E7D32" : x.verim >= 1.5 ? "#F9A825" : x.aylikMaliyet > 0 ? "#C62828" : "#888";
+    const etiket = x.verim >= 3 ? "Çok verimli" : x.verim >= 1.5 ? "Dengeli" : x.aylikMaliyet > 0 ? "Maliyetini karşılamıyor" : "—";
+    return `<div class="card p3 mb2">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:12.5px;font-weight:700;margin:0;">${escapeHtml(x.ad)}</p>
+          <p style="font-size:10px;color:var(--muted);margin:2px 0 0;">${escapeHtml(x.gorev)}</p>
+          ${x.atanmis ? `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;margin-top:6px;font-size:9.5px;color:#666;">
+            <span>Ciro: <b style="color:#2E7D32;">${accTL0(x.ciro)}</b></span>
+            <span>Hasta: <b>${x.hastaSayisi}</b></span>
+            <span>İşlem: <b>${x.islemSayisi}</b></span>
+            <span>Sepet: <b>${accTL0(x.ortalamaSepet)}</b></span>
+          </div>
+          <p style="font-size:9.5px;color:#888;margin:4px 0 0;">Maliyet ${accTL0(x.aylikMaliyet)} · Katkı ${accTL0(x.katki)}</p>
+          ` : `<p style="font-size:10px;color:#E65100;margin:5px 0 0;">⚠️ Henüz işlem atanmamış</p>`}
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          ${x.atanmis ? `<p style="font-size:13px;font-weight:800;margin:0;color:${renk};">${x.verim.toFixed(1)}x</p>
+          <p style="font-size:8.5px;color:${renk};margin:1px 0 0;font-weight:700;">${etiket}</p>
+          <p style="font-size:9.5px;color:${x.net >= 0 ? "#2E7D32" : "#C62828"};margin:4px 0 0;font-weight:700;">${accTL0(x.net)}</p>
+          <p style="font-size:8px;color:#999;margin:0;">net katkı</p>` : ""}
+        </div>
+      </div>
+    </div>`;
+  }).join("") || `<p class="footnote">Personel kaydı yok.</p>`;
+
+  /* Atanmamış işlemler */
+  const atanmamis = (state.accounting.incomes || []).filter(x => !x.doctor);
+  const atanmamisCiro = atanmamis.reduce((s, x) => s + accNum(x.grossAmount || x.amount), 0);
+
+  return `
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#1B5E20,#2E7D32);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 2px;">👥 Personel Verimliliği</p>
+      <p style="font-size:10.5px;opacity:.85;margin:0 0 10px;">${liste.length} personel · ${atanmisIslem}/${toplamIslem} işlem atanmış</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9px;margin:0;opacity:.85;">ATANMIŞ CİRO</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0 0;">${accTL0(atanmisCiro)}</p>
+        </div>
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9px;margin:0;opacity:.85;">PERSONEL MALİYETİ</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0 0;">${accTL0(toplamMaliyet)}</p>
+        </div>
+      </div>
+      <p style="font-size:10px;margin:8px 0 0;opacity:.9;">Genel verim: <b>${toplamMaliyet > 0 ? (toplamKatki / toplamMaliyet).toFixed(1) + "x" : "—"}</b> · Katkı ${accTL0(toplamKatki)}</p>
+    </div>
+
+    ${atamaOrani < 80 ? `<div class="card p3 mb3" style="background:#FFF3E0;border:1px solid #FFB74D;">
+      <p style="font-size:11.5px;font-weight:700;color:#E65100;margin:0;">📌 İşlemlerin %${(100 - atamaOrani).toFixed(0)}'i bir personele atanmamış</p>
+      <p style="font-size:10px;color:#BF360C;margin:3px 0 0;">Doğru verimlilik analizi için gelir kaydederken <b>"Hekim"</b> alanını seçin.<br/>Atanmamış ciro: <b>${accTL0(atanmamisCiro)}</b></p>
+    </div>` : ""}
+
+    <div style="display:flex;gap:5px;margin:10px 0;">
+      ${[30, 90, 180].map(v => `<button data-action="verim-donem" data-gun="${v}" style="flex:1;padding:7px;border-radius:9px;font-size:10.5px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${(state.verimDonem || 30) === v ? "#2E7D32" : "var(--line)"};background:${(state.verimDonem || 30) === v ? "#2E7D32" : "rgba(255,255,255,.7)"};color:${(state.verimDonem || 30) === v ? "#fff" : "var(--ink)"};cursor:pointer;">Son ${v} Gün</button>`).join("")}
+    </div>
+
+    <p class="section-label">Personel Bazlı Verim (aylığa normalize)</p>
+    ${kartlar}
+
+    <div class="card p4 mb3" style="background:#E8F5E9;border:1px solid #A5D6A7;">
+      <p style="font-size:11.5px;font-weight:700;color:#1B5E20;margin:0 0 6px;">💡 Verim katsayısı nedir?</p>
+      <p style="font-size:10.5px;color:#2E7D32;margin:0;line-height:1.65;">
+        <b>Verim = (Ciro − Malzeme maliyeti) ÷ Personel maliyeti</b><br/>
+        • <b>3x ve üzeri</b> → çok verimli<br/>
+        • <b>1,5 – 3x</b> → dengeli<br/>
+        • <b>1,5x altı</b> → maliyetini karşılamıyor, eğitim veya görev dağılımı gerekir
+      </p>
+    </div>
+  `;
+}
+
+/* =========================================================
+   3) KAMPANYA YÖNETİMİ
+========================================================= */
+
+function kampanyaDurum(k) {
+  const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+  const bas = new Date(k.baslangic);
+  const bit = new Date(k.bitis);
+  if (bugun < bas) return { kod: "bekliyor", etiket: "Başlamadı", renk: "#1565C0" };
+  if (bugun > bit) return { kod: "bitti", etiket: "Bitti", renk: "#888" };
+  const kalan = Math.round((bit - bugun) / 86400000);
+  return { kod: "aktif", etiket: kalan + " gün kaldı", renk: "#2E7D32" };
+}
+
+function kampanyaEtki(k) {
+  const fiyat = accNum(accTumFiyatlar()[k.tedavi]);
+  const indirimli = fiyat * (1 - accNum(k.indirim) / 100);
+  const malzeme = tedaviMalzemeMaliyeti(k.tedavi);
+  const karNormal = fiyat - malzeme;
+  const karIndirimli = indirimli - malzeme;
+  const kayip = karNormal - karIndirimli;
+  // Aynı kârı korumak için kaç ek hasta gerekiyor
+  const ekHasta = karIndirimli > 0 ? kayip / karIndirimli : Infinity;
+  return {
+    fiyat, indirimli, malzeme, karNormal, karIndirimli, kayip,
+    marjNormal: fiyat > 0 ? (karNormal / fiyat) * 100 : 0,
+    marjIndirimli: indirimli > 0 ? (karIndirimli / indirimli) * 100 : 0,
+    ekHasta: isFinite(ekHasta) ? Math.ceil(ekHasta) : null
+  };
+}
+
+function renderAccKampanya() {
+  const liste = state.kampanyalar || [];
+  const ed = state.kampanyaEdit;
+
+  let formHtml = "";
+  if (ed !== null && ed !== undefined) {
+    const k = liste.find(x => x.id === ed) || {
+      id: "", ad: "", tedavi: TEDAVI_LISTESI[1], indirim: 10,
+      baslangic: accToday(), bitis: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+      kullanim: 0, notlar: ""
+    };
+    formHtml = `<div class="card p4 mb3" style="border:2px solid #E65100;background:#FFF3E0;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 10px;color:#BF360C;">${k.id ? "✏️ Kampanyayı Düzenle" : "➕ Yeni Kampanya"}</p>
+      <div class="field"><label>Kampanya adı</label><input class="input" id="kp-ad" value="${escapeAttr(k.ad || "")}" placeholder="Örn: Ekim implant fırsatı" /></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="field"><label>Tedavi</label>
+          <select class="input" id="kp-tedavi">
+            ${TEDAVI_LISTESI.map(t => `<option ${k.tedavi === t ? "selected" : ""}>${t}</option>`).join("")}
+          </select>
+        </div>
+        <div class="field"><label>İndirim %</label><input class="input" type="number" min="0" max="90" step="1" id="kp-indirim" value="${accNum(k.indirim)}" /></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="field"><label>Başlangıç</label><input class="input" type="date" id="kp-bas" value="${escapeAttr(k.baslangic || "")}" /></div>
+        <div class="field"><label>Bitiş</label><input class="input" type="date" id="kp-bit" value="${escapeAttr(k.bitis || "")}" /></div>
+      </div>
+      <div class="field"><label>Kullanım sayısı</label><input class="input" type="number" id="kp-kullanim" value="${accNum(k.kullanim)}" /></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" style="background:#E65100;" data-action="kp-save" data-id="${k.id || ""}">💾 Kaydet</button>
+        <button class="btn-primary" style="background:#757575;" data-action="kp-cancel">İptal</button>
+      </div>
+    </div>`;
+  }
+
+  const kartlar = liste.map(k => {
+    const d = kampanyaDurum(k);
+    const e = kampanyaEtki(k);
+    return `<div class="card p3 mb2" style="border-left:4px solid ${d.renk};">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:12.5px;font-weight:700;margin:0;">${escapeHtml(k.ad)}</p>
+          <p style="font-size:10px;color:var(--muted);margin:2px 0 0;">${escapeHtml(k.tedavi)} · %${accNum(k.indirim)} indirim · ${accNum(k.kullanim)} kullanım</p>
+          <p style="font-size:9.5px;color:${d.renk};font-weight:700;margin:3px 0 0;">${d.etiket}</p>
+          <div style="display:flex;gap:10px;margin-top:5px;font-size:9.5px;">
+            <span style="color:#888;">Normal ${accTL0(e.fiyat)} → <b style="color:#E65100;">${accTL0(e.indirimli)}</b></span>
+          </div>
+          <p style="font-size:9.5px;color:#666;margin:3px 0 0;">Kâr: ${accTL0(e.karNormal)} → <b style="color:${e.karIndirimli >= 0 ? "#2E7D32" : "#C62828"};">${accTL0(e.karIndirimli)}</b> (marj %${e.marjIndirimli.toFixed(0)})</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <button data-action="kp-edit" data-id="${k.id}" style="background:#FFF3E0;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px;">✏️</button>
+          <button data-action="kp-delete" data-id="${k.id}" style="background:#FFEBEE;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:11px;color:#C62828;">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("") || `<p class="footnote">Henüz kampanya yok.</p>`;
+
+  const aktifSayisi = liste.filter(k => kampanyaDurum(k).kod === "aktif").length;
+  const toplamKullanim = liste.reduce((s, k) => s + accNum(k.kullanim), 0);
+
+  return `
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#E65100,#F57C00);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 2px;">🎯 Kampanya Yönetimi</p>
+      <p style="font-size:10.5px;opacity:.85;margin:0 0 10px;">${liste.length} kampanya · ${aktifSayisi} aktif</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9px;margin:0;opacity:.85;">TOPLAM KULLANIM</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0 0;">${toplamKullanim}</p>
+        </div>
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;">
+          <p style="font-size:9px;margin:0;opacity:.85;">AKTİF</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0 0;">${aktifSayisi}</p>
+        </div>
+      </div>
+    </div>
+
+    ${formHtml}
+    ${ed === null || ed === undefined ? `<button class="btn-primary mb3" style="background:#E65100;" data-action="kp-new">➕ Yeni Kampanya</button>` : ""}
+
+    <p class="section-label">Kampanyalar (${liste.length})</p>
+    ${kartlar}
+
+    <div class="card p4 mb3" style="background:#FFF3E0;border:1px solid #FFB74D;">
+      <p style="font-size:11.5px;font-weight:700;color:#E65100;margin:0 0 6px;">🧮 İndirim kâra nasıl yansıyor?</p>
+      <p style="font-size:10.5px;color:#BF360C;margin:0;line-height:1.7;">
+        Her kampanyada program otomatik gösteriyor:
+      </p>
+      <ul style="font-size:10px;color:#BF360C;margin:6px 0 0;padding-left:16px;line-height:1.8;">
+        <li>İndirimli fiyat ve yeni kâr</li>
+        <li>Yeni kâr marjı</li>
+        <li><b>Aynı kârı korumak için kaç ek hasta gerekiyor</b></li>
+      </ul>
+      <p style="font-size:10px;color:#E65100;margin:8px 0 0;font-weight:600;">
+        %20 indirim yaptığında aynı parayı kazanmak için yaklaşık <b>%25 daha fazla hasta</b> görmen gerekir.
+      </p>
+    </div>
+  `;
+}
+
+/* =========================================================
+   4) BAYAT STOK
+========================================================= */
+
+function bayatStok(gunEsik) {
+  const esik = gunEsik || (accNum((state.bayatAyar || {}).gun) || 90);
+  const bugun = new Date();
+  const stoklar = state.stok || [];
+  const hareketler = state.stokHareket || [];
+
+  return stoklar.map(s => {
+    const sHareket = hareketler.filter(h => h.stokId === s.id);
+    const sonCikis = sHareket.filter(h => h.tip === "cikis")
+      .sort((a, b) => new Date(b.tarih) - new Date(a.tarih))[0];
+    const sonHerhangi = sHareket.sort((a, b) => new Date(b.tarih) - new Date(a.tarih))[0];
+
+    const sonTarih = sonCikis ? new Date(sonCikis.tarih) : (s.sonKullanim ? new Date(s.sonKullanim) : (sonHerhangi ? new Date(sonHerhangi.tarih) : new Date(s.olusturma || "2000-01-01")));
+    const gun = Math.round((bugun - sonTarih) / 86400000);
+    const deger = stokDeger(s);
+    const hicKullanilmadi = !sonCikis;
+    const bayat = gun >= esik;
+
+    // Aylık tüketim hızı
+    const son90Cikis = sHareket.filter(h => h.tip === "cikis" && (bugun - new Date(h.tarih)) / 86400000 <= 90);
+    const aylikTuketim = son90Cikis.reduce((t, h) => t + accNum(h.miktar), 0) / 3;
+    const kalanAy = aylikTuketim > 0 ? accNum(s.miktar) / aylikTuketim : null;
+
+    return {
+      ...s, gunBayat: gun, deger, hicKullanilmadi, bayat, aylikTuketim, kalanAy,
+      sonTarih, sHareketSayisi: sHareket.length
+    };
+  }).filter(x => x.bayat || x.hicKullanilmadi)
+    .sort((a, b) => b.deger - a.deger);
+}
+
+function renderAccBayat() {
+  const esik = accNum((state.bayatAyar || {}).gun) || 90;
+  const liste = bayatStok(esik);
+  const toplamDeger = liste.reduce((s, x) => s + x.deger, 0);
+  const toplamStokDeger = stokToplamDeger();
+  const oran = toplamStokDeger > 0 ? (toplamDeger / toplamStokDeger) * 100 : 0;
+
+  const chip = (v, l) => {
+    const aktif = esik === v;
+    return `<button data-action="bayat-esik" data-gun="${v}" style="flex:1;padding:7px;border-radius:9px;font-size:10.5px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${aktif ? "#6D4C41" : "var(--line)"};background:${aktif ? "#6D4C41" : "rgba(255,255,255,.7)"};color:${aktif ? "#fff" : "var(--ink)"};cursor:pointer;">${l}</button>`;
+  };
+
+  const kartlar = liste.map(x => {
+    const renk = x.hicKullanilmadi ? "#C62828" : x.gunBayat >= esik * 2 ? "#C62828" : x.gunBayat >= esik ? "#E65100" : "#666";
+    const etiket = x.hicKullanilmadi ? "Hiç kullanılmadı" : x.gunBayat + " gündür kullanılmıyor";
+    return `<div class="card p3 mb2" style="border-left:4px solid ${renk};">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:12.5px;font-weight:700;margin:0;">${escapeHtml(x.ad)}</p>
+          <p style="font-size:10px;color:${renk};font-weight:600;margin:2px 0 0;">${etiket}</p>
+          <p style="font-size:10px;color:var(--muted);margin:2px 0 0;">${accNum(x.miktar).toLocaleString("tr-TR")} ${escapeHtml(x.birim)} · ${escapeHtml(x.kategori || "")}</p>
+          <p style="font-size:10px;color:#888;margin:2px 0 0;">
+            ${x.aylikTuketim > 0 ? "Aylık tüketim " + x.aylikTuketim.toFixed(1) + " · " + (x.kalanAy ? x.kalanAy.toFixed(0) + " ay yeter" : "") : "Tüketim kaydı yok"}
+          </p>
+        </div>
+        <div style="text-align:right;flex-shrink:0;">
+          <p style="font-size:12.5px;font-weight:800;margin:0;color:${renk};">${accTL0(x.deger)}</p>
+          <p style="font-size:8.5px;color:#999;margin:1px 0 0;">bağlı sermaye</p>
+          <button data-action="bayat-sil" data-id="${x.id}" style="margin-top:5px;background:#FFEBEE;border:none;border-radius:6px;padding:4px 7px;font-size:9.5px;color:#C62828;cursor:pointer;">Zayiat</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("") || `<div class="card p4" style="text-align:center;background:#E8F5E9;border:1px solid #A5D6A7;">
+      <p style="font-size:12.5px;margin:0;color:#1B5E20;font-weight:700;">✅ Bayat malzeme yok</p>
+      <p style="font-size:10px;color:#2E7D32;margin:4px 0 0;">Tüm stok ${esik} gün içinde hareket görmüş.</p>
+    </div>`;
+
+  return `
+    <div style="display:flex;gap:5px;margin-bottom:12px;">
+      ${chip(60, "60 Gün")}${chip(90, "90 Gün")}${chip(180, "180 Gün")}
+    </div>
+
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#3E2723,#6D4C41);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 2px;">📦 Bayat Stok Analizi</p>
+      <p style="font-size:10.5px;opacity:.85;margin:0 0 10px;">${esik} gündür hareket görmeyen malzemeler</p>
+      <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;">
+        <p style="font-size:9.5px;margin:0;opacity:.85;">BAĞLI SERMAYE</p>
+        <p style="font-size:22px;font-weight:800;margin:2px 0 0;">${accTL(toplamDeger)}</p>
+      </div>
+      <p style="font-size:10px;margin:8px 0 0;opacity:.9;">
+        ${liste.length} kalem · toplam stoğun <b>%${oran.toFixed(0)}</b>'ı
+      </p>
+    </div>
+
+    ${oran > 30 ? `<div class="card p3 mb3" style="background:#FFEBEE;border:1px solid #EF9A9A;">
+      <p style="font-size:11.5px;font-weight:700;color:#C62828;margin:0;">⚠️ Stoğun %${oran.toFixed(0)}'ı hareketsiz</p>
+      <p style="font-size:10px;color:#B71C1C;margin:3px 0 0;">Bu tutar kasada değil rafta bekliyor. Sipariş miktarlarını gözden geçir.</p>
+    </div>` : ""}
+
+    <p class="section-label">Hareketsiz Malzemeler (${liste.length})</p>
+    ${kartlar}
+
+    <div class="card p4 mb3" style="background:#EFEBE9;border:1px solid #BCAAA4;">
+      <p style="font-size:11.5px;font-weight:700;color:#4E342E;margin:0 0 6px;">💡 Ne yapmalı?</p>
+      <p style="font-size:10.5px;color:#5D4037;margin:0;line-height:1.7;">
+        • <b>Kampanya</b> yaparak bu malzemeyi kullanan tedaviyi indirime sok<br/>
+        • Son kullanma tarihi yaklaşanları <b>öncelikli kullan</b><br/>
+        • Bozulanları <b>"Zayiat"</b> butonuyla stoktan düş (gider olarak işlenir)<br/>
+        • Bir daha aynı miktarda <b>sipariş verme</b>
+      </p>
+    </div>
+  `;
+}
+
 function renderAccMalzemeMaliyet() {
   const secili = state.mmTedavi || TEDAVI_LISTESI[1];
   const kullanim = tedaviMalzemeListesi(secili);
@@ -4310,6 +4927,10 @@ function renderAccounting() {
     { id: "malzeme", label: "🧪 Malzeme Maliyeti" },
     { id: "hasta", label: "👤 Hasta Kârlılık" },
     { id: "nakit", label: "💰 Nakit Akış" },
+    { id: "randevu", label: "📅 Randevu & Ciro" },
+    { id: "verimlilik", label: "👥 Personel Verim" },
+    { id: "kampanya", label: "🎯 Kampanya" },
+    { id: "bayat", label: "📦 Bayat Stok" },
     { id: "cari", label: "💳 Cari Hesap" },
     { id: "demirbas", label: "🏗️ Amortisman" },
     { id: "bordro", label: "📄 Bordro" },
@@ -4334,6 +4955,10 @@ function renderAccounting() {
   else if (tab === "malzeme") body = renderAccMalzemeMaliyet();
   else if (tab === "hasta") body = renderAccHastaKar();
   else if (tab === "nakit") body = renderAccNakit();
+  else if (tab === "randevu") body = renderAccRandevu();
+  else if (tab === "verimlilik") body = renderAccVerimlilik();
+  else if (tab === "kampanya") body = renderAccKampanya();
+  else if (tab === "bayat") body = renderAccBayat();
   else if (tab === "cari") body = renderAccCari();
   else if (tab === "demirbas") body = renderAccDemirbas();
   else if (tab === "bordro") body = renderAccBordro();
@@ -4555,6 +5180,10 @@ function renderAccIslem() {
         <input class="input" id="pos-firm" placeholder="Firma / Hasta (isteğe bağlı)" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;" />
         <input class="input" id="pos-tc" placeholder="TC / Vergi No" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;" />
       </div>
+      <select class="input" id="pos-doctor" style="margin-top:8px;background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);font-size:11px;">
+        <option value="">— İşlemi yapan hekim (isteğe bağlı) —</option>
+        ${(state.personnel || []).filter(p => p.aktif !== false).map(p => `<option value="${escapeAttr(p.id)}">${escapeHtml(p.name)}</option>`).join("")}
+      </select>
       <label style="display:flex;align-items:center;gap:7px;margin-top:8px;font-size:11px;color:rgba(255,255,255,.9);">
         <input type="checkbox" id="pos-unpaid" />
         <span>Veresiye / ödenmedi (cari hesaba işlenir)</span>
@@ -5120,6 +5749,74 @@ function accAction(action, el) {
     localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting));
     if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
     alert("✅ SGK primi gider olarak kaydedildi: " + accTL(t.toplamSgk));
+    render();
+    return true;
+  }
+
+  /* ---- RANDEVU & CİRO ---- */
+  if (A("randevu-donem")) { state.randevuDonem = parseInt(el.dataset.gun); render(); return true; }
+  if (A("verim-donem")) { state.verimDonem = parseInt(el.dataset.gun); render(); return true; }
+
+  /* ---- KAMPANYA ---- */
+  if (A("kp-new")) { state.kampanyaEdit = ""; render(); window.scrollTo(0, 0); return true; }
+  if (A("kp-edit")) { state.kampanyaEdit = el.dataset.id; render(); window.scrollTo(0, 0); return true; }
+  if (A("kp-cancel")) { state.kampanyaEdit = undefined; render(); return true; }
+  if (A("kp-save")) {
+    const id = el.dataset.id;
+    const rec = {
+      id: id || ("kmp_" + Date.now()),
+      ad: (document.getElementById("kp-ad")?.value || "").trim(),
+      tedavi: document.getElementById("kp-tedavi")?.value || "Dolgu",
+      indirim: accNum(document.getElementById("kp-indirim")?.value),
+      baslangic: document.getElementById("kp-bas")?.value || accToday(),
+      bitis: document.getElementById("kp-bit")?.value || accToday(),
+      kullanim: accNum(document.getElementById("kp-kullanim")?.value)
+    };
+    if (!rec.ad) { alert("Kampanya adı gerekli."); return true; }
+    if (rec.indirim <= 0 || rec.indirim >= 90) { alert("İndirim %1 ile %89 arasında olmalı."); return true; }
+    if (!state.kampanyalar) state.kampanyalar = [];
+    if (id) {
+      const old = state.kampanyalar.find(x => x.id === id);
+      Object.assign(old, rec);
+    } else {
+      state.kampanyalar.push(rec);
+    }
+    localStorage.setItem("nurdis_kampanyalar", JSON.stringify(state.kampanyalar));
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    state.kampanyaEdit = undefined;
+    const e = kampanyaEtki(rec);
+    alert("✅ Kampanya kaydedildi.\n\n" + rec.tedavi + " · %" + rec.indirim + " indirim\n" +
+      accTL0(e.fiyat) + " → " + accTL0(e.indirimli) + "\n" +
+      "Kâr: " + accTL0(e.karNormal) + " → " + accTL0(e.karIndirimli) + "\n" +
+      (e.ekHasta !== null ? "Aynı kâr için " + e.ekHasta + " ek hasta gerekir." : ""));
+    render();
+    return true;
+  }
+  if (A("kp-delete")) {
+    if (!confirm("Bu kampanya silinsin mi?")) return true;
+    state.kampanyalar = (state.kampanyalar || []).filter(x => x.id !== el.dataset.id);
+    localStorage.setItem("nurdis_kampanyalar", JSON.stringify(state.kampanyalar));
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    render();
+    return true;
+  }
+
+  /* ---- BAYAT STOK ---- */
+  if (A("bayat-esik")) {
+    state.bayatAyar = { gun: parseInt(el.dataset.gun) };
+    localStorage.setItem("nurdis_bayat_ayar", JSON.stringify(state.bayatAyar));
+    render();
+    return true;
+  }
+  if (A("bayat-sil")) {
+    const s = stokBul(el.dataset.id);
+    if (!s) return true;
+    const miktar = accNum(s.miktar);
+    if (miktar <= 0) { alert("Stokta malzeme yok."); return true; }
+    if (!confirm("\"" + s.ad + "\" zayiat olarak düşülsün mü?\n\n" + miktar + " " + s.birim + " · Değer: " + accTL(stokDeger(s)) + "\n\nBu işlem stoktan düşer.")) return true;
+    stokHareketEkle(s.id, "cikis", miktar, "Zayiat / bozulma", s.birimFiyat);
+    stokKaydet();
+    alert("✅ Zayiat kaydedildi. Stok: " + accNum(s.miktar) + " " + s.birim);
     render();
     return true;
   }
@@ -6785,6 +7482,7 @@ document.addEventListener("click", (e) => {
     const firm = document.getElementById("pos-firm")?.value?.trim() || "";
     const tc = document.getElementById("pos-tc")?.value?.trim() || "";
     const unpaid = !!document.getElementById("pos-unpaid")?.checked;
+    const doctorId = document.getElementById("pos-doctor")?.value || "";
     if (!desc || !amount) { alert("Açıklama ve tutar gerekli!"); return; }
     if (!state.accounting) state.accounting = { incomes:[], expenses:[], firms:[], bankAccounts:[], invoices:[] };
 
@@ -6811,6 +7509,7 @@ document.addEventListener("click", (e) => {
       category: category, paymentMethod: payment, date: date, firm: firm, tcNo: tc,
       kdv: kdv, stopaj: stopaj, damga: damga, kdvOran: kdvOran, stopajOran: stopajOran,
       invoiceNo: invoiceNo, patientType: patientType,
+      doctor: doctorId,
       paid: !unpaid, paidDate: unpaid ? null : date,
       createdAt: new Date().toISOString()
     });
@@ -7367,7 +8066,8 @@ function saveAccountingToFirebase() {
       firmaBilgi: state.firmaBilgi || null,
       stok: state.stok || [],
       stokHareket: (state.stokHareket || []).slice(0, 800),
-      tedaviMalzeme: state.tedaviMalzeme || {}
+      tedaviMalzeme: state.tedaviMalzeme || {},
+      kampanyalar: state.kampanyalar || []
     }).catch(() => {});
   }
 }
@@ -7541,6 +8241,7 @@ function startAdminSubscriptions() {
         if (data.stok) { state.stok = data.stok; localStorage.setItem("nurdis_stok", JSON.stringify(state.stok)); }
         if (data.stokHareket) { state.stokHareket = data.stokHareket; localStorage.setItem("nurdis_stok_hareket", JSON.stringify(state.stokHareket)); }
         if (data.tedaviMalzeme) { state.tedaviMalzeme = data.tedaviMalzeme; localStorage.setItem("nurdis_tedavi_malzeme", JSON.stringify(state.tedaviMalzeme)); }
+        if (data.kampanyalar) { state.kampanyalar = data.kampanyalar; localStorage.setItem("nurdis_kampanyalar", JSON.stringify(state.kampanyalar)); }
         localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_treatment_prices", JSON.stringify(state.treatmentPrices)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_auto_expenses", JSON.stringify(state.autoExpenses)); saveAccountingToFirebase();
