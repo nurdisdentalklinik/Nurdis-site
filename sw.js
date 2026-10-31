@@ -1,8 +1,10 @@
 /* Sürüm numarasını HER değişiklikte artır — eski önbellek otomatik silinir. */
-const CACHE_VERSION = "v14";
+const CACHE_VERSION = "v15";
 const CACHE_NAME = "nurdis-" + CACHE_VERSION;
 const ASSETS = [
-  "./index.html", "./app.js", "./manifest.json", "./icon-192.png", "./icon-512.png",
+  "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png",
+  "./js/core.js", "./js/muhasebe.js", "./js/stok.js", "./js/crm.js", "./js/randevu.js",
+  "./js/anket.js", "./js/prim.js", "./js/mali.js", "./js/ekran.js", "./js/medya.js", "./js/firebase.js",
   "./doctor-photo.jpg", "./clinic-hero.jpg", "./whitening-before-after.jpg",
   "./treatment-process.jpg", "./info-toothache.jpg",
   "./screenshot-1-home.png", "./screenshot-2-services.png", "./screenshot-3-booking.png"
@@ -37,6 +39,12 @@ self.addEventListener("activate", (event) => {
    yarım/bozuk bir karışıma (index.html yeni, app.js eski gibi) yol açıp
    "uygulama düzgün yüklenemedi" hatasına neden oluyordu. */
 const NETWORK_FIRST = ["index.html", "app.js", "firebase-init.js", "manifest.json"];
+
+/* js/ klasöründeki tüm parçalar da network-first olmalı:
+   biri güncellenip diğeri önbellekten gelirse sürüm karışır. */
+function isJsPart(path) {
+  return path.indexOf("/js/") !== -1 || path.endsWith("/js") ;
+}
 
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
