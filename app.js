@@ -325,6 +325,10 @@ let state = {
   rvEdit: undefined,
   konumAyar: null,
   randevuSablon: null,
+  anketler: [],
+  anketTab: "bekleyen",
+  anketSablon: null,
+  hatirlatmaLog: [],
   hhSablonAcik: false,
   mesajSablon: null,
   hhAyar: null,
@@ -415,6 +419,9 @@ function loadAll() {
   try { state.mesajSablon = JSON.parse(localStorage.getItem("nurdis_mesaj_sablon") || "null"); } catch(e){ state.mesajSablon = null; }
   try { state.konumAyar = JSON.parse(localStorage.getItem("nurdis_konum_ayar") || "null"); } catch(e){ state.konumAyar = null; }
   try { state.randevuSablon = JSON.parse(localStorage.getItem("nurdis_randevu_sablon") || "null"); } catch(e){ state.randevuSablon = null; }
+  try { state.anketler = JSON.parse(localStorage.getItem("nurdis_anketler") || "[]"); } catch(e){ state.anketler = []; }
+  try { state.anketSablon = JSON.parse(localStorage.getItem("nurdis_anket_sablon") || "null"); } catch(e){ state.anketSablon = null; }
+  try { state.hatirlatmaLog = JSON.parse(localStorage.getItem("nurdis_hatirlatma_log") || "[]"); } catch(e){ state.hatirlatmaLog = []; }
   try { state.bonusAyar = JSON.parse(localStorage.getItem("nurdis_bonus_ayar") || "null"); } catch(e){ state.bonusAyar = null; }
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}
@@ -3117,10 +3124,27 @@ function randevuMesaj(tip, r) {
 
 function renderBookingV2() {
   const f = state.bookingForm;
+  // Birden fazla hekim olduğu için saat çakışması engellenmez.
+  // Sadece seçili hekimin o saatte randevusu varsa küçük bir işaret gösterilir.
+  const seciliDoktor = f.doctor || "";
   const slots = TIME_SLOTS.map(t => {
-    const dolu = (state.appointments || []).some(a => a.date === f.date && a.time === t && a.status !== "iptal");
-    return `<div class="slot ${f.time === t ? "active" : ""}" ${dolu ? 'style="opacity:.35;text-decoration:line-through;"' : ""} data-action="${dolu ? "slot-dolu" : "pick-time"}" data-time="${t}">${t}</div>`;
+    const dolu = seciliDoktor && (state.appointments || []).some(a =>
+      a.date === f.date && a.time === t && a.status !== "iptal" &&
+      (a.doctor === seciliDoktor || (!a.doctor && seciliDoktor))
+    );
+    return `<div class="slot ${f.time === t ? "active" : ""}" data-action="pick-time" data-time="${t}">${t}${dolu ? " •" : ""}</div>`;
   }).join("");
+
+  const doktorlar = (state.personnel || []).filter(p => p.aktif !== false);
+  const doktorSecim = doktorlar.length
+    ? `<div class="field"><label>Hekim (isteğe bağlı)</label>
+        <select class="input" id="f-doctor" onchange="state.bookingForm.doctor=this.value;render();">
+          <option value="">— Fark etmez —</option>
+          ${doktorlar.map(p => `<option value="${escapeAttr(p.id)}" ${f.doctor === p.id ? "selected" : ""}>${escapeHtml(p.name)}</option>`).join("")}
+        </select>
+        <p style="font-size:9.5px;color:#888;margin:4px 0 0;">Birden fazla hekim aynı saatte hasta kabul edebilir.</p>
+      </div>`
+    : "";
 
   const canSubmit = f.date && f.time && f.name && f.phone;
   let statusHtml = "";
@@ -3146,6 +3170,7 @@ function renderBookingV2() {
         <div class="field"><label>Hizmet</label><input class="input" value="Muayene" disabled style="background:#EEF6F4;color:var(--muted);" /></div>
         <div class="field"><label>Tarih</label><input class="input" type="date" id="f-date" value="${escapeAttr(f.date)}" min="${accToday()}" /></div>
         <div class="field"><label>Saat</label><div class="slot-grid">${slots}</div></div>
+        ${doktorSecim}
         <div class="field"><label>Ad Soyad</label><input class="input" id="f-name" placeholder="Adınız Soyadınız" value="${escapeAttr(f.name)}" /></div>
         <div class="field"><label>Telefon</label><input class="input" id="f-phone" type="tel" placeholder="05xx xxx xx xx" value="${escapeAttr(f.phone)}" /></div>
         <div class="field"><label>Not (isteğe bağlı)</label><input class="input" id="f-note" placeholder="Örn: diş ağrım var" value="${escapeAttr(f.note || "")}" /></div>
@@ -3180,6 +3205,320 @@ function randevuFiltrele(r, filtre) {
   if (filtre === "gelecek") { const y = randevuYakinlik(r); return y.gun >= 0 && r.status !== "iptal"; }
   if (filtre === "gecmis") { const y = randevuYakinlik(r); return y.gun < 0; }
   return r.status === filtre;
+}
+
+/* =========================================================
+   NUR DİŞ — ANKET ve HATIRLATMA v10
+   • Tedavi sonrası memnuniyet anketi (WhatsApp 1-5 yıldız)
+   • Randevu hatırlatma (bugün / yarın / 1 saat kala)
+========================================================= */
+
+/* ---------------- ANKET MESAJLARI ---------------- */
+
+const ANKET_MSG =
+`İyi günler Sayın {ad}
+
+Bugün kliniğimizi tercih ettiğiniz için teşekkür ederiz 🤍
+
+Deneyiminizi 1-5 yıldız ile puanlar mısınız?
+1 ⭐ · 2 ⭐⭐ · 3 ⭐⭐⭐ · 4 ⭐⭐⭐⭐ · 5 ⭐⭐⭐⭐⭐
+
+Görüşünüz bizim için çok değerli.
+
+Nur Diş & Dental Klinik`;
+
+const ANKET_MSG_KOTU =
+`Sayın {ad}
+
+Görüşünüz için teşekkür ederiz. Yaşadığınız memnuniyetsizliği düzeltmek isteriz.
+
+Sizi tekrar kliniğimize bekliyoruz, dilerseniz bize yazabilirsiniz.
+
+Nur Diş & Dental Klinik`;
+
+function anketMesaj(ad, kotu) {
+  const ozel = (state.anketSablon || {})[kotu ? "kotu" : "normal"];
+  let m = (ozel && ozel.trim()) ? ozel : (kotu ? ANKET_MSG_KOTU : ANKET_MSG);
+  return m.replace(/\{ad\}/g, ad || "hastamız");
+}
+
+/* Anket kaydı oluştur (randevu "geldi" işaretlenince) */
+function anketOlustur(randevu) {
+  if (!state.anketler) state.anketler = [];
+  const varMi = state.anketler.find(a => a.randevuId === randevu.id);
+  if (varMi) return varMi;
+
+  const kayit = {
+    id: "ank_" + Date.now() + "_" + Math.random().toString(36).slice(2, 5),
+    randevuId: randevu.id,
+    name: randevu.name || "",
+    phone: randevu.phone || "",
+    service: randevu.service || "Muayene",
+    tarih: randevu.date || accToday(),
+    gonderildi: false,
+    gonderimTarihi: null,
+    puan: null,
+    yorum: "",
+    yanitTarihi: null
+  };
+  state.anketler.unshift(kayit);
+  return kayit;
+}
+
+function anketKaydet() {
+  localStorage.setItem("nurdis_anketler", JSON.stringify((state.anketler || []).slice(0, 1500)));
+  if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+}
+
+/* Anket istatistikleri */
+function anketIstatistik() {
+  const l = state.anketler || [];
+  const yanitli = l.filter(a => a.puan !== null && a.puan !== undefined);
+  const gonderilen = l.filter(a => a.gonderildi);
+  const ort = yanitli.length ? yanitli.reduce((s, a) => s + accNum(a.puan), 0) / yanitli.length : 0;
+  const dagilim = [1, 2, 3, 4, 5].map(p => ({ puan: p, adet: yanitli.filter(a => accNum(a.puan) === p).length }));
+  const memnun = yanitli.filter(a => accNum(a.puan) >= 4).length;
+  const memnunOran = yanitli.length ? (memnun / yanitli.length) * 100 : 0;
+  const yanitOran = gonderilen.length ? (yanitli.length / gonderilen.length) * 100 : 0;
+  const dusuk = yanitli.filter(a => accNum(a.puan) <= 2);
+
+  return { toplam: l.length, gonderilen: gonderilen.length, yanitli: yanitli.length, ort, dagilim, memnunOran, yanitOran, dusuk };
+}
+
+/* =========================================================
+   RENDER: ANKET SEKMESİ
+========================================================= */
+
+function renderAccAnket() {
+  const ist = anketIstatistik();
+  const liste = state.anketler || [];
+  const altTab = state.anketTab || "bekleyen";
+
+  const chip = (id, label, adet) => {
+    const aktif = altTab === id;
+    return `<button data-action="anket-tab" data-tab="${id}" style="flex:1;padding:8px 3px;border-radius:10px;font-size:10px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${aktif ? "#AD1457" : "var(--line)"};background:${aktif ? "#AD1457" : "rgba(255,255,255,.7)"};color:${aktif ? "#fff" : "var(--ink)"};cursor:pointer;line-height:1.3;">${label}<br/><span style="font-size:12px;">${adet}</span></button>`;
+  };
+
+  let icerik = "";
+
+  if (altTab === "bekleyen") {
+    const bekleyen = liste.filter(a => !a.gonderildi);
+    icerik = bekleyen.length ? bekleyen.map(a => `
+      <div class="card p3 mb2">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="flex:1;min-width:0;">
+            <p style="font-size:12.5px;font-weight:700;margin:0;">${escapeHtml(a.name)}</p>
+            <p style="font-size:10px;color:var(--muted);margin:2px 0 0;">${escapeHtml(a.service)} · ${accTarihTR(a.tarih)}</p>
+            <p style="font-size:9.5px;color:#888;margin:2px 0 0;">${escapeHtml(a.phone || "telefon yok")}</p>
+          </div>
+          ${a.phone
+            ? `<a href="${waLink(a.phone, anketMesaj(a.name))}" target="_blank" rel="noopener"
+                 data-action="anket-gonderildi" data-id="${a.id}"
+                 style="background:#25D366;color:#fff;text-decoration:none;border-radius:7px;padding:7px 10px;font-size:10.5px;font-weight:700;flex-shrink:0;">💬 Gönder</a>`
+            : `<span style="font-size:18px;opacity:.3;">💬</span>`}
+        </div>
+      </div>`).join("") : `<div class="card p4" style="text-align:center;background:#E8F5E9;border:1px solid #A5D6A7;">
+        <p style="font-size:12.5px;margin:0;color:#1B5E20;font-weight:700;">✅ Gönderilmeyi bekleyen anket yok</p>
+        <p style="font-size:10px;color:#2E7D32;margin:4px 0 0;">Randevuyu "Geldi" işaretleyince anket otomatik oluşur.</p>
+      </div>`;
+  }
+
+  if (altTab === "yanit") {
+    const yanitBekleyen = liste.filter(a => a.gonderildi && (a.puan === null || a.puan === undefined));
+    icerik = yanitBekleyen.length ? yanitBekleyen.map(a => `
+      <div class="card p3 mb2">
+        <p style="font-size:12.5px;font-weight:700;margin:0 0 2px;">${escapeHtml(a.name)}</p>
+        <p style="font-size:10px;color:var(--muted);margin:0 0 8px;">${accTarihTR(a.gonderimTarihi)} gönderildi · ${escapeHtml(a.phone)}</p>
+        <p style="font-size:10px;color:#555;margin:0 0 6px;">Hastanın verdiği puan:</p>
+        <div style="display:flex;gap:4px;">
+          ${[1, 2, 3, 4, 5].map(p => `<button data-action="anket-puan" data-id="${a.id}" data-puan="${p}"
+            style="flex:1;background:${p >= 4 ? "#E8F5E9" : "#FFEBEE"};border:none;border-radius:7px;padding:9px 2px;cursor:pointer;font-size:11px;font-weight:700;color:${p >= 4 ? "#2E7D32" : "#C62828"};">${p}⭐</button>`).join("")}
+        </div>
+      </div>`).join("") : `<div class="card p4" style="text-align:center;"><p class="footnote" style="margin:0;">Yanıt bekleyen anket yok.</p></div>`;
+  }
+
+  if (altTab === "sonuc") {
+    const yanitli = liste.filter(a => a.puan !== null && a.puan !== undefined)
+      .sort((a, b) => new Date(b.yanitTarihi) - new Date(a.yanitTarihi));
+
+    const dagilimBar = ist.dagilim.map(d => {
+      const max = Math.max(1, ...ist.dagilim.map(x => x.adet));
+      return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+        <span style="font-size:10px;width:26px;">${d.puan}⭐</span>
+        <div style="flex:1;height:14px;background:#F0F0F0;border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:${d.adet / max * 100}%;background:${d.puan >= 4 ? "#2E7D32" : d.puan === 3 ? "#F9A825" : "#C62828"};border-radius:4px;"></div>
+        </div>
+        <span style="font-size:10px;font-weight:700;width:22px;text-align:right;">${d.adet}</span>
+      </div>`;
+    }).join("");
+
+    icerik = `
+      <div class="card p4 mb3" style="background:linear-gradient(135deg,#880E4F,#AD1457);color:#fff;border:none;">
+        <p style="font-size:13px;font-weight:700;margin:0 0 2px;">⭐ Memnuniyet Skoru</p>
+        <p style="font-size:10.5px;opacity:.85;margin:0 0 10px;">${ist.yanitli} yanıt · ${ist.gonderilen} gönderim</p>
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:10px;text-align:center;">
+          <p style="font-size:28px;font-weight:800;margin:0;">${ist.ort.toFixed(1)}<span style="font-size:15px;opacity:.7;">/5</span></p>
+          <p style="font-size:11px;margin:3px 0 0;opacity:.9;">${"⭐".repeat(Math.round(ist.ort))}</p>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+          <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:7px;text-align:center;">
+            <p style="font-size:8.5px;margin:0;opacity:.85;">MEMNUN (4-5)</p>
+            <p style="font-size:14px;font-weight:800;margin:2px 0 0;">%${ist.memnunOran.toFixed(0)}</p>
+          </div>
+          <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:7px;text-align:center;">
+            <p style="font-size:8.5px;margin:0;opacity:.85;">YANIT ORANI</p>
+            <p style="font-size:14px;font-weight:800;margin:2px 0 0;">%${ist.yanitOran.toFixed(0)}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p4 mb3">
+        <p style="font-size:12px;font-weight:700;margin:0 0 10px;">📊 Puan Dağılımı</p>
+        ${dagilimBar}
+      </div>
+
+      ${ist.dusuk.length ? `<div class="card p3 mb3" style="background:#FFEBEE;border:1px solid #EF9A9A;">
+        <p style="font-size:11.5px;font-weight:700;color:#C62828;margin:0;">⚠️ ${ist.dusuk.length} hasta düşük puan verdi</p>
+        <p style="font-size:10px;color:#B71C1C;margin:3px 0 0;">Bu hastaları arayıp geri kazanmak sadakati artırır.</p>
+      </div>` : ""}
+
+      <p class="section-label">Yanıtlar (${yanitli.length})</p>
+      ${yanitli.length ? yanitli.map(a => {
+        const p = accNum(a.puan);
+        const renk = p >= 4 ? "#2E7D32" : p === 3 ? "#F9A825" : "#C62828";
+        return `<div class="card p3 mb2" style="border-left:3px solid ${renk};">
+          <div style="display:flex;justify-content:space-between;gap:8px;">
+            <div style="flex:1;min-width:0;">
+              <p style="font-size:12px;font-weight:700;margin:0;">${escapeHtml(a.name)}</p>
+              <p style="font-size:9.5px;color:var(--muted);margin:2px 0 0;">${escapeHtml(a.service)} · ${accTarihTR(a.yanitTarihi)}</p>
+              ${a.yorum ? `<p style="font-size:10px;color:#555;margin:4px 0 0;font-style:italic;">"${escapeHtml(a.yorum)}"</p>` : ""}
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <p style="font-size:14px;font-weight:800;margin:0;color:${renk};">${p}⭐</p>
+              ${a.phone ? `<a href="${waLink(a.phone, p <= 3 ? anketMesaj(a.name, true) : "Teşekkür ederiz!")}" target="_blank" rel="noopener" style="display:inline-block;margin-top:4px;background:#25D366;color:#fff;text-decoration:none;border-radius:6px;padding:4px 7px;font-size:10px;">💬</a>` : ""}
+            </div>
+          </div>
+        </div>`;
+      }).join("") : `<p class="footnote">Henüz yanıt yok.</p>`}
+    `;
+  }
+
+  return `
+    <div style="display:flex;gap:5px;margin-bottom:12px;">
+      ${chip("bekleyen", "Gönderilecek", liste.filter(a => !a.gonderildi).length)}
+      ${chip("yanit", "Yanıt Gir", liste.filter(a => a.gonderildi && (a.puan === null || a.puan === undefined)).length)}
+      ${chip("sonuc", "Sonuçlar", ist.yanitli)}
+    </div>
+
+    ${icerik}
+
+    <div class="card p4 mb3" style="background:#FCE4EC;border:1px solid #F8BBD0;margin-top:12px;">
+      <p style="font-size:11.5px;font-weight:700;color:#880E4F;margin:0 0 6px;">💡 Memnuniyet anketi neden önemli?</p>
+      <p style="font-size:10.5px;color:#AD1457;margin:0;line-height:1.7;">
+        • Memnun hasta <b>3 kat daha fazla</b> arkadaşına tavsiye eder<br/>
+        • Düşük puan veren hastayı <b>hemen arayıp</b> geri kazanabilirsin<br/>
+        • Google yorumlarına olumlu yansır<br/>
+        • Hizmet kalitesindeki düşüşü erken fark edersin
+      </p>
+    </div>
+  `;
+}
+
+/* =========================================================
+   RENDER: HATIRLATMA (randevu bazlı)
+========================================================= */
+
+function renderAccRandevuHatirlatma() {
+  const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+  const appts = (state.appointments || []).filter(a => a.status !== "iptal");
+
+  const bugunku = appts.filter(a => {
+    const d = new Date(a.date + "T00:00:00");
+    return Math.round((d - bugun) / 86400000) === 0;
+  }).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+
+  const yarin = appts.filter(a => {
+    const d = new Date(a.date + "T00:00:00");
+    return Math.round((d - bugun) / 86400000) === 1;
+  }).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+
+  const yaklasan1saat = bugunku.filter(a => {
+    if (!a.time) return false;
+    const [h, m] = a.time.split(":").map(Number);
+    const t = new Date(); t.setHours(h, m, 0, 0);
+    const fark = (t - new Date()) / 60000;
+    return fark > 0 && fark <= 90;
+  });
+
+  const kart = (a, tip) => {
+    const tel = (a.phone || "").replace(/\D/g, "");
+    const telOk = tel.length >= 10;
+    const mesaj = randevuMesaj(tip === "bugun" ? "hatirlatma" : "hatirlatma", a);
+    return `<div class="card p3 mb2" style="border-left:3px solid ${tip === "saat" ? "#C62828" : "#0277BD"};">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:12.5px;font-weight:700;margin:0;">${escapeHtml(a.name)}</p>
+          <p style="font-size:11px;color:${tip === "saat" ? "#C62828" : "#0277BD"};font-weight:700;margin:2px 0 0;">${escapeHtml(a.time || "")} · ${escapeHtml(a.service || "Muayene")}</p>
+          <p style="font-size:9.5px;color:#888;margin:2px 0 0;">${escapeHtml(a.phone || "telefon yok")}</p>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          ${telOk ? `<a href="tel:+9${tel.startsWith("0") ? tel : "0" + tel}" style="background:#E8F5E9;border-radius:7px;padding:7px 8px;text-decoration:none;font-size:12px;">📞</a>` : ""}
+          ${telOk ? `<a href="${waLink(a.phone, mesaj)}" target="_blank" rel="noopener" data-action="hatirlat-gonderildi" data-id="${a.id}" style="background:#25D366;border-radius:7px;padding:7px 8px;text-decoration:none;font-size:12px;">💬</a>` : ""}
+        </div>
+      </div>
+    </div>`;
+  };
+
+  const gonderilen = (state.hatirlatmaLog || []).slice(0, 10);
+
+  return `
+    ${yaklasan1saat.length ? `<div class="card p3 mb3" style="background:#FFEBEE;border:1px solid #EF9A9A;">
+      <p style="font-size:12px;font-weight:700;color:#C62828;margin:0;">⏰ ${yaklasan1saat.length} randevu 1,5 saat içinde</p>
+      <p style="font-size:10px;color:#B71C1C;margin:3px 0 0;">Hemen hatırlatma gönder.</p>
+    </div>` : ""}
+
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#01579B,#0277BD);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 2px;">⏰ Randevu Hatırlatma</p>
+      <p style="font-size:10.5px;opacity:.85;margin:0 0 10px;">Bugün ${bugunku.length} · Yarın ${yarin.length}</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;text-align:center;">
+          <p style="font-size:9px;margin:0;opacity:.85;">BUGÜN</p>
+          <p style="font-size:16px;font-weight:800;margin:2px 0 0;">${bugunku.length}</p>
+        </div>
+        <div style="background:rgba(255,255,255,.15);border-radius:10px;padding:8px;text-align:center;">
+          <p style="font-size:9px;margin:0;opacity:.85;">YARIN</p>
+          <p style="font-size:16px;font-weight:800;margin:2px 0 0;">${yarin.length}</p>
+        </div>
+      </div>
+    </div>
+
+    ${yaklasan1saat.length ? `<p class="section-label">⏰ 1,5 Saat İçinde</p>${yaklasan1saat.map(a => kart(a, "saat")).join("")}` : ""}
+
+    <p class="section-label">Bugünkü Randevular (${bugunku.length})</p>
+    ${bugunku.length ? bugunku.map(a => kart(a, "bugun")).join("") : `<div class="card p4" style="text-align:center;"><p class="footnote" style="margin:0;">Bugün randevu yok.</p></div>`}
+
+    <p class="section-label" style="margin-top:14px;">Yarınki Randevular (${yarin.length})</p>
+    ${yarin.length ? yarin.map(a => kart(a, "yarin")).join("") : `<div class="card p4" style="text-align:center;"><p class="footnote" style="margin:0;">Yarın randevu yok.</p></div>`}
+
+    ${gonderilen.length ? `<p class="section-label" style="margin-top:14px;">Son Gönderilenler</p>
+    <div class="card p4 mb3">
+      ${gonderilen.map(h => `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);">
+        <span style="font-size:11px;">${escapeHtml(h.name)}</span>
+        <span style="font-size:9.5px;color:#888;">${accTarihTR(h.tarih)}</span>
+      </div>`).join("")}
+    </div>` : ""}
+
+    <button class="btn-primary mb3" style="background:#0277BD;font-size:12px;padding:12px;" data-action="hatirlat-toplu">📤 Yarınki Tüm Hastalara Hatırlatma</button>
+
+    <div class="card p4 mb3" style="background:#E1F5FE;border:1px solid #81D4FA;">
+      <p style="font-size:11.5px;font-weight:700;color:#01579B;margin:0 0 6px;">💡 Hatırlatma etkisi</p>
+      <p style="font-size:10.5px;color:#0277BD;margin:0;line-height:1.7;">
+        Randevu hatırlatması <b>no-show oranını %50-65 azaltır</b>.
+        WhatsApp'ın açılma oranı <b>%98</b> (SMS %20-30).<br/>
+        En etkili zaman: <b>randevudan 1 gün önce</b> + <b>2 saat önce</b>.
+      </p>
+    </div>
+  `;
 }
 
 function renderAppointmentsAdmin() {
@@ -5770,6 +6109,8 @@ function renderAccounting() {
     { id: "bayat", label: "📦 Bayat Stok" },
     { id: "hatirlatma", label: "🔔 Hasta Hatırlatma" },
     { id: "prim", label: "🎁 Prim / Bonus" },
+    { id: "rwhatir", label: "⏰ Randevu Hatırlat" },
+    { id: "anket", label: "⭐ Memnuniyet Anketi" },
     { id: "cari", label: "💳 Cari Hesap" },
     { id: "demirbas", label: "🏗️ Amortisman" },
     { id: "bordro", label: "📄 Bordro" },
@@ -5800,6 +6141,8 @@ function renderAccounting() {
   else if (tab === "bayat") body = renderAccBayat();
   else if (tab === "hatirlatma") body = renderAccHastaHatirlatma();
   else if (tab === "prim") body = renderAccPrim();
+  else if (tab === "rwhatir") body = renderAccRandevuHatirlatma();
+  else if (tab === "anket") body = renderAccAnket();
   else if (tab === "cari") body = renderAccCari();
   else if (tab === "demirbas") body = renderAccDemirbas();
   else if (tab === "bordro") body = renderAccBordro();
@@ -6594,6 +6937,72 @@ function accAction(action, el) {
     return true;
   }
 
+  /* ---- ANKET ---- */
+  if (A("anket-tab")) { state.anketTab = el.dataset.tab; render(); return true; }
+
+  if (A("anket-gonderildi")) {
+    const a = (state.anketler || []).find(x => x.id === el.dataset.id);
+    if (a) {
+      a.gonderildi = true;
+      a.gonderimTarihi = new Date().toISOString();
+      anketKaydet();
+      setTimeout(() => { state.anketTab = "yanit"; render(); }, 400);
+    }
+    return true; // WhatsApp bağlantısı açılsın
+  }
+
+  if (A("anket-puan")) {
+    const a = (state.anketler || []).find(x => x.id === el.dataset.id);
+    if (!a) return true;
+    a.puan = parseInt(el.dataset.puan);
+    a.yanitTarihi = new Date().toISOString();
+    anketKaydet();
+    const p = a.puan;
+    if (p <= 3) {
+      // Düşük puan → telafi mesajı öner
+      if (a.phone && confirm("Düşük puan (" + p + "⭐) alındı.\n\nHastaya özür/telafi mesajı gönderilsin mi?")) {
+        window.open(waLink(a.phone, anketMesaj(a.name, true)), "_blank");
+      }
+    }
+    render();
+    return true;
+  }
+
+  /* ---- RANDEVU HATIRLATMA ---- */
+  if (A("hatirlat-gonderildi")) {
+    const r = (state.appointments || []).find(x => x.id === el.dataset.id);
+    if (r) {
+      if (!state.hatirlatmaLog) state.hatirlatmaLog = [];
+      state.hatirlatmaLog.unshift({ id: r.id, name: r.name, tarih: new Date().toISOString() });
+      state.hatirlatmaLog = state.hatirlatmaLog.slice(0, 100);
+      localStorage.setItem("nurdis_hatirlatma_log", JSON.stringify(state.hatirlatmaLog));
+      if (r.status === "bekliyor") r.status = "onaylandi";
+      persist("nurdis_appointments", state.appointments);
+      render();
+    }
+    return true; // WhatsApp açılsın
+  }
+
+  if (A("hatirlat-toplu")) {
+    const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+    const yarin = (state.appointments || []).filter(a => {
+      if (a.status === "iptal" || !a.phone) return false;
+      const d = new Date(a.date + "T00:00:00");
+      return Math.round((d - bugun) / 86400000) === 1;
+    });
+    if (!yarin.length) { alert("Yarın için telefon numarası olan randevu yok."); return true; }
+    if (!confirm(yarin.length + " hastaya WhatsApp hatırlatma penceresi açılacak.\n\nDevam?")) return true;
+    yarin.forEach((a, i) => setTimeout(() => {
+      window.open(waLink(a.phone, randevuMesaj("hatirlatma", a)), "_blank");
+    }, i * 600));
+    if (!state.hatirlatmaLog) state.hatirlatmaLog = [];
+    yarin.forEach(a => state.hatirlatmaLog.unshift({ id: a.id, name: a.name, tarih: new Date().toISOString() }));
+    state.hatirlatmaLog = state.hatirlatmaLog.slice(0, 100);
+    localStorage.setItem("nurdis_hatirlatma_log", JSON.stringify(state.hatirlatmaLog));
+    render();
+    return true;
+  }
+
   /* ---- RANDEVU YÖNETİMİ ---- */
   if (A("rv-filtre")) { state.rvFiltre = el.dataset.f; render(); return true; }
   if (A("rv-new")) { state.rvEdit = ""; render(); window.scrollTo(0, 0); return true; }
@@ -6650,6 +7059,7 @@ function accAction(action, el) {
     if (!r) return true;
     r.status = el.dataset.st;
     persist("nurdis_appointments", state.appointments);
+    if (r.status === "geldi") anketOlustur(r);
     render();
     return true;
   }
@@ -9152,6 +9562,8 @@ function saveAccountingToFirebase() {
       mesajSablon: state.mesajSablon || null,
       konumAyar: state.konumAyar || null,
       randevuSablon: state.randevuSablon || null,
+      anketler: (state.anketler || []).slice(0, 1500),
+      anketSablon: state.anketSablon || null,
       bonusAyar: state.bonusAyar || null
     }).catch(() => {});
   }
@@ -9331,6 +9743,8 @@ function startAdminSubscriptions() {
         if (data.mesajSablon) { state.mesajSablon = data.mesajSablon; localStorage.setItem("nurdis_mesaj_sablon", JSON.stringify(state.mesajSablon)); }
         if (data.konumAyar) { state.konumAyar = data.konumAyar; localStorage.setItem("nurdis_konum_ayar", JSON.stringify(state.konumAyar)); }
         if (data.randevuSablon) { state.randevuSablon = data.randevuSablon; localStorage.setItem("nurdis_randevu_sablon", JSON.stringify(state.randevuSablon)); }
+        if (data.anketler) { state.anketler = data.anketler; localStorage.setItem("nurdis_anketler", JSON.stringify(state.anketler)); }
+        if (data.anketSablon) { state.anketSablon = data.anketSablon; localStorage.setItem("nurdis_anket_sablon", JSON.stringify(state.anketSablon)); }
         if (data.bonusAyar) { state.bonusAyar = data.bonusAyar; localStorage.setItem("nurdis_bonus_ayar", JSON.stringify(state.bonusAyar)); }
         localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_treatment_prices", JSON.stringify(state.treatmentPrices)); saveAccountingToFirebase();
