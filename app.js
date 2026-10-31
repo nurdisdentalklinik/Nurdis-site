@@ -320,6 +320,11 @@ let state = {
   randevuDonem: 30,
   verimDonem: 30,
   hhTab: "kontrol",
+  rvFiltre: "gelecek",
+  rvArama: "",
+  rvEdit: undefined,
+  konumAyar: null,
+  randevuSablon: null,
   hhSablonAcik: false,
   mesajSablon: null,
   hhAyar: null,
@@ -333,7 +338,7 @@ let state = {
   gvDonem: 1,
   treatmentPrices: {},
   autoExpenses: { kira:50000, elektrik:3000, su:1500, dogalgaz:2000, sgk:8000, vergi:5000 },
-  bookingForm: { date:"", time:"", name:"", phone:"" },
+  bookingForm: { date:"", time:"", name:"", phone:"", note:"" },
   bookingStatus: "idle",
   contactForm: { name:"", phone:"", msg:"" },
   contactStatus: "idle",
@@ -408,6 +413,8 @@ function loadAll() {
   try { state.bayatAyar = JSON.parse(localStorage.getItem("nurdis_bayat_ayar") || "null"); } catch(e){ state.bayatAyar = null; }
   try { state.hhAyar = JSON.parse(localStorage.getItem("nurdis_hh_ayar") || "null"); } catch(e){ state.hhAyar = null; }
   try { state.mesajSablon = JSON.parse(localStorage.getItem("nurdis_mesaj_sablon") || "null"); } catch(e){ state.mesajSablon = null; }
+  try { state.konumAyar = JSON.parse(localStorage.getItem("nurdis_konum_ayar") || "null"); } catch(e){ state.konumAyar = null; }
+  try { state.randevuSablon = JSON.parse(localStorage.getItem("nurdis_randevu_sablon") || "null"); } catch(e){ state.randevuSablon = null; }
   try { state.bonusAyar = JSON.parse(localStorage.getItem("nurdis_bonus_ayar") || "null"); } catch(e){ state.bonusAyar = null; }
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}
@@ -1037,35 +1044,7 @@ function renderReviews() {
 /* ---------------- RANDEVU (sadece muayene) ---------------- */
 
 function renderBooking() {
-  const f = state.bookingForm;
-  const slots = TIME_SLOTS.map(t => `<div class="slot ${f.time===t?'active':''}" data-action="pick-time" data-time="${t}">${t}</div>`).join("");
-  const canSubmit = f.date && f.time && f.name && f.phone;
-  let statusHtml = "";
-  if (state.bookingStatus==="done") statusHtml = `<p class="status-ok">✓ Randevun kaydedildi, en kısa sürede aranacaksın. Yöneticimize bilgi iletildi.</p>`;
-  if (state.bookingStatus==="error") statusHtml = `<p class="status-err">Kaydedilemedi, lütfen tekrar dene.</p>`;
-
-  const list = state.myAppointments.slice().reverse().map(a => `
-    <div class="card p4 mb3 row" style="justify-content:space-between;">
-      <div><p class="name" style="font-size:14px;">Muayene</p><p class="desc">${escapeHtml(a.name)} · ${escapeHtml(a.phone)}</p></div>
-      <span style="font-size:12px;color:var(--tealLight);font-family:'IBM Plex Mono',monospace;">${a.date} ${a.time}</span>
-    </div>`).join("");
-
-  return `${topbar("Randevu Al","Sadece muayene randevusu alınır — hangi tedaviye uygun olduğuna hekimimiz muayenede karar verir.")}
-    <div class="content">
-      ${authGate("Randevu almak için Google ile giriş yapman gerekiyor.")}
-      ${state.user ? `<div class="card p5 mb5">
-        <div class="field"><label>Hizmet</label><input class="input" value="Muayene" disabled style="background:#EEF6F4;color:var(--muted);" /></div>
-        <div class="field"><label>Tarih</label><input class="input" type="date" id="f-date" value="${f.date}" /></div>
-        <div class="field"><label>Saat</label><div class="slot-grid">${slots}</div></div>
-        <div class="field"><label>Ad Soyad</label><input class="input" id="f-name" placeholder="Adınız Soyadınız" value="${escapeAttr(f.name)}" /></div>
-        <div class="field"><label>Telefon</label><input class="input" id="f-phone" placeholder="05xx xxx xx xx" value="${escapeAttr(f.phone)}" /></div>
-        <button class="btn-primary" data-action="submit-booking" ${!canSubmit || state.bookingStatus==='saving' ? 'disabled':''}>
-          ${state.bookingStatus==='saving' ? 'Kaydediliyor…' : icon('calendar',16)+' Randevuyu Onayla'}
-        </button>
-        ${statusHtml}
-      </div>` : ""}
-      ${state.myAppointments.length ? `<p class="section-label">Bu oturumda oluşturduğun randevular</p>${list}` : ""}
-    </div>`;
+  return renderBookingV2();
 }
 
 /* ---------------- MAĞAZA ---------------- */
@@ -2991,6 +2970,390 @@ function mesajDoldur(tip, veri) {
        .replace(/\{gun\}/g, veri.gun || "")
        .replace(/\{saat\}/g, veri.saat || "");
   return m;
+}
+
+/* =========================================================
+   NUR DİŞ — RANDEVU YÖNETİM SİSTEMİ v9
+   • Misafir randevu (giriş gerekmez)
+   • Randevu sonrası WhatsApp konum mesajı
+   • Yönetici paneli: düzenle, sil, ara, mesaj at, konum gönder
+   • Durum takibi (bekliyor / geldi / gelmedi / iptal)
+========================================================= */
+
+/* ---------------- KLİNİK KONUM ---------------- */
+
+const KLINIK_KONUM = {
+  adres: "Mardin, Kızıltepe, TOKİ Mahallesi",
+  lat: null, lon: null,
+  telefon: "05051050302"
+};
+
+function klinikKonumAyar() {
+  return Object.assign({}, KLINIK_KONUM, state.konumAyar || {});
+}
+
+/* Google Maps konum linki */
+function konumLinki() {
+  const k = klinikKonumAyar();
+  if (k.lat && k.lon) {
+    return "https://www.google.com/maps/search/?api=1&query=" + k.lat + "," + k.lon;
+  }
+  return "https://www.google.com/maps/search/?api=1&query=" +
+    encodeURIComponent("Nur Diş & Dental Klinik " + (k.adres || ""));
+}
+
+/* Konumun kısa önizlemesi */
+function konumKisa() {
+  const k = klinikKonumAyar();
+  return k.adres || "Mardin, Kızıltepe, TOKİ";
+}
+
+/* ---------------- RANDEVU DURUMLARI ---------------- */
+
+const RANDEVU_DURUM = {
+  bekliyor: { ad: "Bekliyor", renk: "#1565C0", bg: "#E3F2FD", ikon: "🕐" },
+  onaylandi: { ad: "Onaylandı", renk: "#2E7D32", bg: "#E8F5E9", ikon: "✅" },
+  geldi: { ad: "Geldi", renk: "#00695C", bg: "#E0F2F1", ikon: "🟢" },
+  gelmedi: { ad: "Gelmedi", renk: "#C62828", bg: "#FFEBEE", ikon: "🔴" },
+  iptal: { ad: "İptal", renk: "#757575", bg: "#F5F5F5", ikon: "⚪" }
+};
+
+function randevuDurum(r) {
+  return RANDEVU_DURUM[r.status] || RANDEVU_DURUM.bekliyor;
+}
+
+/* Randevu zamanı geçti mi */
+function randevuGecti(r) {
+  const d = new Date((r.date || "") + "T" + (r.time || "23:59"));
+  return d < new Date();
+}
+
+/* Yaklaşma durumu (bugün / yarın / geçmiş) */
+function randevuYakinlik(r) {
+  const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+  const d = new Date(r.date + "T00:00:00");
+  const gun = Math.round((d - bugun) / 86400000);
+  if (gun < 0) return { gun, etiket: Math.abs(gun) + " gün önce", renk: "#999" };
+  if (gun === 0) return { gun, etiket: "BUGÜN", renk: "#C62828" };
+  if (gun === 1) return { gun, etiket: "Yarın", renk: "#E65100" };
+  if (gun <= 7) return { gun, etiket: gun + " gün sonra", renk: "#F9A825" };
+  return { gun, etiket: gun + " gün sonra", renk: "#2E7D32" };
+}
+
+/* ---------------- RANDEVU MESAJLARI ---------------- */
+
+const RANDEVU_MSG = {
+  onay:
+`İyi günler Sayın {ad}
+
+Randevunuz oluşturuldu ✓
+
+📅 Tarih: {tarih}
+🕐 Saat: {saat}
+🏥 Nur Diş & Dental Klinik
+
+📍 Konumumuz: {konum}
+
+Randevunuzu iptal etmek veya değiştirmek için bize yazabilirsiniz.`,
+
+  hatirlatma:
+`İyi günler Sayın {ad}
+
+Yarın saat {saat} randevunuzu hatırlatmak isteriz.
+
+📅 {tarih}
+📍 {konum}
+
+Nur Diş & Dental Klinik`,
+
+  konum:
+`Nur Diş & Dental Klinik konumumuz 📍
+
+{adres}
+
+Haritada açmak için: {konum}
+
+Randevu için bize yazabilirsiniz.`,
+
+  iptal:
+`Sayın {ad}
+
+{saat} saatindeki randevunuz iptal edilmiştir.
+
+Yeni randevu için bize yazabilirsiniz.
+
+Nur Diş & Dental Klinik`,
+
+  tesekkur:
+`Sayın {ad}
+
+Bugün kliniğimizi tercih ettiğiniz için teşekkür ederiz 🤍
+
+Kontrol randevunuzu planlamak için bize yazabilirsiniz.
+
+Nur Diş & Dental Klinik`
+};
+
+function randevuMesaj(tip, r) {
+  const ozel = (state.randevuSablon || {})[tip];
+  let m = (ozel && ozel.trim()) ? ozel : RANDEVU_MSG[tip];
+  const k = klinikKonumAyar();
+  let tarih = r.date || "";
+  try {
+    tarih = new Date(r.date + "T00:00:00").toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" });
+  } catch (e) {}
+  m = m.replace(/\{ad\}/g, r.name || "hastamız")
+       .replace(/\{saat\}/g, r.time || "")
+       .replace(/\{tarih\}/g, tarih)
+       .replace(/\{konum\}/g, konumLinki())
+       .replace(/\{adres\}/g, k.adres || "")
+       .replace(/\{islem\}/g, r.service || "Muayene");
+  return m;
+}
+
+/* =========================================================
+   MİSAFİR RANDEVU — randevu ekranı
+========================================================= */
+
+function renderBookingV2() {
+  const f = state.bookingForm;
+  const slots = TIME_SLOTS.map(t => {
+    const dolu = (state.appointments || []).some(a => a.date === f.date && a.time === t && a.status !== "iptal");
+    return `<div class="slot ${f.time === t ? "active" : ""}" ${dolu ? 'style="opacity:.35;text-decoration:line-through;"' : ""} data-action="${dolu ? "slot-dolu" : "pick-time"}" data-time="${t}">${t}</div>`;
+  }).join("");
+
+  const canSubmit = f.date && f.time && f.name && f.phone;
+  let statusHtml = "";
+  if (state.bookingStatus === "done" && state.lastBooking) {
+    const b = state.lastBooking;
+    statusHtml = `<div class="card p4 mt3" style="background:#E8F5E9;border:1px solid #A5D6A7;">
+      <p style="font-size:14px;font-weight:700;color:#1B5E20;margin:0 0 4px;">✅ Randevunuz oluşturuldu</p>
+      <p style="font-size:12px;color:#2E7D32;margin:0 0 10px;">${accTarihTR(b.date)} · saat ${b.time}</p>
+      <p style="font-size:11px;color:#2E7D32;margin:0 0 12px;">Randevu detaylarını ve konumumuzu WhatsApp'ınıza gönderelim mi?</p>
+      <a href="${waLink(b.phone, randevuMesaj("onay", b))}" target="_blank" rel="noopener" class="btn-primary" style="text-decoration:none;background:#25D366;font-size:13px;padding:12px;">💬 WhatsApp'a Gönder</a>
+      <a href="${konumLinki()}" target="_blank" rel="noopener" class="btn-primary" style="text-decoration:none;background:#1565C0;font-size:12px;padding:11px;margin-top:8px;">📍 Konumu Aç</a>
+    </div>`;
+  }
+  if (state.bookingStatus === "error") statusHtml = `<p class="status-err">Kaydedilemedi, lütfen tekrar deneyin.</p>`;
+
+  return `${topbar("Randevu Al", "Giriş yapmadan da randevu alabilirsiniz.")}
+    <div class="content">
+      ${state.user && !state.user.isGuest ? "" : `<div class="card p3 mb3" style="background:#E3F2FD;border:1px solid #90CAF9;">
+        <p style="font-size:11.5px;color:#0D47A1;margin:0;line-height:1.5;">🎁 <b>Misafir olarak</b> randevu alabilirsiniz. Sadece ad ve telefon yeterli.</p>
+      </div>`}
+
+      <div class="card p5 mb4">
+        <div class="field"><label>Hizmet</label><input class="input" value="Muayene" disabled style="background:#EEF6F4;color:var(--muted);" /></div>
+        <div class="field"><label>Tarih</label><input class="input" type="date" id="f-date" value="${escapeAttr(f.date)}" min="${accToday()}" /></div>
+        <div class="field"><label>Saat</label><div class="slot-grid">${slots}</div></div>
+        <div class="field"><label>Ad Soyad</label><input class="input" id="f-name" placeholder="Adınız Soyadınız" value="${escapeAttr(f.name)}" /></div>
+        <div class="field"><label>Telefon</label><input class="input" id="f-phone" type="tel" placeholder="05xx xxx xx xx" value="${escapeAttr(f.phone)}" /></div>
+        <div class="field"><label>Not (isteğe bağlı)</label><input class="input" id="f-note" placeholder="Örn: diş ağrım var" value="${escapeAttr(f.note || "")}" /></div>
+        <button class="btn-primary" data-action="submit-booking" ${!canSubmit || state.bookingStatus === "saving" ? "disabled" : ""}>
+          ${state.bookingStatus === "saving" ? "Kaydediliyor…" : "📅 Randevuyu Onayla"}
+        </button>
+        ${statusHtml}
+      </div>
+
+      <div class="card p4 mb3" style="background:#F1F8E9;border:1px solid #C5E1A5;">
+        <p style="font-size:11.5px;font-weight:700;color:#33691E;margin:0 0 6px;">📍 Kliniğimiz</p>
+        <p style="font-size:11px;color:#558B2F;margin:0 0 8px;">${escapeHtml(konumKisa())}</p>
+        <a href="${konumLinki()}" target="_blank" rel="noopener" class="btn-primary" style="text-decoration:none;background:#558B2F;font-size:12px;padding:10px;">🗺️ Haritada Aç</a>
+      </div>
+
+      ${state.myAppointments.length ? `<p class="section-label">Bu oturumda aldığınız randevular</p>
+      ${state.myAppointments.slice().reverse().map(a => `
+        <div class="card p3 mb2">
+          <p style="font-size:12.5px;font-weight:700;margin:0;">${escapeHtml(a.name)}</p>
+          <p style="font-size:11px;color:var(--muted);margin:2px 0 0;">${accTarihTR(a.date)} · ${escapeHtml(a.time)}</p>
+        </div>`).join("")}` : ""}
+    </div>`;
+}
+
+/* =========================================================
+   YÖNETİCİ: RANDEVU YÖNETİMİ
+========================================================= */
+
+function randevuFiltrele(r, filtre) {
+  if (filtre === "tumu") return true;
+  if (filtre === "bugun") { const y = randevuYakinlik(r); return y.gun === 0; }
+  if (filtre === "gelecek") { const y = randevuYakinlik(r); return y.gun >= 0 && r.status !== "iptal"; }
+  if (filtre === "gecmis") { const y = randevuYakinlik(r); return y.gun < 0; }
+  return r.status === filtre;
+}
+
+function renderAppointmentsAdmin() {
+  const filtre = state.rvFiltre || "gelecek";
+  const ara = (state.rvArama || "").toLowerCase().trim();
+
+  let liste = (state.appointments || []).filter(r => randevuFiltrele(r, filtre));
+  if (ara) {
+    liste = liste.filter(r =>
+      (r.name || "").toLowerCase().includes(ara) ||
+      (r.phone || "").replace(/\s/g, "").includes(ara.replace(/\s/g, ""))
+    );
+  }
+  liste = liste.sort((a, b) => {
+    const da = new Date(a.date + "T" + (a.time || "00:00"));
+    const db = new Date(b.date + "T" + (b.time || "00:00"));
+    return filtre === "gecmis" ? db - da : da - db;
+  });
+
+  /* İstatistikler */
+  const bugun = (state.appointments || []).filter(r => randevuYakinlik(r).gun === 0 && r.status !== "iptal").length;
+  const gelecek = (state.appointments || []).filter(r => randevuYakinlik(r).gun > 0 && r.status !== "iptal").length;
+  const gelmedi = (state.appointments || []).filter(r => r.status === "gelmedi").length;
+  const toplam = (state.appointments || []).length;
+  const noShow = toplam ? (gelmedi / toplam) * 100 : 0;
+
+  const filtreChip = (id, label, adet) => {
+    const aktif = filtre === id;
+    return `<button data-action="rv-filtre" data-f="${id}" style="flex:0 0 auto;padding:7px 12px;border-radius:16px;font-size:10.5px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${aktif ? "#0B6E86" : "var(--line)"};background:${aktif ? "#0B6E86" : "rgba(255,255,255,.7)"};color:${aktif ? "#fff" : "var(--ink)"};cursor:pointer;white-space:nowrap;">${label}${adet != null ? " " + adet : ""}</button>`;
+  };
+
+  const ed = state.rvEdit;
+  let formHtml = "";
+  if (ed !== null && ed !== undefined) {
+    const r = (state.appointments || []).find(x => x.id === ed) || {
+      id: "", date: accToday(), time: "09:00", name: "", phone: "", note: "", status: "bekliyor", service: "Muayene"
+    };
+    formHtml = `<div class="card p4 mb3" style="border:2px solid #0B6E86;background:#E0F7FA;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 10px;color:#006064;">${r.id ? "✏️ Randevuyu Düzenle" : "➕ Yeni Randevu"}</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="field"><label>Tarih</label><input class="input" type="date" id="rv-date" value="${escapeAttr(r.date)}" /></div>
+        <div class="field"><label>Saat</label>
+          <select class="input" id="rv-time">
+            ${TIME_SLOTS.map(t => `<option ${r.time === t ? "selected" : ""}>${t}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Ad Soyad</label><input class="input" id="rv-name" value="${escapeAttr(r.name)}" placeholder="Hasta adı" /></div>
+      <div class="field"><label>Telefon</label><input class="input" id="rv-phone" type="tel" value="${escapeAttr(r.phone)}" placeholder="05xx xxx xx xx" /></div>
+      <div class="field"><label>Hizmet</label>
+        <select class="input" id="rv-service">
+          ${["Muayene", "Kontrol", "Dolgu", "Kanal Tedavisi", "İmplant", "Zirkonyum", "Beyazlatma", "Ortodonti", "Protez", "Çekim", "Diğer"].map(s => `<option ${r.service === s ? "selected" : ""}>${s}</option>`).join("")}
+        </select>
+      </div>
+      <div class="field"><label>Durum</label>
+        <select class="input" id="rv-status">
+          ${Object.entries(RANDEVU_DURUM).map(([k, v]) => `<option value="${k}" ${r.status === k ? "selected" : ""}>${v.ikon} ${v.ad}</option>`).join("")}
+        </select>
+      </div>
+      <div class="field"><label>Not</label><input class="input" id="rv-note" value="${escapeAttr(r.note || "")}" placeholder="Örn: diş ağrısı" /></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-primary" style="background:#006064;" data-action="rv-save" data-id="${r.id || ""}">💾 Kaydet</button>
+        <button class="btn-primary" style="background:#757575;" data-action="rv-cancel">İptal</button>
+      </div>
+    </div>`;
+  }
+
+  const kartlar = liste.slice(0, 60).map(r => {
+    const d = randevuDurum(r);
+    const y = randevuYakinlik(r);
+    const tel = (r.phone || "").replace(/\D/g, "");
+    const telOk = tel.length >= 10;
+    return `<div class="card p3 mb2" style="border-left:4px solid ${d.renk};">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:12.5px;font-weight:700;margin:0;">${escapeHtml(r.name || "-")}</p>
+          <p style="font-size:11px;color:${y.renk};font-weight:700;margin:2px 0 0;">${d.ikon} ${escapeHtml(r.date || "")} · ${escapeHtml(r.time || "")} <span style="opacity:.7;font-weight:500;">(${y.etiket})</span></p>
+          <p style="font-size:10px;color:var(--muted);margin:2px 0 0;">${escapeHtml(r.service || "Muayene")}${r.note ? " · " + escapeHtml(r.note) : ""}</p>
+          <p style="font-size:10px;color:#888;margin:2px 0 0;">${escapeHtml(r.phone || "telefon yok")}</p>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:8px;">
+        ${telOk
+          ? `<a href="tel:+9${tel.startsWith("0") ? tel : "0" + tel}" style="background:#E8F5E9;border:none;border-radius:7px;padding:8px 2px;text-align:center;text-decoration:none;font-size:13px;">📞</a>`
+          : `<span style="background:#F5F5F5;border-radius:7px;padding:8px 2px;text-align:center;opacity:.3;font-size:13px;">📞</span>`}
+        ${telOk
+          ? `<a href="${waLink(r.phone, randevuMesaj("onay", r))}" target="_blank" rel="noopener" style="background:#E8F5E9;border:none;border-radius:7px;padding:8px 2px;text-align:center;text-decoration:none;font-size:13px;">💬</a>`
+          : `<span style="background:#F5F5F5;border-radius:7px;padding:8px 2px;text-align:center;opacity:.3;font-size:13px;">💬</span>`}
+        ${telOk
+          ? `<a href="${waLink(r.phone, randevuMesaj("konum", r))}" target="_blank" rel="noopener" style="background:#E3F2FD;border:none;border-radius:7px;padding:8px 2px;text-align:center;text-decoration:none;font-size:13px;">📍</a>`
+          : `<span style="background:#F5F5F5;border-radius:7px;padding:8px 2px;text-align:center;opacity:.3;font-size:13px;">📍</span>`}
+        <button data-action="rv-edit" data-id="${r.id}" style="background:#FFF3E0;border:none;border-radius:7px;padding:8px 2px;cursor:pointer;font-size:13px;">✏️</button>
+        <button data-action="rv-delete" data-id="${r.id}" style="background:#FFEBEE;border:none;border-radius:7px;padding:8px 2px;cursor:pointer;font-size:13px;color:#C62828;">🗑️</button>
+      </div>
+      <div style="display:flex;gap:4px;margin-top:4px;">
+        ${Object.entries(RANDEVU_DURUM).filter(([k]) => k !== r.status).map(([k, v]) =>
+          `<button data-action="rv-durum" data-id="${r.id}" data-st="${k}" style="flex:1;background:${v.bg};border:none;border-radius:6px;padding:5px 2px;cursor:pointer;font-size:9px;color:${v.renk};font-weight:600;">${v.ikon} ${v.ad}</button>`
+        ).join("")}
+      </div>
+    </div>`;
+  }).join("") || `<div class="card p4" style="text-align:center;"><p class="footnote" style="margin:0;">Bu filtrede randevu yok.</p></div>`;
+
+  return `
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#004D40,#00695C);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:700;margin:0 0 2px;">📅 Randevu Yönetimi</p>
+      <p style="font-size:10.5px;opacity:.85;margin:0 0 10px;">${toplam} toplam randevu</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+        <div style="background:rgba(255,255,255,.15);border-radius:9px;padding:7px;text-align:center;">
+          <p style="font-size:8.5px;margin:0;opacity:.85;">BUGÜN</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0 0;">${bugun}</p>
+        </div>
+        <div style="background:rgba(255,255,255,.15);border-radius:9px;padding:7px;text-align:center;">
+          <p style="font-size:8.5px;margin:0;opacity:.85;">GELECEK</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0 0;">${gelecek}</p>
+        </div>
+        <div style="background:rgba(255,255,255,.15);border-radius:9px;padding:7px;text-align:center;">
+          <p style="font-size:8.5px;margin:0;opacity:.85;">NO-SHOW</p>
+          <p style="font-size:15px;font-weight:800;margin:2px 0 0;">%${noShow.toFixed(0)}</p>
+        </div>
+      </div>
+    </div>
+
+    <input class="input mb3" id="rv-arama" placeholder="🔍 İsim veya telefon ara..." value="${escapeAttr(state.rvArama || "")}" data-action-blur="rv-ara" style="font-size:12px;" />
+
+    <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px;">
+      ${filtreChip("bugun", "Bugün", bugun)}
+      ${filtreChip("gelecek", "Gelecek")}
+      ${filtreChip("gecmis", "Geçmiş")}
+      ${filtreChip("gelmedi", "Gelmedi", gelmedi)}
+      ${filtreChip("tumu", "Tümü", toplam)}
+    </div>
+
+    ${formHtml}
+    ${ed === null || ed === undefined ? `<button class="btn-primary mb3" style="background:#00695C;" data-action="rv-new">➕ Yeni Randevu</button>` : ""}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;">
+      <a href="${konumLinki()}" target="_blank" rel="noopener" class="btn-primary" style="text-decoration:none;background:#1565C0;font-size:11.5px;padding:10px;">📍 Kliniğin Konumu</a>
+      <button class="btn-primary" style="background:#0E93AC;font-size:11.5px;padding:10px;" data-action="rv-csv">⬇️ CSV İndir</button>
+    </div>
+
+    <p class="section-label">Randevular (${liste.length})</p>
+    ${kartlar}
+
+    <div class="card p4 mb3" style="background:#E0F2F1;border:1px solid #80CBC4;margin-top:12px;">
+      <p style="font-size:11.5px;font-weight:700;color:#00695C;margin:0 0 6px;">💡 Tek tıkla ne yapabilirsin?</p>
+      <p style="font-size:10.5px;color:#00897B;margin:0;line-height:1.7;">
+        <b>📞</b> Hastayı doğrudan ara<br/>
+        <b>💬</b> WhatsApp'tan randevu onay mesajı gönder<br/>
+        <b>📍</b> WhatsApp'tan konum linki gönder<br/>
+        <b>✏️</b> Randevuyu düzenle · <b>🗑️</b> Sil<br/>
+        Alttaki durum butonlarıyla tek dokunuşta <b>Geldi / Gelmedi / Onaylandı</b> işaretle.
+      </p>
+    </div>
+
+    <div class="card p4 mb3">
+      <p style="font-size:11.5px;font-weight:700;color:#004D40;margin:0 0 8px;">⚙️ Klinik Konumu</p>
+      <div class="field" style="margin-bottom:8px;"><label style="font-size:10px;">Adres</label>
+        <input class="input" id="kon-adres" value="${escapeAttr(klinikKonumAyar().adres || "")}" style="font-size:11px;padding:8px;" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="field" style="margin-bottom:8px;"><label style="font-size:10px;">Enlem (lat)</label>
+          <input class="input" id="kon-lat" value="${escapeAttr(String(klinikKonumAyar().lat || ""))}" placeholder="37.1900" style="font-size:11px;padding:8px;" />
+        </div>
+        <div class="field" style="margin-bottom:8px;"><label style="font-size:10px;">Boylam (lon)</label>
+          <input class="input" id="kon-lon" value="${escapeAttr(String(klinikKonumAyar().lon || ""))}" placeholder="40.5800" style="font-size:11px;padding:8px;" />
+        </div>
+      </div>
+      <button class="btn-primary" style="background:#004D40;font-size:11.5px;padding:10px;" data-action="konum-kaydet">💾 Konumu Kaydet</button>
+      <p style="font-size:9px;color:#888;margin:6px 0 0;line-height:1.5;">
+        Koordinat girmezsen adresle arama yapılır. Google Maps'te kliniği bulup bağlantıdaki
+        <b>@37.19,40.58</b> kısmından koordinatı alabilirsin.
+      </p>
+    </div>
+  `;
 }
 
 function renderAccHastaHatirlatma() {
@@ -6231,6 +6594,101 @@ function accAction(action, el) {
     return true;
   }
 
+  /* ---- RANDEVU YÖNETİMİ ---- */
+  if (A("rv-filtre")) { state.rvFiltre = el.dataset.f; render(); return true; }
+  if (A("rv-new")) { state.rvEdit = ""; render(); window.scrollTo(0, 0); return true; }
+  if (A("rv-edit")) { state.rvEdit = el.dataset.id; render(); window.scrollTo(0, 0); return true; }
+  if (A("rv-cancel")) { state.rvEdit = undefined; render(); return true; }
+
+  if (A("rv-save")) {
+    const id = el.dataset.id;
+    const rec = {
+      id: id || ("rv_" + Date.now()),
+      date: document.getElementById("rv-date")?.value || accToday(),
+      time: document.getElementById("rv-time")?.value || "09:00",
+      name: (document.getElementById("rv-name")?.value || "").trim(),
+      phone: (document.getElementById("rv-phone")?.value || "").trim(),
+      service: document.getElementById("rv-service")?.value || "Muayene",
+      status: document.getElementById("rv-status")?.value || "bekliyor",
+      note: (document.getElementById("rv-note")?.value || "").trim()
+    };
+    if (!rec.name) { alert("Hasta adı gerekli."); return true; }
+    if (!rec.phone) { alert("Telefon gerekli."); return true; }
+
+    if (!state.appointments) state.appointments = [];
+    if (id) {
+      const old = state.appointments.find(x => x.id === id);
+      Object.assign(old, rec);
+    } else {
+      state.appointments.push(rec);
+    }
+    persist("nurdis_appointments", state.appointments);
+    if (window.fb && state.fbReady) {
+      try { window.fb.addAppointment(rec).catch(() => {}); } catch (e) {}
+    }
+    state.rvEdit = undefined;
+    alert("✅ Randevu kaydedildi.");
+    render();
+    return true;
+  }
+
+  if (A("rv-delete")) {
+    const r = (state.appointments || []).find(x => x.id === el.dataset.id);
+    if (!r) return true;
+    if (!confirm("\"" + (r.name || "") + "\" randevusu silinsin mi?\n\n" + accTarihTR(r.date) + " " + (r.time || ""))) return true;
+    state.appointments = state.appointments.filter(x => x.id !== el.dataset.id);
+    persist("nurdis_appointments", state.appointments);
+    if (window.fb && state.fbReady) {
+      try { window.fb.deleteAppointment?.(el.dataset.id); } catch (e) {}
+    }
+    render();
+    return true;
+  }
+
+  if (A("rv-durum")) {
+    const r = (state.appointments || []).find(x => x.id === el.dataset.id);
+    if (!r) return true;
+    r.status = el.dataset.st;
+    persist("nurdis_appointments", state.appointments);
+    render();
+    return true;
+  }
+
+  if (A("rv-arama")) {
+    state.rvArama = document.getElementById("rv-arama")?.value || "";
+    render();
+    return true;
+  }
+
+  if (A("rv-csv")) {
+    const rows = [["Tarih", "Saat", "Ad Soyad", "Telefon", "Hizmet", "Durum", "Not"]];
+    (state.appointments || []).slice().sort((a, b) => new Date(b.date) - new Date(a.date))
+      .forEach(r => rows.push([
+        r.date || "", r.time || "", r.name || "", r.phone || "",
+        r.service || "", (RANDEVU_DURUM[r.status] || RANDEVU_DURUM.bekliyor).ad, r.note || ""
+      ]));
+    accCsvDownload("randevular-" + accToday() + ".csv", rows);
+    return true;
+  }
+
+  if (A("konum-kaydet")) {
+    state.konumAyar = {
+      adres: (document.getElementById("kon-adres")?.value || "").trim(),
+      lat: (document.getElementById("kon-lat")?.value || "").trim(),
+      lon: (document.getElementById("kon-lon")?.value || "").trim()
+    };
+    localStorage.setItem("nurdis_konum_ayar", JSON.stringify(state.konumAyar));
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    alert("✅ Konum kaydedildi.\n\n" + konumLinki());
+    render();
+    return true;
+  }
+
+  if (A("slot-dolu")) {
+    alert("Bu saat dilimi dolu. Lütfen başka bir saat seçin.");
+    return true;
+  }
+
   /* ---- HASTA HATIRLATMA ---- */
   if (A("hh-tab")) { state.hhTab = el.dataset.tab; render(); return true; }
   if (A("hh-sablon-ac")) { state.hhSablonAcik = !state.hhSablonAcik; render(); return true; }
@@ -6885,11 +7343,7 @@ function renderAdminPanel() {
   let tabContent = "";
 
   if (state.adminTab === "appointments") {
-    const apps = state.appointments.slice().reverse().map(a=>`<div class="card p3 mb2"><p class="desc" style="margin:0;">${a.date||""} ${a.time||""} · ${escapeHtml(a.name)} · ${escapeHtml(a.phone)}</p></div>`).join("") || `<p class="footnote">Henüz randevu yok.</p>`;
-    tabContent = `
-      <p class="section-label">Gelen randevular (canlı)</p>
-      <div class="mb4">${apps}</div>
-    `;
+    tabContent = renderAppointmentsAdmin();
   }
 
   if (state.adminTab === "orders") {
@@ -7462,21 +7916,46 @@ document.addEventListener("click", (e) => {
   if (action === "pick-time") { state.bookingForm.time = el.dataset.time; state.bookingStatus="idle"; render(); }
   if (action === "submit-booking") {
     const f = state.bookingForm;
-    if (!(f.date && f.time && f.name && f.phone) || !state.user) return;
+    if (!(f.date && f.time && f.name && f.phone)) return;
+
+    const booker = state.user || guestUser();
+    const note = document.getElementById("f-note")?.value?.trim() || "";
+
     state.bookingStatus = "saving"; render();
-    const entry = { date:f.date, time:f.time, name:f.name, phone:f.phone, uid: state.user.uid };
+
+    const entry = {
+      date: f.date, time: f.time, name: f.name, phone: f.phone,
+      note, service: "Muayene",
+      status: "bekliyor",
+      uid: booker.uid,
+      misafir: !state.user || state.user.isGuest,
+      createdAt: new Date().toISOString()
+    };
+
     (async () => {
+      let saved = false;
       try {
-        if (window.fb && state.fbReady) await window.fb.addAppointment(entry);
-        else { state.appointments.push({ id:Date.now(), ...entry }); persist("nurdis_appointments", state.appointments); }
-        state.myAppointments.push({ id:Date.now(), ...entry });
-        state.bookingStatus = "done";
-        state.bookingForm = { date:"", time:"", name:"", phone:"" };
-        playSound("success");
-      } catch (e) { state.bookingStatus = "error"; playSound("error"); }
+        if (window.fb && state.fbReady && !(state.user && state.user.isGuest)) {
+          await window.fb.addAppointment(entry);
+          saved = true;
+        }
+      } catch (e) { saved = false; }
+
+      if (!saved) {
+        state.appointments.push({ id: "rv_" + Date.now(), ...entry });
+        persist("nurdis_appointments", state.appointments);
+      }
+
+      state.lastBooking = entry;
+      state.myAppointments.push({ id: Date.now(), ...entry });
+      state.bookingStatus = "done";
+      state.bookingForm = { date: "", time: "", name: "", phone: "", note: "" };
+      playSound("success");
       render();
+      window.scrollTo(0, 0);
     })();
   }
+
   if (action === "submit-contact") {
     const c = state.contactForm;
     if (!(c.name && c.msg)) return;
@@ -8671,6 +9150,8 @@ function saveAccountingToFirebase() {
       kampanyalar: state.kampanyalar || [],
       hhAyar: state.hhAyar || null,
       mesajSablon: state.mesajSablon || null,
+      konumAyar: state.konumAyar || null,
+      randevuSablon: state.randevuSablon || null,
       bonusAyar: state.bonusAyar || null
     }).catch(() => {});
   }
@@ -8848,6 +9329,8 @@ function startAdminSubscriptions() {
         if (data.kampanyalar) { state.kampanyalar = data.kampanyalar; localStorage.setItem("nurdis_kampanyalar", JSON.stringify(state.kampanyalar)); }
         if (data.hhAyar) { state.hhAyar = data.hhAyar; localStorage.setItem("nurdis_hh_ayar", JSON.stringify(state.hhAyar)); }
         if (data.mesajSablon) { state.mesajSablon = data.mesajSablon; localStorage.setItem("nurdis_mesaj_sablon", JSON.stringify(state.mesajSablon)); }
+        if (data.konumAyar) { state.konumAyar = data.konumAyar; localStorage.setItem("nurdis_konum_ayar", JSON.stringify(state.konumAyar)); }
+        if (data.randevuSablon) { state.randevuSablon = data.randevuSablon; localStorage.setItem("nurdis_randevu_sablon", JSON.stringify(state.randevuSablon)); }
         if (data.bonusAyar) { state.bonusAyar = data.bonusAyar; localStorage.setItem("nurdis_bonus_ayar", JSON.stringify(state.bonusAyar)); }
         localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_treatment_prices", JSON.stringify(state.treatmentPrices)); saveAccountingToFirebase();
