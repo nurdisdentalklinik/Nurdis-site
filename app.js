@@ -123,7 +123,29 @@ const HERBS = [
   { name:"Papatya", helps:"Ağız içi tahriş, hafif iltihap, rahatlama", how:"Papatya çayı demlenip ılıtıldıktan sonra gargara yapılabilir ya da içilebilir.", amount:"Günde 2-3 kez", caution:"Papatyaya karşı alerjisi olanlar kullanmamalıdır." },
 ];
 
-const TIME_SLOTS = ["09:00","10:00","11:00","12:00","14:00","15:00","16:00","17:00"];
+/* Randevu saat dilimleri: 24 saat, 15 dakika aralıkla (acil/gece randevusu dahil) */
+const RANDEVU_ARALIK_DK = 15;
+const TIME_SLOTS = (() => {
+  const arr = [];
+  for (let saat = 0; saat < 24; saat++) {
+    for (let dk = 0; dk < 60; dk += RANDEVU_ARALIK_DK) {
+      arr.push(String(saat).padStart(2, "0") + ":" + String(dk).padStart(2, "0"));
+    }
+  }
+  return arr;
+})();
+
+/* Saate göre gruplama (0-23) */
+function saatDilimGrubu(hour) {
+  return TIME_SLOTS.filter(t => parseInt(t.split(":")[0]) === hour);
+}
+
+/* Gece mi? (22:00 - 07:00) */
+function geceMi(time) {
+  if (!time) return false;
+  const h = parseInt(time.split(":")[0]);
+  return h >= 22 || h < 7;
+}
 
 const NAV_TABS = [
   { id:"home", label:"Ana Sayfa", icon:"home", img:"tab-home.png" },
@@ -321,6 +343,7 @@ let state = {
   verimDonem: 30,
   hhTab: "kontrol",
   rvFiltre: "gelecek",
+  rvSaatGrup: null,
   rvArama: "",
   rvEdit: undefined,
   konumAyar: null,
@@ -2728,7 +2751,7 @@ function tedaviKar(tedavi) {
 
 /* Günlük kapasite (TIME_SLOTS uzunluğu) — ayarlanabilir */
 function randevuKapasite() {
-  return accNum((state.randevuAyar || {}).gunlukKapasite) || TIME_SLOTS.length;
+  return accNum((state.randevuAyar || {}).gunlukKapasite) || TIME_SLOTS.length; // 96 (24 saat × 4)
 }
 
 /* Bir tarihin kapalı olup olmadığı (Pazar kapalı varsayımı) */
@@ -3124,29 +3147,30 @@ function randevuMesaj(tip, r) {
 
 function renderBookingV2() {
   const f = state.bookingForm;
-  // Birden fazla hekim olduğu için saat çakışması engellenmez.
-  // Sadece seçili hekimin o saatte randevusu varsa küçük bir işaret gösterilir.
-  const seciliDoktor = f.doctor || "";
-  const slots = TIME_SLOTS.map(t => {
-    const dolu = seciliDoktor && (state.appointments || []).some(a =>
-      a.date === f.date && a.time === t && a.status !== "iptal" &&
-      (a.doctor === seciliDoktor || (!a.doctor && seciliDoktor))
-    );
-    return `<div class="slot ${f.time === t ? "active" : ""}" data-action="pick-time" data-time="${t}">${t}${dolu ? " •" : ""}</div>`;
+
+  /* Saat seçimi: 24 saat, 15 dk aralık. Seçili saat grubu state'te tutulur. */
+  const seciliSaatGrubu = state.rvSaatGrup != null ? state.rvSaatGrup
+    : (f.time ? parseInt(f.time.split(":")[0]) : new Date().getHours());
+
+  const saatButonlari = Array.from({ length: 24 }, (_, h) => {
+    const aktif = h === seciliSaatGrubu;
+    const gece = h >= 22 || h < 7;
+    return `<button data-action="saat-grup" data-h="${h}" style="flex:0 0 auto;min-width:44px;padding:7px 4px;border-radius:9px;font-size:11px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;border:1px solid ${aktif ? (gece ? "#4527A0" : "#0B6E86") : "var(--line)"};background:${aktif ? (gece ? "#4527A0" : "#0B6E86") : (gece ? "#F3E5F5" : "rgba(255,255,255,.75)")};color:${aktif ? "#fff" : "var(--ink)"};cursor:pointer;">${String(h).padStart(2, "0")}</button>`;
   }).join("");
 
-  const doktorlar = (state.personnel || []).filter(p => p.aktif !== false);
-  const doktorSecim = doktorlar.length
-    ? `<div class="field"><label>Hekim (isteğe bağlı)</label>
-        <select class="input" id="f-doctor" onchange="state.bookingForm.doctor=this.value;render();">
-          <option value="">— Fark etmez —</option>
-          ${doktorlar.map(p => `<option value="${escapeAttr(p.id)}" ${f.doctor === p.id ? "selected" : ""}>${escapeHtml(p.name)}</option>`).join("")}
-        </select>
-        <p style="font-size:9.5px;color:#888;margin:4px 0 0;">Birden fazla hekim aynı saatte hasta kabul edebilir.</p>
-      </div>`
+  const dakikaButonlari = saatDilimGrubu(seciliSaatGrubu).map(t => {
+    const aktif = f.time === t;
+    return `<div class="slot ${aktif ? "active" : ""}" data-action="pick-time" data-time="${t}" style="margin:0;">${t.split(":")[1]}</div>`;
+  }).join("");
+
+  const geceUyari = (seciliSaatGrubu >= 22 || seciliSaatGrubu < 7)
+    ? `<div class="card p3 mt2" style="background:#F3E5F5;border:1px solid #CE93D8;">
+         <p style="font-size:11px;color:#4527A0;margin:0;line-height:1.5;">🌙 <b>Gece / acil saat</b> — kliniğimiz acil durumlar için açıktır. Randevunuz öncelikli işleme alınacaktır.</p>
+       </div>`
     : "";
 
   const canSubmit = f.date && f.time && f.name && f.phone;
+
   let statusHtml = "";
   if (state.bookingStatus === "done" && state.lastBooking) {
     const b = state.lastBooking;
@@ -3169,11 +3193,20 @@ function renderBookingV2() {
       <div class="card p5 mb4">
         <div class="field"><label>Hizmet</label><input class="input" value="Muayene" disabled style="background:#EEF6F4;color:var(--muted);" /></div>
         <div class="field"><label>Tarih</label><input class="input" type="date" id="f-date" value="${escapeAttr(f.date)}" min="${accToday()}" /></div>
-        <div class="field"><label>Saat</label><div class="slot-grid">${slots}</div></div>
-        ${doktorSecim}
+
+        <div class="field">
+          <label>Saat <span style="color:var(--muted);font-weight:400;">(24 saat açık · 15 dk aralık)</span></label>
+          <div style="display:flex;gap:4px;overflow-x:auto;padding:2px 0 8px;">${saatButonlari}</div>
+          <p style="font-size:9.5px;color:#888;margin:0 0 6px;">Saat seçin, ardından dakikayı seçin</p>
+          <div class="slot-grid" style="grid-template-columns:repeat(4,1fr);">${dakikaButonlari}</div>
+          ${f.time ? `<p style="font-size:12px;font-weight:700;color:${geceMi(f.time) ? "#4527A0" : "var(--teal)"};margin:8px 0 0;text-align:center;">Seçilen saat: ${escapeHtml(f.time)}${geceMi(f.time) ? " 🌙" : ""}</p>` : ""}
+          ${geceUyari}
+        </div>
+
         <div class="field"><label>Ad Soyad</label><input class="input" id="f-name" placeholder="Adınız Soyadınız" value="${escapeAttr(f.name)}" /></div>
         <div class="field"><label>Telefon</label><input class="input" id="f-phone" type="tel" placeholder="05xx xxx xx xx" value="${escapeAttr(f.phone)}" /></div>
         <div class="field"><label>Not (isteğe bağlı)</label><input class="input" id="f-note" placeholder="Örn: diş ağrım var" value="${escapeAttr(f.note || "")}" /></div>
+
         <button class="btn-primary" data-action="submit-booking" ${!canSubmit || state.bookingStatus === "saving" ? "disabled" : ""}>
           ${state.bookingStatus === "saving" ? "Kaydediliyor…" : "📅 Randevuyu Onayla"}
         </button>
@@ -3190,7 +3223,7 @@ function renderBookingV2() {
       ${state.myAppointments.slice().reverse().map(a => `
         <div class="card p3 mb2">
           <p style="font-size:12.5px;font-weight:700;margin:0;">${escapeHtml(a.name)}</p>
-          <p style="font-size:11px;color:var(--muted);margin:2px 0 0;">${accTarihTR(a.date)} · ${escapeHtml(a.time)}</p>
+          <p style="font-size:11px;color:var(--muted);margin:2px 0 0;">${accTarihTR(a.date)} · ${escapeHtml(a.time)}${geceMi(a.time) ? " 🌙" : ""}</p>
         </div>`).join("")}` : ""}
     </div>`;
 }
@@ -3562,7 +3595,7 @@ function renderAppointmentsAdmin() {
         <div class="field"><label>Tarih</label><input class="input" type="date" id="rv-date" value="${escapeAttr(r.date)}" /></div>
         <div class="field"><label>Saat</label>
           <select class="input" id="rv-time">
-            ${TIME_SLOTS.map(t => `<option ${r.time === t ? "selected" : ""}>${t}</option>`).join("")}
+            ${TIME_SLOTS.map(t => `<option ${r.time === t ? "selected" : ""}>${t}${geceMi(t) ? " 🌙" : ""}</option>`).join("")}
           </select>
         </div>
       </div>
@@ -7003,6 +7036,18 @@ function accAction(action, el) {
     return true;
   }
 
+  /* ---- SAAT GRUBU SEÇİMİ ---- */
+  if (A("saat-grup")) {
+    state.rvSaatGrup = parseInt(el.dataset.h);
+    // Dakika seçimini sıfırla (yeni saat grubunda farklı dakikalar var)
+    if (state.bookingForm.time) {
+      const h = parseInt(state.bookingForm.time.split(":")[0]);
+      if (h !== state.rvSaatGrup) state.bookingForm.time = "";
+    }
+    render();
+    return true;
+  }
+
   /* ---- RANDEVU YÖNETİMİ ---- */
   if (A("rv-filtre")) { state.rvFiltre = el.dataset.f; render(); return true; }
   if (A("rv-new")) { state.rvEdit = ""; render(); window.scrollTo(0, 0); return true; }
@@ -8323,7 +8368,12 @@ document.addEventListener("click", (e) => {
     state.moreOpen = !state.moreOpen;
     render();
   }
-  if (action === "pick-time") { state.bookingForm.time = el.dataset.time; state.bookingStatus="idle"; render(); }
+  if (action === "pick-time") {
+    state.bookingForm.time = el.dataset.time;
+    state.rvSaatGrup = parseInt(el.dataset.time.split(":")[0]);
+    state.bookingStatus = "idle";
+    render();
+  }
   if (action === "submit-booking") {
     const f = state.bookingForm;
     if (!(f.date && f.time && f.name && f.phone)) return;
