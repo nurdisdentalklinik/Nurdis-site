@@ -242,6 +242,35 @@ function sendChat(imageBase64) {
   }, 350);
 }
 
+
+/* ---------------- DEĞİŞİM (change) OLAYLARI ----------------
+   Satır içi onchange="" CSP tarafından engellendiği için
+   data-change özniteliği ile merkezi olarak yönetilir. */
+document.addEventListener("change", (e) => {
+  const el = e.target.closest("[data-change]");
+  if (!el) return;
+  const tur = el.dataset.change;
+
+  if (tur === "exp-stok-toggle") {
+    const kutu = document.getElementById("exp-stok-alanlari");
+    if (kutu) kutu.style.display = el.checked ? "block" : "none";
+    return;
+  }
+
+  if (tur === "set-booking-doctor") {
+    if (!state.bookingForm) state.bookingForm = {};
+    state.bookingForm.doctor = el.value;
+    return;
+  }
+
+  if (tur === "yedek-dosya") {
+    if (typeof yedekDosyaSecildi === "function" && el.files && el.files[0]) {
+      yedekDosyaSecildi(el);
+    }
+    return;
+  }
+});
+
 /* ---------------- TIKLAMA OLAYLARI ---------------- */
 
 let _entrySoundPlayed = false;
@@ -853,6 +882,7 @@ document.addEventListener("click", (e) => {
     state.lightboxPhoto = null;
     render();
   }
+  if (action === "yazdir") { try { window.print(); } catch (e) {} return; }
   if (action === "set-info-tab") {
     state.infoTab = el.dataset.id;
     render();

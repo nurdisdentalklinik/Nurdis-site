@@ -82,8 +82,45 @@ function subscribe(colName, cb, max=100) {
   }, (err) => { console.error(`${colName} dinleme hatası:`, err); cb([]); });
 }
 
+/* ------------------------------------------------------------------
+   GİRİŞ TEMİZLİĞİ (halka açık formlar)
+   Randevu / sipariş / mesaj / yorum alanları halktan gelir. Buraya
+   "<img src=x onerror=...>" gibi HTML yazılırsa yönetici panelinde
+   çalışabilir (CSP script'i engeller ama sahte form/arayüz enjekte
+   edilebilir). Bu yüzden kayıt daha veritabanına yazılmadan temizlenir:
+   açı/burun işaretleri ve kontrol karakterleri atılır, uzunluk kısılır.
+   ------------------------------------------------------------------ */
+function _temizMetin(v, max) {
+  if (typeof v !== "string") return v;
+  return v
+    .replace(/[<>]/g, "")              // HTML etiketi kurmayı imkânsız kıl
+    .replace(/[\u0000-\u001F\u007F]/g, " ")  // kontrol karakterleri
+    .replace(/\s{3,}/g, "  ")
+    .trim()
+    .slice(0, max || 500);
+}
+
+const _PUBLIC_ALANLAR = {
+  name: 80, phone: 20, date: 10, time: 5, note: 300, address: 400,
+  msg: 1500, text: 1000, email: 120, doctor: 60, treatment: 80,
+  subject: 120, items: 0
+};
+
+function _temizPaket(data) {
+  const cikti = {};
+  Object.keys(data || {}).forEach((k) => {
+    const v = data[k];
+    if (typeof v === "string") {
+      cikti[k] = _temizMetin(v, _PUBLIC_ALANLAR[k] || 400);
+    } else {
+      cikti[k] = v;   // sayı, dizi, boolean olduğu gibi
+    }
+  });
+  return cikti;
+}
+
 function addItem(colName, data) {
-  return addDoc(collection(db, colName), { ...data, createdAt: serverTimestamp() });
+  return addDoc(collection(db, colName), { ..._temizPaket(data), createdAt: serverTimestamp() });
 }
 
 /* Basit anahtar->deger haritaları (id -> {url}) — hizmet videoları ve
@@ -256,10 +293,10 @@ window.fb = {
   addOrder: (data) => addItem("orders", data),
   addMessage: (data) => addItem("messages", data),
   // Hasta portalı
-  subscribePatientFiles: (cb) => subscribe("patient_files", cb, 200),
+  subscribePatientFiles: (uid, cb) => window.fb.subscribeMine("patient_files", uid, cb),
   addPatientFile: (data) => addItem("patient_files", data),
   deletePatientFile: (id) => deleteItem("patient_files", id),
-  subscribePatientNotes: (cb) => subscribe("patient_notes", cb, 200),
+  subscribePatientNotes: (uid, cb) => window.fb.subscribeMine("patient_notes", uid, cb),
   addPatientNote: (data) => addItem("patient_notes", data),
   deletePatientNote: (id) => deleteItem("patient_notes", id),
   subscribeServiceVideos: (cb) => subscribeMap("service_videos", cb),
@@ -290,8 +327,33 @@ window.fb = {
   addAccountingEntry: (data) => addAccountingEntry(data),
   subscribeAccountingIncomes: (cb) => subscribeAccounting("income", cb),
   subscribeAccountingExpenses: (cb) => subscribeAccounting("expense", cb),
+  /* Anlık oturum — yönetici kapısı bunu sunucudan doğrular */
+  getCurrentUser: () => {
+    const u = auth.currentUser;
+    return u ? { uid: u.uid, email: u.email, isAdmin: u.email === ADMIN_EMAIL } : null;
+  },
+  signOutNow: () => signOut(auth),
   saveAccountingData: (data) => setDoc(doc(db, "settings", "accounting"), data),
   loadAccountingData: () => getDoc(doc(db, "settings", "accounting")),
+
+  /* --- HALKA AÇIK KLİNİK VERİSİ ---
+     Finansal veri (ciro, gider, personel maaşı) ile hasta kataloğu AYNI
+     dokümanda tutulmamalı. Halka açık kısım burada, özel kısım
+     settings/accounting'te (sadece yönetici). */
+  savePublicData: (data) => setDoc(doc(db, "public", "klinik"), data),
+  loadPublicData: () => getDoc(doc(db, "public", "klinik")),
+
+  /* --- KENDİ KAYITLARIM ---
+     Hasta yalnızca kendi kayıtlarını okuyabilir. Koleksiyonun tamamını
+     çekmek güvenlik kuralı tarafından reddedilir (ve reddedilmelidir). */
+  subscribeMine: (col, uid, cb) => {
+    if (!uid) { cb([]); return () => {}; }
+    const q = query(collection(db, col), where("uid", "==", uid));
+    return onSnapshot(q,
+      (snap) => { const items = []; snap.forEach(d => items.push({ id: d.id, ...d.data() })); cb(items); },
+      () => cb([])
+    );
+  },
   /* --- MEDYA DEPOSU ---
      Firestore tek doküman limiti 1 MB. Doktor fotoğrafı, diploma, ürün görseli
      gibi base64 medyalar settings/accounting içine gömülürse limit kısa sürede

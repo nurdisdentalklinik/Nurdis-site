@@ -30,53 +30,43 @@ function hastaKimlik() {
   };
 }
 
-/* Bu hastaya ait tedavi kayıtlarını bul */
+/* Bu hastaya ait tedavi kayıtları.
+   GÜVENLİK: yalnızca giriş yapmış kullanıcının KENDİ uid'si eşleşir.
+   Ad benzerliği veya telefon eşleşmesi kullanılmaz — bunlar taklit
+   edilebilir ve başka hastanın sağlık verisini sızdırır. */
 function hastaTedavileri() {
   const k = hastaKimlik();
-  const norm = s => (s || "").toLowerCase().replace(/[^a-zğüşıöç0-9]/g, "");
-  const adParca = norm(k.ad).split(" ")[0];
-
-  return (state.treatments || []).filter(t => {
-    if (k.email && (t.patientEmail || "").toLowerCase() === k.email) return true;
-    if (k.uid && t.uid === k.uid) return true;
-    if (k.telefon && normalizePhone(t.patientPhone || "") === k.telefon) return true;
-    if (adParca && adParca.length > 2) {
-      const hedef = norm(t.userName || "");
-      if (hedef.includes(adParca)) return true;
-    }
-    return false;
-  }).sort((a, b) => new Date(b.date) - new Date(a.date));
+  if (!k.uid) return [];
+  return (state.treatments || [])
+    .filter(t => t.uid && t.uid === k.uid)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
-/* Mali müşavir modülündeki gelir kayıtlarından hasta faturası */
+/* Hasta faturaları — GÜVENLİK: finansal veri hastaya gösterilmez.
+   Önceden burada state.accounting.incomes taranıyordu; bu, kliniğin TÜM
+   ciro ve gider kayıtlarının her ziyaretçinin tarayıcısına indirilmesi
+   demekti. Ayrıca yalnızca ilk ad ile eşleştirme yapıldığı için aynı ada
+   sahip iki hasta birbirinin kaydını görebiliyordu. */
 function hastaFaturalari() {
-  const k = hastaKimlik();
-  const norm = s => (s || "").toLowerCase().replace(/[^a-zğüşıöç0-9]/g, "");
-  const adParca = norm(k.ad).split(" ")[0];
-
-  return ((state.accounting || {}).incomes || []).filter(x => {
-    // Ödenmemiş (veresiye) kayıtlar hastaya gösterilmez — yalnızca yönetici görür
-    if (x.paid === false) return false;
-    const hedef = norm((x.firm || "") + " " + (x.description || ""));
-    if (adParca && adParca.length > 2 && hedef.includes(adParca)) return true;
-    return false;
-  }).sort((a, b) => new Date(b.date) - new Date(a.date));
+  return [];
 }
 
 /* Hastanın yüklediği dosyalar */
 function hastaDosyalari() {
   const k = hastaKimlik();
-  return (state.patientFiles || []).filter(f =>
-    (k.uid && f.uid === k.uid) || (k.email && (f.email || "").toLowerCase() === k.email)
-  ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  if (!k.uid) return [];
+  return (state.patientFiles || [])
+    .filter(f => f.uid && f.uid === k.uid)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
 /* Hastanın notları */
 function hastaNotlari() {
   const k = hastaKimlik();
-  return (state.patientNotes || []).filter(n =>
-    (k.uid && n.uid === k.uid) || (k.email && (n.email || "").toLowerCase() === k.email)
-  ).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  if (!k.uid) return [];
+  return (state.patientNotes || [])
+    .filter(n => n.uid && n.uid === k.uid)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
 /* ---------------- DOSYA TÜRLERİ ---------------- */

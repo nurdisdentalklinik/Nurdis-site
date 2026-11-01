@@ -1,0 +1,205 @@
+rules_version = '2';
+
+// ============================================================================
+//  NUR DİŞ & DENTAL KLİNİK — FIRESTORE GÜVENLİK KURALLARI  (v3 / sertleştirilmiş)
+// ----------------------------------------------------------------------------
+//  TASARIM İLKESİ: "Varsayılan olarak HER ŞEY YASAK. Sadece açıkça izin
+//  verilen şey serbest." Eski kuralda `allow read: if true` vardı; bu, tüm
+//  hasta verisini (telefon, adres, sağlık notu) internete açık ediyordu.
+//
+//  YETKİ MODELİ
+//    • Halk (giriş yapmamış)  → sadece herkese açık içerik okuyabilir,
+//                               formları doldurabilir (randevu/sipariş/yorum/mesaj)
+//    • Yönetici (ADMIN_EMAIL) → her şeyi okur/yazar
+//    • Hasta (giriş yapmış)   → yalnızca KENDİ not/dosya/profilini okur
+// ============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------- YARDIMCILAR ----------------------------
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.token.email == 'nurdisdentalklinik@gmail.com';
+    }
+
+    function girisVar() {
+      return request.auth != null;
+    }
+
+    // Metin alanı: doğru tip, makul uzunluk
+    function metin(d, alan, min, max) {
+      return d[alan] is string
+          && d[alan].size() >= min
+          && d[alan].size() <= max;
+    }
+
+    // Telefon: sadece rakam, boşluk, +, -, parantez
+    function telefon(d, alan) {
+      return d[alan] is string
+          && d[alan].size() >= 7
+          && d[alan].size() <= 20
+          && d[alan].matches('^[0-9 +()\\-]+$');
+    }
+
+    // Tarih: YYYY-MM-DD
+    function tarih(d, alan) {
+      return d[alan] is string && d[alan].matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    // Saat: HH:MM
+    function saat(d, alan) {
+      return d[alan] is string && d[alan].matches('^[0-9]{2}:[0-9]{2}$');
+    }
+
+    // Aşırı büyük dokümanı engelle (spam / DoS)
+    function makulBoyut() {
+      return request.resource.data.keys().size() <= 40;
+    }
+
+    // =====================================================================
+    //  1. HERKESE AÇIK İÇERİK  (ürün, yorum, sosyal medya, bilgi kartları)
+    // =====================================================================
+
+    // Ürün kataloğu — okuma herkese açık, yazma yönetici
+    match /products_custom/{id} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Hasta yorumları — herkes okur (sitede gösteriliyor), herkes yazabilir
+    // ama doğrulamalı; güncelleme/silme sadece yönetici
+    match /reviews/{id} {
+      allow read: if true;
+      allow create: if makulBoyut()
+                    && metin(request.resource.data, 'name', 1, 60)
+                    && metin(request.resource.data, 'text', 1, 1000)
+                    && request.resource.data.rating is int
+                    && request.resource.data.rating >= 1
+                    && request.resource.data.rating <= 5;
+      allow update, delete: if isAdmin();
+    }
+
+    // Sosyal medya bağlantıları — herkese açık
+    match /social_media/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Sağlık ipuçları / duyurular / tedavi bilgileri — herkese açık içerik
+    match /health_tips/{id} {
+      allow read: if true;
+      allow create: if false;
+      allow update, delete: if isAdmin();
+    }
+    match /announcements/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /treatments/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Engellenen kullanıcılar — sadece uid listesi (kişisel veri yok)
+    match /blocked_users/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // =====================================================================
+    //  2. HERKESE AÇIK KLİNİK VERİSİ  (ürünler, doktorlar, kampanyalar)
+    //     Finansal veri BURADA DEĞİL — ayrı ve özel dokümanda.
+    // =====================================================================
+    match /public/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // =====================================================================
+    //  3. KLİNİK AYARLARI / MUHASEBE  (finans, maaş, personel — ÇOK GİZLİ)
+    //     Eski kuralda yazma için sadece "giriş yapmış olmak" yetiyordu;
+    //     yani herhangi biri ücretsiz hesap açıp tüm muhasebeyi silebilirdi.
+    // =====================================================================
+    match /settings/{docId} {
+      // Fotoğraf/diploma/ürün görseli dokümanları herkese açık okunabilir
+      // (sitede gösteriliyor). Geri kalanı SADECE yönetici.
+      allow read: if isAdmin()
+                  || docId.matches('doktor_.*')
+                  || docId.matches('urun_.*')
+                  || docId.matches('brushing_video');
+      allow write: if isAdmin();
+    }
+
+    // =====================================================================
+    //  4. RANDEVU  (hasta adı + telefonu — kişisel veri)
+    //     Oluşturma: herkes (misafir randevu) · Okuma: sadece yönetici
+    // =====================================================================
+    match /appointments/{id} {
+      allow read: if isAdmin();
+      allow create: if makulBoyut()
+                    && metin(request.resource.data, 'name', 2, 80)
+                    && telefon(request.resource.data, 'phone')
+                    && tarih(request.resource.data, 'date')
+                    && saat(request.resource.data, 'time');
+      allow update, delete: if isAdmin();
+    }
+
+    // =====================================================================
+    //  5. SİPARİŞ  (ad + telefon + adres — kişisel veri)
+    // =====================================================================
+    match /orders/{id} {
+      allow read: if isAdmin() || (girisVar() && resource.data.uid == request.auth.uid);
+      allow create: if makulBoyut()
+                    && metin(request.resource.data, 'name', 2, 80)
+                    && telefon(request.resource.data, 'phone')
+                    && metin(request.resource.data, 'address', 4, 400);
+      allow update, delete: if isAdmin();
+    }
+
+    // =====================================================================
+    //  6. MESAJLAR  (hasta iletişim formu)
+    // =====================================================================
+    match /messages/{id} {
+      allow read: if isAdmin();
+      allow create: if makulBoyut()
+                    && metin(request.resource.data, 'name', 2, 80)
+                    && telefon(request.resource.data, 'phone')
+                    && metin(request.resource.data, 'msg', 1, 1500);
+      allow update, delete: if isAdmin();
+    }
+
+    // =====================================================================
+    //  7. HASTA NOTLARI ve DOSYALARI  (SAĞLIK VERİSİ — KVKK özel nitelikli)
+    //     Herkes kendi kaydını okur. Başkasınınkini ASLA.
+    // =====================================================================
+    match /patient_notes/{id} {
+      allow read: if isAdmin() || (girisVar() && resource.data.uid == request.auth.uid);
+      allow create: if makulBoyut() && girisVar();
+      allow update, delete: if isAdmin() || (girisVar() && resource.data.uid == request.auth.uid);
+    }
+    match /patient_files/{id} {
+      allow read: if isAdmin() || (girisVar() && resource.data.uid == request.auth.uid);
+      allow create: if makulBoyut() && girisVar();
+      allow update, delete: if isAdmin() || (girisVar() && resource.data.uid == request.auth.uid);
+    }
+
+    // =====================================================================
+    //  8. HASTA PROFİLİ / FIRÇALAMA SERİSİ — sadece sahibi
+    // =====================================================================
+    match /user_profiles/{uid} {
+      allow read, write: if isAdmin() || (girisVar() && request.auth.uid == uid);
+    }
+    match /brush_streaks/{uid} {
+      allow read, write: if isAdmin() || (girisVar() && request.auth.uid == uid);
+    }
+
+    // =====================================================================
+    //  9. KAPANIŞ: Listelenmemiş HİÇBİR koleksiyona erişim yok.
+    //     (Varsayılan davranış zaten yasak; bu satır niyeti belgeler.)
+    // =====================================================================
+    match /{document=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

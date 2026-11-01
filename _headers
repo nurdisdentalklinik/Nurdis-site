@@ -1,0 +1,33 @@
+# ============================================================================
+#  NUR DİŞ & DENTAL KLİNİK — Cloudflare Pages güvenlik başlıkları
+#  Bu dosya her yanıta otomatik uygulanır.
+# ============================================================================
+
+/*
+  # --- İÇERİK GÜVENLİK POLİTİKASI (CSP) ---
+  # Tarayıcı seviyesinde XSS kalkanı. Sayfaya enjekte edilen <script> veya
+  # onerror="" gibi kodlar ÇALIŞMAZ. Uygulamanın kendi dosyaları ve
+  # Firebase/Google Fonts dışında hiçbir kaynağa izin yok.
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://nurdis-worker.nurdisdentalklinik.workers.dev https://*.firebaseapp.com https://accounts.google.com https://www.youtube.com; frame-src 'self' https://denta.bot https://www.youtube.com https://www.youtube-nocookie.com https://*.firebaseapp.com https://accounts.google.com data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;
+
+  # --- Tıklama kaçırma (clickjacking) koruması ---
+  X-Frame-Options: SAMEORIGIN
+
+  # --- MIME koklama saldırısını engelle ---
+  X-Content-Type-Options: nosniff
+
+  # --- Referrer sızıntısını kısıtla ---
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # --- Tarayıcı özelliklerini kısıtla (kamera/mikrofon sadece kendi kaynağımız) ---
+  Permissions-Policy: geolocation=(self), camera=(self), microphone=(), payment=(), usb=(), magnetometer=(), gyroscope=()
+
+  # --- XSS denetçileri (eski tarayıcılar) ---
+  X-XSS-Protection: 1; mode=block
+
+  # --- HTTPS zorunlu (1 yıl) ---
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+  # --- Kross-origin izolasyonu ---
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-site

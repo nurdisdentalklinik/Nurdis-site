@@ -11,7 +11,7 @@ function stokGiderFormu() {
   return `
     <div style="margin-top:10px;padding:10px;background:#E0F7FA;border:1px solid #80DEEA;border-radius:10px;">
       <label style="font-size:12px;display:flex;align-items:center;gap:8px;font-weight:700;color:#006064;cursor:pointer;">
-        <input type="checkbox" id="exp-stok-ekle" onchange="document.getElementById('exp-stok-alanlari').style.display=this.checked?'block':'none';" />
+        <input type="checkbox" id="exp-stok-ekle" data-change="exp-stok-toggle" />
         <span>📦 Bu alımı stoğa da ekle</span>
       </label>
       <div id="exp-stok-alanlari" style="display:none;margin-top:9px;">
@@ -1577,7 +1577,7 @@ function accPrint(title, bodyHtml) {
     <h2>NUR DİŞ & DENTAL KLİNİK</h2>
     <div class="sub">${escapeHtml(title)} · ${new Date().toLocaleString("tr-TR")}</div>
     ${bodyHtml}
-    <p class="noprint" style="margin-top:24px;"><button onclick="window.print()" style="padding:10px 20px;font-size:14px;">🖨️ Yazdır</button></p>
+    <p class="noprint" style="margin-top:24px;"><button data-action="yazdir" style="padding:10px 20px;font-size:14px;">🖨️ Yazdır</button></p>
     </body></html>`);
   w.document.close();
 }
@@ -2694,6 +2694,25 @@ function accAction(action, el) {
 }
 
 function renderAdminPanel() {
+  /* GÜVENLİK KAPISI
+     Önceden bu ekranı herkes açabiliyordu. Artık hem yerel oturum hem de
+     Firebase'in gerçek oturumu doğrulanmadan hiçbir şey render edilmez.
+     Sunucu tarafında da Firestore kuralları yönetici e-postası dışındaki
+     tüm okuma/yazmaları reddeder; bu kapı yalnızca arayüz katmanıdır. */
+  const gercek = (window.fb && window.fb.getCurrentUser) ? window.fb.getCurrentUser() : null;
+  if (!state.adminLoggedIn || !gercek || !gercek.isAdmin) {
+    state.adminLoggedIn = false;
+    return `${topbar("Yönetici Girişi", "Bu alan yalnızca klinik yöneticisine açıktır.", { back: "home" })}
+      <div class="content">
+        <div class="card p4" style="text-align:center;">
+          <p style="font-size:40px;margin:0 0 10px;">🔒</p>
+          <p class="name" style="font-size:15px;margin:0 0 6px;">Yetkisiz erişim</p>
+          <p class="desc" style="margin:0 0 16px;">Bu bölümü görmek için yönetici hesabıyla giriş yapmanız gerekir.</p>
+          <button class="btn-primary" style="width:100%;" data-action="goto" data-screen="admin-login">Yönetici Girişi</button>
+        </div>
+      </div>`;
+  }
+
   const tabs = [
     { id: "appointments", label: "📅 Randevular", count: state.appointments.length },
     { id: "orders", label: "📦 Siparişler", count: state.orders.length },

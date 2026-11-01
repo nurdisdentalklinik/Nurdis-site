@@ -209,7 +209,7 @@ function renderBookingV2() {
 
         ${doktorlar().length ? `<div class="field">
           <label>Hekim Tercihi <span style="color:var(--muted);font-weight:400;">(isteğe bağlı)</span></label>
-          <select class="input" id="f-doctor" onchange="state.bookingForm.doctor=this.value;">
+          <select class="input" id="f-doctor" data-change="set-booking-doctor">
             <option value="">— Fark etmez —</option>
             ${doktorlar().map(d => `<option value="${escapeAttr(d.id)}" ${f.doctor === d.id ? "selected" : ""}>${escapeHtml((d.unvan || "") + " " + (d.adSoyad || ""))}${(d.uzmanliklar||[])[0] ? " · " + escapeHtml((d.uzmanliklar||[])[0]) : ""}</option>`).join("")}
           </select>

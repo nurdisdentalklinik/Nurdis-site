@@ -242,7 +242,35 @@ function _urunHafif(p) {
   return { hafif: { ...p, gorsel: "" }, medya: { gorsel: p.gorsel } };
 }
 
+/* Yalnızca halka açık kısmı yayınla (yönetici girişi gerektirir) */
+function halkaAcikYayinla() {
+  try {
+    if (!(window.fb && window.fb.savePublicData)) return Promise.resolve();
+    return window.fb.savePublicData({
+      products: (state.products || []).map(p => ({ ...p, gorsel: (typeof p.gorsel === "string" && p.gorsel.startsWith("data:")) ? "" : p.gorsel })),
+      doctors: (state.doctors || []).map(d => ({ ...d, foto: (typeof d.foto === "string" && d.foto.startsWith("data:")) ? "" : d.foto, diplomalar: [] })),
+      treatments: state.treatments || [],
+      treatmentPrices: state.treatmentPrices || {},
+      kampanyalar: state.kampanyalar || [],
+      firmaBilgi: state.firmaBilgi || null,
+      guncelleme: new Date().toISOString()
+    }).catch(() => {});
+  } catch (e) { return Promise.resolve(); }
+}
+
 function saveAccountingToFirebase() {
+  /* GÜVENLİK + PERFORMANS
+     Bu fonksiyon eskiden her ziyaretçide çalışıp buluta yazmaya çalışıyordu:
+     hem sürekli "permission-denied" hatası üretiyor hem de boşuna yazma
+     kotası harcıyordu. Artık yalnızca doğrulanmış yönetici oturumunda yazar. */
+  const yetkili = (() => {
+    try {
+      const u = (window.fb && window.fb.getCurrentUser) ? window.fb.getCurrentUser() : null;
+      return !!(u && u.isAdmin && state.adminLoggedIn);
+    } catch (e) { return false; }
+  })();
+  if (!yetkili) return Promise.resolve();
+
   if (window.fb && window.fb.saveAccountingData) {
     const doktorlar = state.doctors || [];
     const urunler = state.products || [];
@@ -258,7 +286,25 @@ function saveAccountingToFirebase() {
       return r.hafif;
     });
 
-    // Ana dokümana medyasız hâlini gönder
+    /* HALKA AÇIK KOPYA
+       Ürün, doktor ve fiyat bilgisi siteyi gezen herkesin görmesi gereken
+       veridir. Ciro, gider, personel maaşı ise ASLA halka açılmamalı.
+       Bu yüzden iki ayrı dokümana yazılıyor. */
+    try {
+      if (window.fb.savePublicData) {
+        window.fb.savePublicData({
+          products: uHafif,
+          doctors: dHafif,
+          treatments: state.treatments || [],
+          treatmentPrices: state.treatmentPrices || {},
+          kampanyalar: state.kampanyalar || [],
+          firmaBilgi: state.firmaBilgi || null,
+          guncelleme: new Date().toISOString()
+        }).catch(() => {});
+      }
+    } catch (e) {}
+
+    // Ana dokümana (SADECE YÖNETİCİ okur) medyasız hâlini gönder
     return window.fb.saveAccountingData({
       accounting: state.accounting,
       treatmentPrices: state.treatmentPrices,
@@ -389,6 +435,29 @@ function wireFirebase() {
     });
   }
   unsubProducts = window.fb.subscribeProducts((items) => { state.customProducts = items; render(); });
+
+  /* HALKA AÇIK KLİNİK VERİSİ (ürün, doktor, fiyat, kampanya)
+     Finansal doküman artık herkese açık değil; site bu dokümandan beslenir.
+     Doküman henüz yoksa uygulama koddaki varsayılanlarla çalışır. */
+  if (window.fb.loadPublicData) {
+    window.fb.loadPublicData().then((snap) => {
+      if (!snap || !snap.exists()) return;
+      const d = snap.data() || {};
+      if ((d.products || []).length && !(state.products || []).length) {
+        state.products = d.products;
+        try { localStorage.setItem("nurdis_products", JSON.stringify(state.products)); } catch (e) {}
+      }
+      if ((d.doctors || []).length && !(state.doctors || []).length) {
+        state.doctors = d.doctors;
+        try { localStorage.setItem("nurdis_doctors", JSON.stringify(state.doctors)); } catch (e) {}
+      }
+      if (d.treatmentPrices) state.treatmentPrices = d.treatmentPrices;
+      if (d.kampanyalar) state.kampanyalar = d.kampanyalar;
+      if (d.firmaBilgi) state.firmaBilgi = d.firmaBilgi;
+      render();
+      medyaBirlestir();
+    }).catch(() => {});
+  }
   window.fb.subscribeServiceVideos((map) => { state.serviceVideos = map; render(); });
   window.fb.subscribeDeviceVideos((map) => { state.deviceVideos = map; render(); });
   window.fb.subscribeProductImages((map) => { state.productImages = map; render(); });
@@ -425,19 +494,12 @@ function wireFirebase() {
     render();
   });
 
-  // Hasta portalı — dosyalar ve notlar
-  if (window.fb.subscribePatientFiles) {
-    window.fb.subscribePatientFiles((items) => {
-      state.patientFiles = items;
-      render();
-    });
-  }
-  if (window.fb.subscribePatientNotes) {
-    window.fb.subscribePatientNotes((items) => {
-      state.patientNotes = items;
-      render();
-    });
-  }
+  /* Hasta portalı — SADECE kendi kayıtları.
+     Eskiden koleksiyonun tamamı çekilip tarayıcıda filtreleniyordu; bu,
+     her hastanın sağlık notlarının herkese açık olması demekti.
+     Artık sunucu tarafında uid ile sorgulanıyor (güvenlik kuralı da
+     yalnızca kendi kaydını okumaya izin veriyor). */
+  _hastaVerileriniYukle();
 
   // Sağlık ipuçlarını yükle
   window.fb.subscribeHealthTips((tips) => {
@@ -462,19 +524,45 @@ function wireFirebase() {
     });
   }
 
-  // Kullanıcı tedavilerini yükle (admin ekler)
-  if (window.fb.subscribeTreatments) {
-    window.fb.subscribeTreatments((treatments) => {
-      state.treatments = treatments;
-      render();
-    });
-  }
 
   render();
 }
 
+
+/* Hasta kendi verisini yükler. Giriş yapılmamışsa hiçbir şey çekilmez —
+   misafir kullanıcı yalnızca kendi cihazındaki yerel kayıtları görür. */
+let _unsubHasta = [];
+function _hastaVerileriniYukle() {
+  _unsubHasta.forEach(f => { try { f(); } catch (e) {} });
+  _unsubHasta = [];
+  const uid = state.user && state.user.uid;
+  if (!uid || (state.user && state.user.isGuest)) return;
+
+  if (window.fb.subscribePatientFiles) {
+    _unsubHasta.push(window.fb.subscribePatientFiles(uid, (items) => {
+      state.patientFiles = items; render();
+    }));
+  }
+  if (window.fb.subscribePatientNotes) {
+    _unsubHasta.push(window.fb.subscribePatientNotes(uid, (items) => {
+      state.patientNotes = items; render();
+    }));
+  }
+  if (window.fb.subscribeMine) {
+    _unsubHasta.push(window.fb.subscribeMine("treatments", uid, (items) => {
+      state.treatments = items; render();
+    }));
+  }
+}
+
 function startAdminSubscriptions() {
   if (!window.fb || !state.fbReady) return;
+
+  /* Yönetici girişinde halka açık veri otomatik yayınlanır.
+     Böylece ürün/doktor/fiyat bilgisi public/klinik dokümanına düşer ve
+     site finansal veriye hiç erişmeden kataloğu gösterebilir. */
+  try { halkaAcikYayinla(); } catch (e) {}
+
   unsubAppointments = window.fb.subscribeAppointments((items) => {
     // Bildirim: yeni randevu
     if (!_notifFirstLoad.appointments && items.length > state.appointments.length) {
@@ -1019,7 +1107,8 @@ function renderDentistGame() {
 }
 
 /* ============ GÜLÜŞÜNÜ TASARLA - Magic Hour AI ============ */
-const MAGIC_HOUR_API_KEY = "mhk_live_f1grAFyq18bjWKCovOXuO9aQ62xAT8qavlRCQ0G61Kuy3FHmiNl2uwT8Y83JyWDHdHJwROiqt1mEO31I";
+/* (Kaldırıldı) Burada canlı bir API anahtarı düz metin duruyordu ve
+   hiçbir yerde kullanılmıyordu. Herkese açık sitede anahtar bulunmaz. */
 
 function renderSmile() {
   return `${topbar("Gülüşünü Tasarla","Yapay zeka ile Hollywood gülüşünü tasarla!", {back:"home"})}

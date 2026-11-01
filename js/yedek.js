@@ -311,7 +311,7 @@ function renderAccYedek() {
       <button class="btn-primary" style="background:#1565C0;font-size:12px;padding:13px;" data-action="yedek-yukle-btn">⬆️ Geri Yükle</button>
     </div>
 
-    <input type="file" id="yedek-dosya" accept=".json,application/json" style="display:none;" onchange="yedekDosyaSecildi(this)" />
+    <input type="file" id="yedek-dosya" accept=".json,application/json" style="display:none;" data-change="yedek-dosya" />
 
     ${geriAlmaVar ? `<button class="btn-primary mb3" style="background:#6A1B9A;font-size:11.5px;padding:11px;" data-action="yedek-geri-al">↩️ Son Geri Yüklemeden Önceki Hâle Dön</button>` : ""}
 
