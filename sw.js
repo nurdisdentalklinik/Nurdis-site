@@ -1,11 +1,11 @@
 /* Sürüm numarasını HER değişiklikte artır — eski önbellek otomatik silinir. */
-const CACHE_VERSION = "v28";
+const CACHE_VERSION = "v29";
 const CACHE_NAME = "nurdis-" + CACHE_VERSION;
 const ASSETS = [
   "./index.html", "./manifest.json",
   "./urunler/c1.jpg", "./urunler/c2.jpg", "./urunler/y1.jpg", "./urunler/y2.jpg", "./urunler/y3.jpg",
   "./urunler/y4.jpg", "./urunler/y5.jpg", "./urunler/y6.jpg", "./urunler/y7.jpg", "./urunler/y8.jpg", "./icon-192.png", "./icon-512.png",
-  "./js/core.js", "./js/splash.js", "./js/bilgi.js", "./js/muhasebe.js", "./js/stok.js", "./js/crm.js", "./js/randevu.js",
+  "./js/core.js", "./js/guvenlik.js", "./js/splash.js", "./js/bilgi.js", "./js/muhasebe.js", "./js/stok.js", "./js/crm.js", "./js/randevu.js",
   "./js/anket.js", "./js/prim.js", "./js/mali.js", "./js/ekran.js", "./js/medya.js", "./js/doktorlar.js", "./js/magaza.js", "./js/senkron.js", "./js/portal.js", "./js/otomasyon.js", "./js/kvkk.js", "./js/yedek.js", "./js/firebase.js",
   "./doctor-photo.jpg", "./clinic-hero.jpg", "./whitening-before-after.jpg",
   "./treatment-process.jpg", "./info-toothache.jpg",

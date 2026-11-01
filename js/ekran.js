@@ -334,6 +334,8 @@ document.addEventListener("click", (e) => {
   if (action === "submit-booking") {
     const f = state.bookingForm;
     if (!(f.date && f.time && f.name && f.phone)) return;
+    // Bot tuzağı: görünmez alan doldurulmuşsa sessizce durdur
+    if (typeof gvTuzakDolu === "function" && gvTuzakDolu()) return;
     if (!f.kvkk) { alert("Devam etmek için KVKK aydınlatma metnini onaylamanız gerekir."); return; }
 
     const booker = state.user || guestUser();
@@ -382,6 +384,8 @@ document.addEventListener("click", (e) => {
   if (action === "submit-contact") {
     const c = state.contactForm;
     if (!(c.name && c.msg)) return;
+    // Bot tuzağı: görünmez alan doldurulmuşsa sessizce durdur
+    if (typeof gvTuzakDolu === "function" && gvTuzakDolu()) return;
     state.contactStatus = "saving"; render();
     (async () => {
       try {
@@ -889,19 +893,36 @@ document.addEventListener("click", (e) => {
   }
   if (action === "admin-login") {
     if (!window.fb) { state.adminError = "Giriş sistemi henüz hazır değil, birkaç saniye sonra tekrar dene."; render(); return; }
+
+    /* GÜVENLİK: kaba kuvvet (brute force) koruması
+       5 hatalı denemeden sonra 15 dakika kilit. */
+    const kilit = (typeof gvKilitDurumu === "function") ? gvKilitDurumu() : { kilitli: false, deneme: 0 };
+    if (kilit.kilitli) {
+      state.adminError = "Çok fazla hatalı deneme. Güvenlik için " + kilit.kalanDk + " dakika sonra tekrar deneyin.";
+      playSound("error"); render(); return;
+    }
+
     state.authBusy = true; state.adminError = ""; render();
     window.fb.adminSignIn(state.adminForm.email, state.adminForm.pass).then((res) => {
       state.authBusy = false;
       if (res.ok) {
-        state.adminLoggedIn = true; localStorage.setItem("nurdis_admin_logged_in", "true"); state.adminError = ""; state.screen = "admin-panel";
+        gvBasariliGiris();
+        state.adminLoggedIn = true;
+        localStorage.setItem("nurdis_admin_logged_in", "true");
+        state.adminError = ""; state.screen = "admin-panel";
+        gvOturumBaslat();          // zaman aşımı sayacı başlar
         startAdminSubscriptions();
         playSound("login");
       } else {
-        state.adminError = res.error || "Giriş başarısız.";
+        const k = gvHataliGiris();
+        /* E-posta mı şifre mi yanlış — SÖYLENMEZ (hesap keşfini engeller) */
+        state.adminError = k.kilitli
+          ? "Çok fazla hatalı deneme. " + GV.KILIT_DK + " dakika kilitlendi."
+          : "E-posta veya şifre hatalı. (" + k.deneme + "/" + GV.DENEME_LIMIT + ")";
         playSound("error");
       }
       render();
-    });
+    }).catch(() => { state.authBusy = false; render(); });
   }
   if (action === "admin-tab") {
     state.adminTab = el.dataset.tab;
@@ -910,7 +931,8 @@ document.addEventListener("click", (e) => {
   if (action === "admin-logout") {
     stopAdminSubscriptions();
     if (window.fb) window.fb.signOutUser();
-    state.adminLoggedIn = false; localStorage.removeItem("nurdis_admin_logged_in"); state.screen = "home"; render();
+    gvOturumBitir("cikis");
+    state.screen = "home"; render();
   }
 
   /* ===== 🎮 DİŞ DOKTORU OYUNU HANDLER'LARI ===== */

@@ -216,6 +216,7 @@ function renderBookingV2() {
           <p style="font-size:9px;color:#888;margin:4px 0 0;">Hekim seçmezseniz uygun hekim atanır</p>
         </div>` : ""}
 
+        ${typeof gvTuzakAlani === "function" ? gvTuzakAlani() : ""}
         <div class="field"><label>Ad Soyad</label><input class="input" id="f-name" placeholder="Adınız Soyadınız" value="${escapeAttr(f.name)}" /></div>
         <div class="field"><label>Telefon</label><input class="input" id="f-phone" type="tel" placeholder="05xx xxx xx xx" value="${escapeAttr(f.phone)}" /></div>
         <div class="field"><label>Not (isteğe bağlı)</label><input class="input" id="f-note" placeholder="Örn: diş ağrım var" value="${escapeAttr(f.note || "")}" /></div>

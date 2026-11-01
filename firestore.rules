@@ -195,6 +195,15 @@ service cloud.firestore {
     }
 
     // =====================================================================
+    //  8b. DENETİM KAYDI — kim, ne zaman, ne yaptı (KVKK teknik tedbir)
+    //      Yalnızca yönetici okur ve yazar; halk ve hasta erişemez.
+    // =====================================================================
+    match /admin_log/{id} {
+      allow read, create: if isAdmin();
+      allow update, delete: if false;   // kayıt değiştirilemez/silinemez
+    }
+
+    // =====================================================================
     //  9. KAPANIŞ: Listelenmemiş HİÇBİR koleksiyona erişim yok.
     //     (Varsayılan davranış zaten yasak; bu satır niyeti belgeler.)
     // =====================================================================

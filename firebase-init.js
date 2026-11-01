@@ -333,6 +333,9 @@ window.fb = {
     return u ? { uid: u.uid, email: u.email, isAdmin: u.email === ADMIN_EMAIL } : null;
   },
   signOutNow: () => signOut(auth),
+  /* Denetim kaydı — kim ne zaman ne yaptı (yalnızca yönetici yazar/okur) */
+  addAdminLog: (kayit) => addDoc(collection(db, "admin_log"),
+    { ...kayit, createdAt: serverTimestamp() }),
   saveAccountingData: (data) => setDoc(doc(db, "settings", "accounting"), data),
   loadAccountingData: () => getDoc(doc(db, "settings", "accounting")),
 

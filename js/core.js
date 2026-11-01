@@ -1289,6 +1289,7 @@ function renderContact() {
       </div>` : ''}
       <div class="card p5">
         <p class="name" style="font-size:17px;margin-bottom:12px;">Mesaj bırak</p>
+        ${typeof gvTuzakAlani === "function" ? gvTuzakAlani() : ""}
         <div class="field"><label>Ad Soyad</label><input class="input" id="c-name" value="${escapeAttr(c.name)}" /></div>
         <div class="field"><label>Telefon (opsiyonel)</label><input class="input" id="c-phone" value="${escapeAttr(c.phone)}" /></div>
         <div class="field"><label>Mesajınız</label><textarea id="c-msg" placeholder="Sorunuzu yazın">${escapeHtml(c.msg)}</textarea></div>
