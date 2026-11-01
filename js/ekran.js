@@ -256,6 +256,9 @@ document.addEventListener("click", (e) => {
   // Doktorlar
   if (typeof doktorAction === "function" && doktorAction(action, el)) return;
 
+  // Diş sağlığı bilgileri / fırçalama zamanlayıcısı / bilgi testi
+  if (typeof bilgiAction === "function" && bilgiAction(el, action)) return;
+
   // Mağaza
   if (typeof magazaAction === "function" && magazaAction(action, el)) return;
 

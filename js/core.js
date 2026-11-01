@@ -322,7 +322,15 @@ let state = {
   updateAvailable: false,
   expandedDoctor: null,
   lightboxPhoto: null,
-  infoTab: "Bebekler",
+  infoTab: "semptom",
+  infoArama: "",        // Diş sağlığı bilgileri arama metni
+  infoAcik: null,       // Açık (genişletilmiş) bilgi kartı anahtarı
+  testSira: 0,          // Bilgi testi: soru sırası
+  testPuan: 0,          // Bilgi testi: doğru sayısı
+  testCevap: null,      // Bilgi testi: seçilen şık
+  bzKalan: 120,         // Fırçalama zamanlayıcısı: kalan saniye
+  bzAktif: false,
+  bzBitti: false,
   screen: "home",
   moreOpen: false,
   appointments: [],
@@ -1292,58 +1300,9 @@ function renderContact() {
     </div>`;
 }
 
-/* ---------------- BİLGİ ---------------- */
-
-function renderInfo() {
-  const tabs = [
-    { id:"Bebekler", label:"Bebekler" },
-    { id:"Çocuklar", label:"Çocuklar" },
-    { id:"Yetişkinler", label:"Yetişkinler" },
-    { id:"Yanlışlar", label:"Doğru Bilinen Yanlışlar" },
-    { id:"Bitkiler", label:"Şifalı Bitkiler" },
-  ];
-  const active = state.infoTab || "Bebekler";
-
-  const tabBtns = tabs.map(t => `
-    <button class="chip ${active===t.id?'chip-active':''}" data-action="set-info-tab" data-id="${t.id}">${t.label}</button>`).join("");
-
-  let body = "";
-  if (active === "Yanlışlar") {
-    body = MYTHS.map(m => `
-      <div class="card p4 mb3">
-        <div class="row-start mb3"><div class="myth-x">✕</div><p class="desc" style="margin:0;">${m.wrong}</p></div>
-        <div class="row-start"><div class="myth-check">✓</div><p class="name" style="font-size:14px;">${m.right}</p></div>
-      </div>`).join("");
-  } else if (active === "Bitkiler") {
-    body = `
-      <div class="card p4 mb4" style="background:#FFF8E8;border-color:#F0DFAF;">
-        <p class="desc" style="margin:0;color:#8A6D1D;">⚠️ Bu bölüm yalnızca genel bilgi amaçlıdır, tıbbi tavsiye ya da tedavi önerisi değildir. Sorumluluk kullanıcıya aittir. Şikayetin devam etmesi veya şiddetlenmesi durumunda mutlaka diş hekimine başvurunuz.</p>
-      </div>
-      ${HERBS.map(h => `
-        <div class="card p4 mb3">
-          <p class="name" style="font-size:14px;">${h.name}</p>
-          <p class="desc" style="margin-top:6px;"><b>Ne için iyi gelir:</b> ${h.helps}</p>
-          <p class="desc"><b>Nasıl kullanılır:</b> ${h.how}</p>
-          <p class="desc"><b>Miktar:</b> ${h.amount}</p>
-          <p class="desc" style="color:var(--bad);"><b>Dikkat:</b> ${h.caution}</p>
-        </div>`).join("")}`;
-  } else {
-    body = ARTICLES.filter(a=>a.group===active).map(a => `
-      <div class="card p4 mb3">
-        <p class="name" style="font-size:14px;">${a.title}</p>
-        <p class="desc" style="margin-top:6px;">${a.body}</p>
-      </div>`).join("");
-    if (active === "Bebekler") {
-      body = `<div class="card p4 mb4" style="padding:0;overflow:hidden;"><img src="info-toothache.jpg" style="width:100%;display:block;" alt="Diş ağrısı bilgi kartı" /></div>` + body;
-    }
-  }
-
-  return `${topbar("Diş Sağlığı Bilgileri","Bebeklerden yetişkinlere, doğru bilinen yanlışlar ve şifalı bitkiler dahil.", {back:"home"})}
-    <div class="content">
-      <div class="chip-row mb4" style="flex-wrap:wrap;">${tabBtns}</div>
-      ${body}
-    </div>`;
-}
+/* ---------------- BİLGİ ----------------
+   Diş Sağlığı Bilgileri ekranı js/bilgi.js içinde tanımlıdır (renderInfo).
+   ARTICLES / MYTHS / HERBS verileri burada kalır; yeni modül bunları kullanır. */
 
 /* ---------------- CHATBOT ---------------- */
 
