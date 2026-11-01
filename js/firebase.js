@@ -202,8 +202,37 @@ function checkBadges() {
 }
 
 // Firebase'e accounting verilerini kaydet
+// NOT: Doktor fotoğrafı / diploma / ürün görseli gibi base64 medyalar
+// settings/accounting içine KONMAZ — ayrı dokümanlara gider. Sebep:
+// Firestore 1 MB doküman limiti; medya gömülünce limit aşılıp tüm
+// bulut senkronu sessizce duruyordu.
+const _medyaCache = {};
+
+function _medyaYaz(tur, id, icerik) {
+  if (!(window.fb && window.fb.saveMedya) || !id) return null;
+  const anahtar = tur + "_" + id;
+  const json = JSON.stringify(icerik);
+  if (_medyaCache[anahtar] === json) return null;   // değişmedi → gereksiz yazma yok
+  _medyaCache[anahtar] = json;
+  return window.fb.saveMedya(tur, id, icerik);
+}
+
 function saveAccountingToFirebase() {
   if (window.fb && window.fb.saveAccountingData) {
+    const doktorlar = state.doctors || [];
+    const urunler = state.products || [];
+
+    // Medyayı ayrı dokümanlara yaz
+    doktorlar.forEach(d => {
+      if ((d.foto || "") !== "" || (d.belgeler || []).length) {
+        _medyaYaz("doktor", d.id, { foto: d.foto || "", belgeler: d.belgeler || [] });
+      }
+    });
+    urunler.forEach(p => {
+      if (p.image) _medyaYaz("urun", p.id, { image: p.image });
+    });
+
+    // Ana dokümana medyasız hâlini gönder
     return window.fb.saveAccountingData({
       accounting: state.accounting,
       treatmentPrices: state.treatmentPrices,
@@ -226,11 +255,46 @@ function saveAccountingToFirebase() {
       anketSablon: state.anketSablon || null,
       bonusAyar: state.bonusAyar || null,
       kvkkTalepler: (state.kvkkTalepler || []).slice(0, 200),
-      products: state.products || [],
-      doctors: state.doctors || []
+      products: urunler.map(p => ({ ...p, image: "" })),
+      doctors: doktorlar.map(d => ({ ...d, foto: "", belgeler: [] }))
     });
   }
   return Promise.resolve();
+}
+
+// Buluttaki medya dokümanlarını yerel doktor/ürün kayıtlarıyla birleştir
+function medyaBirlestir() {
+  if (!(window.fb && window.fb.loadMedya)) return Promise.resolve();
+  const ds = state.doctors || [];
+  const ps = state.products || [];
+  if (!ds.length && !ps.length) return Promise.resolve();
+
+  const isler = [];
+  ds.forEach(d => {
+    isler.push(window.fb.loadMedya("doktor", d.id).then(s => {
+      if (s && s.exists()) {
+        const m = s.data() || {};
+        if (m.foto) d.foto = m.foto;
+        if ((m.belgeler || []).length) d.belgeler = m.belgeler;
+      }
+    }).catch(() => {}));
+  });
+  ps.forEach(p => {
+    isler.push(window.fb.loadMedya("urun", p.id).then(s => {
+      if (s && s.exists()) {
+        const m = s.data() || {};
+        if (m.image) p.image = m.image;
+      }
+    }).catch(() => {}));
+  });
+
+  return Promise.all(isler).then(() => {
+    try {
+      localStorage.setItem("nurdis_doctors", JSON.stringify(state.doctors || []));
+      localStorage.setItem("nurdis_products", JSON.stringify(state.products || []));
+    } catch (e) {}
+    render();
+  });
 }
 
 function wireFirebase() {
@@ -425,6 +489,7 @@ function startAdminSubscriptions() {
         if (bulutBos && yerelVar) {
           console.warn("Bulut boş, yerel veri korunuyor. Yerel veri buluta gönderiliyor.");
           try { saveAccountingToFirebase(); } catch (e) {}
+          medyaBirlestir();   // yereldeki doktor/ürün görselleri buluttan tamamlanır
           return;   // yerel veriyi EZME
         }
 
@@ -451,11 +516,13 @@ function startAdminSubscriptions() {
         if (data.kvkkTalepler) { state.kvkkTalepler = data.kvkkTalepler; localStorage.setItem("nurdis_kvkk_talepler", JSON.stringify(state.kvkkTalepler)); }
         if (data.products && data.products.length && !(state.products || []).length) { state.products = data.products; localStorage.setItem("nurdis_products", JSON.stringify(state.products)); }
         if (data.doctors && data.doctors.length && !(state.doctors || []).length) { state.doctors = data.doctors; localStorage.setItem("nurdis_doctors", JSON.stringify(state.doctors)); }
-        localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
-        localStorage.setItem("nurdis_treatment_prices", JSON.stringify(state.treatmentPrices)); saveAccountingToFirebase();
-        localStorage.setItem("nurdis_auto_expenses", JSON.stringify(state.autoExpenses)); saveAccountingToFirebase();
+        localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting));
+        localStorage.setItem("nurdis_treatment_prices", JSON.stringify(state.treatmentPrices));
+        localStorage.setItem("nurdis_auto_expenses", JSON.stringify(state.autoExpenses));
         if (data.treatments) localStorage.setItem("nurdis_treatments_local", JSON.stringify(data.treatments));
         render();
+        // Doktor fotoğrafı / diploma / ürün görselleri ayrı dokümanlardan çekilip birleştirilir
+        medyaBirlestir();
       }
     }).catch(() => {});
   }

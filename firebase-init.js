@@ -292,6 +292,15 @@ window.fb = {
   subscribeAccountingExpenses: (cb) => subscribeAccounting("expense", cb),
   saveAccountingData: (data) => setDoc(doc(db, "settings", "accounting"), data),
   loadAccountingData: () => getDoc(doc(db, "settings", "accounting")),
+  /* --- MEDYA DEPOSU ---
+     Firestore tek doküman limiti 1 MB. Doktor fotoğrafı, diploma, ürün görseli
+     gibi base64 medyalar settings/accounting içine gömülürse limit kısa sürede
+     aşılır ve TÜM bulut senkronu sessizce durur. Bu yüzden her medya kendi
+     dokümanında tutulur: settings/doktor_<id>, settings/urun_<id>
+     Aynı `settings/{id}` kuralı bunları da kapsar — ek kural gerekmez. */
+  saveMedya: (tur, id, data) => setDoc(doc(db, "settings", `${tur}_${id}`), data),
+  loadMedya: (tur, id) => getDoc(doc(db, "settings", `${tur}_${id}`)),
+  deleteMedya: (tur, id) => deleteDoc(doc(db, "settings", `${tur}_${id}`)).catch(() => {}),
   deleteHealthTip: (id) => deleteHealthTip(id),
   subscribeTreatments: (cb) => subscribeTreatments(cb),
   addTreatment: (data) => addTreatment(data),

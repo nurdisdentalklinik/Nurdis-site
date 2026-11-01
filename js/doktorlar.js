@@ -575,7 +575,7 @@ function doktorAction(action, el) {
     const dosya = dosyaInput && dosyaInput.files && dosyaInput.files[0];
     if (dosya && typeof dosyaHazirla === "function") {
       dosyaInput.disabled = true;
-      dosyaHazirla(dosya, 900).then((r) => {
+      dosyaHazirla(dosya, 900, 90).then((r) => {
         rec.foto = r.dataUrl;
         kaydet();
       }).catch((err) => {
@@ -594,6 +594,9 @@ function doktorAction(action, el) {
     if (!d) return true;
     if (!confirm((d.adSoyad || "") + " silinsin mi?\n\n(Gizlemek isterseniz 'Aktif' işaretini kaldırın.)")) return true;
     state.doctors = (state.doctors || []).filter(x => x.id !== el.dataset.id);
+    // Fotoğraf/diploma bulut dokümanını da temizle, boşuna yer kaplamasın
+    if (window.fb && window.fb.deleteMedya) window.fb.deleteMedya("doktor", el.dataset.id);
+    if (typeof _medyaCache !== "undefined") delete _medyaCache["doktor_" + el.dataset.id];
     doktorKaydet();
     render();
     return true;
@@ -623,7 +626,7 @@ function doktorAction(action, el) {
 
     if (typeof dosyaHazirla !== "function") { alert("Dosya yükleme kullanılamıyor."); return true; }
     inp.disabled = true;
-    dosyaHazirla(dosya, 1100).then((r) => {
+    dosyaHazirla(dosya, 1100, 250).then((r) => {
       if (!d.diplomalar) d.diplomalar = [];
       d.diplomalar.push({ ad, kurum, yil, tip: r.tip, dataUrl: r.dataUrl, boyutKB: r.boyutKB });
       doktorKaydet();

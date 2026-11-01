@@ -97,8 +97,14 @@ function dosyaTurBilgi(id) {
 
 const DOSYA_MAX_KB = 700;   // Firestore tek doküman ~1MB — güvenli sınır
 
-/* Görseli küçült, PDF'i olduğu gibi oku */
-function dosyaHazirla(file, maxSide) {
+/* Görseli küçült, PDF'i olduğu gibi oku
+   maxSide: en uzun kenar (px)
+   maxKB  : hedef dosya boyutu — verilmezse DOSYA_MAX_KB (700)
+   NOT: Doktor fotoğrafı / diploma gibi settings/accounting içine gömülen
+        medyalar MUTLAKA küçük maxKB ile çağrılmalı — Firestore doküman
+        limiti 1 MB, aksi halde limit aşılır ve tüm bulut senkronu durur. */
+function dosyaHazirla(file, maxSide, maxKB) {
+  const HEDEF_KB = (typeof maxKB === "number" && maxKB > 0) ? maxKB : DOSYA_MAX_KB;
   return new Promise((resolve, reject) => {
     if (!file) { reject(new Error("Dosya seçilmedi")); return; }
     if (file.size > 12 * 1024 * 1024) { reject(new Error("Dosya çok büyük (en fazla 12 MB)")); return; }
@@ -114,8 +120,8 @@ function dosyaHazirla(file, maxSide) {
       if (isPdf) {
         const dataUrl = reader.result;
         const kb = Math.round((dataUrl.length * 3 / 4) / 1024);
-        if (kb > DOSYA_MAX_KB) {
-          reject(new Error("PDF çok büyük (" + kb + " KB). En fazla " + DOSYA_MAX_KB + " KB olmalı.\n\nDaha küçük bir PDF seçin veya ekran görüntüsü alıp yükleyin."));
+        if (kb > HEDEF_KB) {
+          reject(new Error("PDF çok büyük (" + kb + " KB). En fazla " + HEDEF_KB + " KB olmalı.\n\nDaha küçük bir PDF seçin veya ekran görüntüsü alıp yükleyin."));
           return;
         }
         resolve({ dataUrl, tip: "pdf", boyutKB: kb });
@@ -141,13 +147,13 @@ function dosyaHazirla(file, maxSide) {
 
         let url = ciz(scale, 0.82);
         let tryCount = 0;
-        while (Math.round((url.length * 3 / 4) / 1024) > DOSYA_MAX_KB && tryCount < 6) {
+        while (Math.round((url.length * 3 / 4) / 1024) > HEDEF_KB && tryCount < 6) {
           scale *= 0.78;
           url = ciz(scale, Math.max(0.5, 0.82 - tryCount * 0.06));
           tryCount++;
         }
         const kb = Math.round((url.length * 3 / 4) / 1024);
-        if (kb > DOSYA_MAX_KB) {
+        if (kb > HEDEF_KB) {
           reject(new Error("Görsel küçültülemedi (" + kb + " KB). Daha küçük bir görsel deneyin."));
           return;
         }

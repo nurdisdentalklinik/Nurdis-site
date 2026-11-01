@@ -579,7 +579,7 @@ function magazaAction(action, el) {
     const dosya = dosyaInput && dosyaInput.files && dosyaInput.files[0];
     if (dosya && typeof dosyaHazirla === "function") {
       dosyaInput.disabled = true;
-      dosyaHazirla(dosya, 900).then((r) => {
+      dosyaHazirla(dosya, 900, 110).then((r) => {
         rec.gorsel = r.dataUrl;
         kaydet();
       }).catch((err) => {
