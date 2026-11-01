@@ -1,5 +1,5 @@
 /* Sürüm numarasını HER değişiklikte artır — eski önbellek otomatik silinir. */
-const CACHE_VERSION = "v24";
+const CACHE_VERSION = "v25";
 const CACHE_NAME = "nurdis-" + CACHE_VERSION;
 const ASSETS = [
   "./index.html", "./manifest.json",

@@ -206,7 +206,9 @@ function checkBadges() {
 // settings/accounting içine KONMAZ — ayrı dokümanlara gider. Sebep:
 // Firestore 1 MB doküman limiti; medya gömülünce limit aşılıp tüm
 // bulut senkronu sessizce duruyordu.
+// Alan adları: doktor → foto + diplomalar[], ürün → gorsel
 const _medyaCache = {};
+const _b64 = (s) => typeof s === "string" && s.indexOf("data:") === 0;
 
 function _medyaYaz(tur, id, icerik) {
   if (!(window.fb && window.fb.saveMedya) || !id) return null;
@@ -214,7 +216,30 @@ function _medyaYaz(tur, id, icerik) {
   const json = JSON.stringify(icerik);
   if (_medyaCache[anahtar] === json) return null;   // değişmedi → gereksiz yazma yok
   _medyaCache[anahtar] = json;
-  return window.fb.saveMedya(tur, id, icerik);
+  return window.fb.saveMedya(tur, id, icerik).catch(() => {});
+}
+
+/* Ana dokümana gidecek hafif kopyayı üret (medya boşaltılmış) */
+function _doktorHafif(d) {
+  const fotoB64 = _b64(d.foto);
+  const diplomaVar = (d.diplomalar || []).some(x => _b64(x && x.dataUrl));
+  if (!fotoB64 && !diplomaVar) return { hafif: d, medya: null };   // yol/boş → ayrım gerekmez
+
+  const hafif = { ...d };
+  if (fotoB64) hafif.foto = "";
+  if (diplomaVar) {
+    hafif.diplomalar = (d.diplomalar || []).map(x => ({ ...x, dataUrl: "" }));
+  }
+  const medya = {};
+  if (fotoB64) medya.foto = d.foto;
+  if (diplomaVar) medya.diplomalar = d.diplomalar;
+  return { hafif, medya };
+}
+
+function _urunHafif(p) {
+  const gorselB64 = _b64(p.gorsel);
+  if (!gorselB64) return { hafif: p, medya: null };
+  return { hafif: { ...p, gorsel: "" }, medya: { gorsel: p.gorsel } };
 }
 
 function saveAccountingToFirebase() {
@@ -222,14 +247,15 @@ function saveAccountingToFirebase() {
     const doktorlar = state.doctors || [];
     const urunler = state.products || [];
 
-    // Medyayı ayrı dokümanlara yaz
-    doktorlar.forEach(d => {
-      if ((d.foto || "") !== "" || (d.belgeler || []).length) {
-        _medyaYaz("doktor", d.id, { foto: d.foto || "", belgeler: d.belgeler || [] });
-      }
+    const dHafif = doktorlar.map(d => {
+      const r = _doktorHafif(d);
+      if (r.medya) _medyaYaz("doktor", d.id, r.medya);
+      return r.hafif;
     });
-    urunler.forEach(p => {
-      if (p.image) _medyaYaz("urun", p.id, { image: p.image });
+    const uHafif = urunler.map(p => {
+      const r = _urunHafif(p);
+      if (r.medya) _medyaYaz("urun", p.id, r.medya);
+      return r.hafif;
     });
 
     // Ana dokümana medyasız hâlini gönder
@@ -255,8 +281,8 @@ function saveAccountingToFirebase() {
       anketSablon: state.anketSablon || null,
       bonusAyar: state.bonusAyar || null,
       kvkkTalepler: (state.kvkkTalepler || []).slice(0, 200),
-      products: urunler.map(p => ({ ...p, image: "" })),
-      doctors: doktorlar.map(d => ({ ...d, foto: "", belgeler: [] }))
+      products: uHafif,
+      doctors: dHafif
     });
   }
   return Promise.resolve();
@@ -272,19 +298,24 @@ function medyaBirlestir() {
   const isler = [];
   ds.forEach(d => {
     isler.push(window.fb.loadMedya("doktor", d.id).then(s => {
-      if (s && s.exists()) {
-        const m = s.data() || {};
-        if (m.foto) d.foto = m.foto;
-        if ((m.belgeler || []).length) d.belgeler = m.belgeler;
+      if (!(s && s.exists())) return;
+      const m = s.data() || {};
+      if (!d.foto && m.foto) d.foto = m.foto;                       // yerelde yoksa buluttan al
+      if ((m.diplomalar || []).length) {
+        const yerel = d.diplomalar || [];
+        d.diplomalar = (m.diplomalar || []).map((x, i) => {
+          // yereldeki dataUrl varsa onu koru, yoksa buluttakini kullan
+          const y = yerel[i] || {};
+          return { ...x, dataUrl: (y.dataUrl || x.dataUrl || "") };
+        });
       }
     }).catch(() => {}));
   });
   ps.forEach(p => {
     isler.push(window.fb.loadMedya("urun", p.id).then(s => {
-      if (s && s.exists()) {
-        const m = s.data() || {};
-        if (m.image) p.image = m.image;
-      }
+      if (!(s && s.exists())) return;
+      const m = s.data() || {};
+      if (!p.gorsel && m.gorsel) p.gorsel = m.gorsel;
     }).catch(() => {}));
   });
 
