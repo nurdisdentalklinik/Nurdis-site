@@ -2729,63 +2729,7 @@ function renderAdminPanel() {
   }
 
   if (state.adminTab === "products") {
-    const imgRows = allProducts().flatMap(cat => cat.items).map(p => `
-      <div class="card p3 mb2">
-        <p class="desc" style="margin:0 0 6px;font-weight:500;color:var(--ink);">${p.name}</p>
-        <div style="display:flex;gap:6px;">
-          <input class="input" id="img-${p.id}" placeholder="Görsel URL'si" value="${escapeAttr(state.productImages[p.id]||"")}" style="flex:1;" />
-          <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-product-image" data-id="${p.id}">Kaydet</button>
-        </div>
-      </div>`).join("");
-
-    tabContent = `
-      <p class="section-label">Yeni ürün ekle</p>
-      <div class="card p5 mb4">
-        <div class="field"><label>Ürün adı</label><input class="input" id="np-name" /></div>
-        <div class="field"><label>Fiyat (₺)</label><input class="input" id="np-price" type="number" /></div>
-        <button class="btn-primary" data-action="admin-add-product">Ürünü Ekle</button>
-      </div>
-      <p class="section-label">Ürün görselleri</p>
-      <p class="footnote" style="margin-top:-4px;">Görseli bir yere yükleyip (ör. Google Drive'da "herkese açık" paylaşım linki, Imgur vb.) buraya linkini yapıştır.</p>
-      <div class="mb4">${imgRows}</div>
-    `;
-  }
-
-  if (state.adminTab === "videos") {
-    const videoRows = SERVICES.map(s => `
-      <div class="card p3 mb2">
-        <p class="desc" style="margin:0 0 6px;font-weight:500;color:var(--ink);">${s.name}</p>
-        <div style="display:flex;gap:6px;">
-          <input class="input" id="vid-${s.id}" placeholder="YouTube linki" value="${escapeAttr(state.serviceVideos[s.id]||"")}" style="flex:1;" />
-          <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-video" data-id="${s.id}">Kaydet</button>
-        </div>
-      </div>`).join("");
-
-    const deviceVideoRows = DEVICES.map(d => `
-      <div class="card p3 mb2">
-        <p class="desc" style="margin:0 0 6px;font-weight:500;color:var(--ink);">${d.name}</p>
-        <div style="display:flex;gap:6px;">
-          <input class="input" id="dvid-${d.id}" placeholder="YouTube linki" value="${escapeAttr(state.deviceVideos[d.id]||"")}" style="flex:1;" />
-          <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-device-video" data-id="${d.id}">Kaydet</button>
-        </div>
-      </div>`).join("");
-
-    tabContent = `
-      <p class="section-label">🪥 Çocuklar İçin Diş Fırçalama Videosu</p>
-      <p class="footnote" style="margin-top:-4px;">Çocukların izleyerek diş fırçalayacağı eğlenceli 2 dakikalık YouTube videosu. Boş bırakılırsa profil sayfasında görünmez.</p>
-      <div class="card p3 mb4">
-        <div style="display:flex;gap:6px;">
-          <input class="input" id="brush-video-url" placeholder="YouTube linki (örn: https://youtube.com/watch?v=...)" value="${escapeAttr(state.brushingVideoUrl||"")}" style="flex:1;" />
-          <button class="qty-btn" style="width:auto;padding:0 12px;" data-action="save-brush-video">Kaydet</button>
-        </div>
-      </div>
-      <p class="section-label">Hizmet tanıtım videoları</p>
-      <p class="footnote" style="margin-top:-4px;">YouTube'a yüklediğin videonun linkini ilgili hizmetin yanına yapıştır.</p>
-      <div class="mb4">${videoRows}</div>
-      <p class="section-label">Cihaz tanıtım videoları</p>
-      <p class="footnote" style="margin-top:-4px;">Cihazın nasıl çalıştığını gösteren YouTube videosunun linkini yapıştır.</p>
-      <div class="mb4">${deviceVideoRows}</div>
-    `;
+    tabContent = renderAccMagaza();
   }
 
   if (state.adminTab === "social") {

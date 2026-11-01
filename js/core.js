@@ -65,18 +65,28 @@ const DEVICES = [
 
 const PRODUCT_CATEGORIES = [
   { id:"cocuk", name:"Çocuk Ürünleri", items:[
-    { id:"c1", name:"Çocuk Diş Fırçası (Yumuşak, Karakterli)", price:80 },
-    { id:"c2", name:"Çocuk Diş Macunu (Florürsüz, Meyveli)", price:70 },
+    { id:"c1", name:"Çocuk Diş Fırçası (Yumuşak, Karakterli)", price:80, gorsel:"urunler/c1.jpg",
+      marka:"Nur Diş", aciklama:"Yumuşak kıllı, küçük başlı — 2-7 yaş çocuklar için.\n\n• Ekstra yumuşak naylon kıllar\n• Kaymaz tutamak\n• Eğlenceli karakter tasarımı\n• Diş etine zarar vermez" },
+    { id:"c2", name:"Çocuk Diş Macunu (Florürsüz, Meyveli)", price:70, gorsel:"urunler/c2.jpg",
+      marka:"Nur Diş", aciklama:"3 yaş altı çocuklar için florürsüz, yutulabilir formül.\n\n• Meyve aromalı\n• Şekersiz\n• Çocukların seveceği tat\n• Diş hekimi onaylı" },
   ]},
   { id:"yetiskin", name:"Yetişkin Ürünleri", items:[
-    { id:"y1", name:"Diş Fırçası (Orta Sertlik)", price:60 },
-    { id:"y2", name:"Diş Macunu (Florürlü)", price:90 },
-    { id:"y3", name:"Diş Macunu (Hassas Dişler İçin)", price:110 },
-    { id:"y4", name:"Ağız Gargarası (Alkolsüz)", price:120 },
-    { id:"y5", name:"Diş İpi", price:40 },
-    { id:"y6", name:"Ağız Duşu (Irrigatör)", price:650 },
-    { id:"y7", name:"Ev Tipi Beyazlatma Kiti", price:950 },
-    { id:"y8", name:"Ortodontik Fırça (Tel Tedavisi İçin)", price:75 },
+    { id:"y1", name:"Diş Fırçası (Orta Sertlik)", price:60, gorsel:"urunler/y1.jpg",
+      marka:"Nur Diş", aciklama:"Günlük kullanım için ideal orta sertlikte diş fırçası.\n\n• Ergonomik tutamak\n• Ulaşılması zor bölgelere uygun baş\n• Kıl uçları yuvarlatılmış\n• Diş etini tahriş etmez" },
+    { id:"y2", name:"Diş Macunu (Florürlü)", price:90, gorsel:"urunler/y2.jpg",
+      marka:"Nur Diş", aciklama:"Günlük florürlü koruma — çürük önleyici.\n\n• 1450 ppm florür\n• Diş minesini güçlendirir\n• Ferah nefes\n• 75 ml" },
+    { id:"y3", name:"Diş Macunu (Hassas Dişler İçin)", price:110, gorsel:"urunler/y3.jpg",
+      marka:"Nur Diş", aciklama:"Hassas dişler ve çekilmiş diş eti için özel formül.\n\n• Sinir uçlarını korur\n• Sıcak-soğuk hassasiyetini azaltır\n• Nazik temizlik\n• 75 ml" },
+    { id:"y4", name:"Ağız Gargarası (Alkolsüz)", price:120, gorsel:"urunler/y4.jpg",
+      marka:"Nur Diş", aciklama:"Alkol içermeyen, günlük kullanıma uygun gargara.\n\n• 12 saat nefes koruması\n• Diş eti sağlığını destekler\n• Ağız kokusunu önler\n• 500 ml" },
+    { id:"y5", name:"Diş İpi", price:40, gorsel:"urunler/y5.jpg",
+      marka:"Nur Diş", aciklama:"Diş aralarındaki plak ve yemek artıklarını temizler.\n\n• Mumlu yapı — kolay kayar\n• Kopmaz\n• Nane aromalı\n• 50 metre" },
+    { id:"y6", name:"Ağız Duşu (Irrigatör)", price:650, gorsel:"urunler/y6.jpg",
+      marka:"Nur Diş", aciklama:"Diş aralarını su basıncıyla derinlemesine temizler.\n\n• 3 basınç kademesi\n• 300 ml hazne\n• Şarj edilebilir\n• Su geçirmez (IPX7)\n• Braket ve implant kullananlar için ideal" },
+    { id:"y7", name:"Ev Tipi Beyazlatma Kiti", price:950, gorsel:"urunler/y7.jpg",
+      marka:"Nur Diş", aciklama:"Diş hekimi kontrolünde evde beyazlatma.\n\n• Kişiye özel kalıp\n• Jel + uygulama seti\n• 2 haftalık kür\n• Mine dostu formül\n\n⚠️ Kullanım öncesi hekiminize danışın." },
+    { id:"y8", name:"Ortodontik Fırça (Tel Tedavisi İçin)", price:75, gorsel:"urunler/y8.jpg",
+      marka:"Nur Diş", aciklama:"Braket ve tellerin etrafını temizlemek için özel V kesim.\n\n• V şeklinde kıl kesimi\n• Tel aralarına girer\n• Yumuşak kıllar\n• Ortodonti hastaları için" },
   ]},
 ];
 
@@ -371,6 +381,13 @@ let state = {
   patientNotes: [],
   senkronKuyrugu: [],
   senkronBekleyen: 0,
+  products: [],
+  magazaArama: "",
+  magazaKategori: "tumu",
+  magazaSirala: "onerilen",
+  magazaFavori: false,
+  magazaUrunId: null,
+  magazaUrunEdit: undefined,
   hhSablonAcik: false,
   mesajSablon: null,
   hhAyar: null,
@@ -482,6 +499,7 @@ function loadAll() {
   try { state.patientFiles = JSON.parse(localStorage.getItem("nurdis_patient_files") || "[]"); } catch(e){ state.patientFiles = []; }
   try { state.patientNotes = JSON.parse(localStorage.getItem("nurdis_patient_notes") || "[]"); } catch(e){ state.patientNotes = []; }
   try { state.senkronKuyrugu = JSON.parse(localStorage.getItem("nurdis_senkron_kuyrugu") || "[]"); state.senkronBekleyen = state.senkronKuyrugu.length; } catch(e){}
+  try { state.products = JSON.parse(localStorage.getItem("nurdis_products") || "[]"); } catch(e){ state.products = []; }
   try { state.bonusAyar = JSON.parse(localStorage.getItem("nurdis_bonus_ayar") || "null"); } catch(e){ state.bonusAyar = null; }
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}
@@ -1146,6 +1164,11 @@ function cartTotal() {
 }
 
 function renderStore() {
+  return renderStoreV2();
+}
+
+/* Eski mağaza (kullanılmıyor - referans için) */
+function renderStoreEski() {
   if (state.checkoutStatus === "form") return renderCheckout();
   const cats = allProducts().map(cat => `
     <p class="section-label">${cat.name}</p>

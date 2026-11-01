@@ -253,6 +253,9 @@ document.addEventListener("click", (e) => {
   if (!_entrySoundPlayed) { _entrySoundPlayed = true; playSound("login"); }
   else if (action !== "send-chat") playSound("click"); // sendChat kendi tık sesini zaten çalıyor
 
+  // Mağaza
+  if (typeof magazaAction === "function" && magazaAction(action, el)) return;
+
   // Hasta portalı
   if (typeof portalAction === "function" && portalAction(action, el)) return;
 
