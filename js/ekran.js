@@ -891,6 +891,62 @@ document.addEventListener("click", (e) => {
     state.infoTab = el.dataset.id;
     render();
   }
+  if (action === "admin-google-giris") {
+    if (!window.fb || !window.fb.adminGoogleSignIn) { state.adminError = "Giriş sistemi hazır değil, birkaç saniye sonra dene."; render(); return; }
+    state.authBusy = true; state.adminError = ""; render();
+    window.fb.adminGoogleSignIn().then((res) => {
+      state.authBusy = false;
+      if (res.ok) {
+        gvBasariliGiris();
+        state.adminLoggedIn = true;
+        localStorage.setItem("nurdis_admin_logged_in", "true");
+        state.adminError = ""; state.screen = "admin-panel";
+        gvOturumBaslat();
+        startAdminSubscriptions();
+        playSound("login");
+        gvDenetim("giris", "Google ile yönetici girişi");
+      } else {
+        gvHataliGiris();
+        state.adminError = res.error || "Google girişi başarısız.";
+        playSound("error");
+      }
+      render();
+    }).catch(() => { state.authBusy = false; render(); });
+    return;
+  }
+
+  if (action === "admin-mfa-dogrula") {
+    if (!window.fb || !window.fb.adminMfaDogrula) return;
+    const kod = (document.getElementById("ad-mfa-kod") || {}).value || "";
+    state.authBusy = true; state.adminError = ""; render();
+    window.fb.adminMfaDogrula(kod).then((res) => {
+      state.authBusy = false;
+      if (res.ok) {
+        state.adminMfa = false; state.adminMfaYontem = null;
+        gvBasariliGiris();
+        state.adminLoggedIn = true;
+        localStorage.setItem("nurdis_admin_logged_in", "true");
+        state.adminError = ""; state.screen = "admin-panel";
+        gvOturumBaslat();
+        startAdminSubscriptions();
+        playSound("login");
+        gvDenetim("giris", "İki adımlı doğrulama ile giriş");
+      } else {
+        state.adminError = res.error || "Kod doğrulanamadı.";
+        playSound("error");
+      }
+      render();
+    }).catch(() => { state.authBusy = false; render(); });
+    return;
+  }
+
+  if (action === "admin-mfa-iptal") {
+    state.adminMfa = false; state.adminMfaYontem = null; state.adminError = "";
+    if (window.fb && window.fb.signOutNow) { try { window.fb.signOutNow(); } catch (e) {} }
+    render();
+    return;
+  }
+
   if (action === "admin-login") {
     if (!window.fb) { state.adminError = "Giriş sistemi henüz hazır değil, birkaç saniye sonra tekrar dene."; render(); return; }
 
@@ -913,6 +969,18 @@ document.addEventListener("click", (e) => {
         gvOturumBaslat();          // zaman aşımı sayacı başlar
         startAdminSubscriptions();
         playSound("login");
+      } else if (res.mfa) {
+        /* Şifre doğru, ikinci faktör gerekiyor */
+        state.adminMfa = true;
+        state.adminMfaYontem = res.yontem || "totp";
+        state.adminError = "";
+        state.authBusy = false;
+        render();
+        setTimeout(() => {
+          const el = document.getElementById("ad-mfa-kod");
+          if (el) el.focus();
+        }, 120);
+        return;
       } else {
         const k = gvHataliGiris();
         /* E-posta mı şifre mi yanlış — SÖYLENMEZ (hesap keşfini engeller) */

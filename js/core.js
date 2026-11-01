@@ -428,6 +428,9 @@ let state = {
   settings: { muted: false, lang: "tr" },
   adminLoggedIn: false,
   adminForm: { email:"", pass:"" },
+  adminMfa: false,          // İki adımlı doğrulama adımı
+  adminMfaYontem: null,     // 'totp' veya 'sms'
+  adminGoogleErr: false,
   adminError: "",
   blockedUsers: [],  // Engellenen kullanıcı e-postaları
   blockedChatUsers: [],  // DİJİ RAMO'da engellenen kullanıcılar (anonymous ID)
@@ -1349,14 +1352,64 @@ function renderChatbot() {
 
 function renderAdminLogin() {
   const f = state.adminForm;
+
+  /* İkinci faktör adımı: şifre doğru, şimdi 6 haneli kod isteniyor */
+  if (state.adminMfa) {
+    return `${topbar("İki Adımlı Doğrulama","Hesabınızı korumak için ikinci adım.", {back:"admin-login"})}
+      <div class="content">
+        <div class="card p5" style="text-align:center;">
+          <div style="font-size:40px;margin-bottom:10px;">🔐</div>
+          <p class="name" style="font-size:15px;margin:0 0 6px;">Doğrulama kodu</p>
+          <p class="desc" style="margin:0 0 16px;font-size:12px;line-height:1.5;">
+            ${state.adminMfaYontem === "totp"
+              ? "Authenticator uygulamanızdaki (Google Authenticator, Microsoft Authenticator) 6 haneli kodu girin."
+              : "Telefonunuza gönderilen kodu girin."}
+          </p>
+          <input class="input" id="ad-mfa-kod" inputmode="numeric" autocomplete="one-time-code"
+            placeholder="123456" maxlength="8"
+            style="text-align:center;font-size:24px;letter-spacing:8px;font-weight:700;" />
+          ${state.adminError ? `<p class="status-err" style="margin-top:12px;">${state.adminError}</p>` : ""}
+          <button class="btn-primary" style="margin-top:14px;" data-action="admin-mfa-dogrula" ${state.authBusy ? "disabled" : ""}>
+            ${state.authBusy ? "Doğrulanıyor…" : "Doğrula ve Giriş Yap"}
+          </button>
+          <button class="btn-primary" style="margin-top:8px;background:var(--surface);color:var(--ink);border:1px solid var(--line);"
+            data-action="admin-mfa-iptal">Vazgeç</button>
+        </div>
+      </div>`;
+  }
+
   return `${topbar("Yönetici Girişi","Sadece klinik yönetimi içindir.", {back:"home"})}
     <div class="content">
+
+      <div class="card p4 mb3" style="background:linear-gradient(135deg,#0B6E86,#0E8FA8);color:#fff;">
+        <p style="font-size:12.5px;font-weight:700;margin:0 0 4px;">🔐 Güvenli giriş önerilir</p>
+        <p style="font-size:11px;opacity:.92;margin:0;line-height:1.5;">
+          Google hesabınızda 2 adımlı doğrulama açıksa, aşağıdaki Google butonu şifreniz çalınsa bile hesabınızı korur.
+        </p>
+      </div>
+
+      <div class="card p5 mb3">
+        <button class="btn-primary" data-action="admin-google-giris"
+          style="width:100%;background:#fff;color:#3c4043;border:1px solid #dadce0;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:600;">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Google ile Giriş Yap
+        </button>
+        ${state.adminError ? `<p class="status-err" style="margin-top:12px;">${state.adminError}</p>` : ""}
+        <p class="footnote" style="margin:10px 0 0;text-align:center;">Google hesabınızda 2 adımlı doğrulama açıksa bu yöntem en güvenlisidir.</p>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;margin:4px 0 14px;">
+        <div style="flex:1;height:1px;background:var(--line);"></div>
+        <span style="font-size:11px;color:var(--muted);font-weight:600;">veya e-posta ile</span>
+        <div style="flex:1;height:1px;background:var(--line);"></div>
+      </div>
+
       <div class="card p5">
-        <div class="field"><label>Yönetici e-postası</label><input class="input" id="ad-email" value="${escapeAttr(f.email)}" /></div>
-        <div class="field"><label>Şifre</label><input class="input" type="password" id="ad-pass" value="${escapeAttr(f.pass)}" /></div>
-        ${state.adminError ? `<p class="status-err">${state.adminError}</p>` : ""}
+        <div class="field"><label>Yönetici e-postası</label><input class="input" id="ad-email" value="${escapeAttr(f.email)}" autocomplete="username" /></div>
+        <div class="field"><label>Şifre</label><input class="input" type="password" id="ad-pass" value="${escapeAttr(f.pass)}" autocomplete="current-password" /></div>
+        ${state.adminError && !state.adminGoogleErr ? `<p class="status-err">${state.adminError}</p>` : ""}
         <button class="btn-primary" data-action="admin-login" ${state.authBusy?"disabled":""}>${state.authBusy?"Giriş yapılıyor…":"Giriş Yap"}</button>
-        <p class="footnote">Bu e-posta/şifre, Firebase konsolunda Authentication &gt; Users kısmında oluşturduğun yönetici hesabıdır.</p>
+        <p class="footnote">İki adımlı doğrulama açıksa girişten sonra kod istenir.</p>
       </div>
     </div>`;
 }

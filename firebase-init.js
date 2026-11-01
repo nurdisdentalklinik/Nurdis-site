@@ -9,7 +9,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut,
-  signInWithEmailAndPassword, onAuthStateChanged
+  signInWithEmailAndPassword, onAuthStateChanged,
+  getMultiFactorResolver, TotpMultiFactorGenerator,
+  PhoneAuthProvider, PhoneMultiFactorGenerator
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp,
@@ -47,6 +49,17 @@ async function signInGoogle() {
   }
 }
 
+/* ---------------- ÇOK FAKTÖRLÜ DOĞRULAMA (MFA) ----------------
+   İki yöntem desteklenir:
+     A) Google ile giriş → Google hesabının kendi 2 adımlı doğrulaması
+        devreye girer. ÜCRETSİZ, ek plan gerekmez.
+     B) Firebase TOTP MFA (authenticator uygulaması: Google Authenticator,
+        Microsoft Authenticator, Authy). Bunun için Firebase projesinin
+        "Identity Platform" sürümüne yükseltilmesi gerekir (Blaze planı).
+   Kod her iki duruma da hazırdır. */
+
+let _bekleyenMfa = null;
+
 async function adminSignIn(email, password) {
   try {
     const res = await signInWithEmailAndPassword(auth, email, password);
@@ -56,7 +69,70 @@ async function adminSignIn(email, password) {
     }
     return { ok: true, user: res.user };
   } catch (err) {
-    return { ok: false, error: "Giriş başarısız: kullanıcı adı ya da şifre hatalı." };
+    /* Şifre doğru ama ikinci faktör isteniyorsa panel kilitlenmesin */
+    if (err && (err.code === "auth/multi-factor-auth-required" || err.code === "auth/need-second-factor")) {
+      try {
+        const resolver = getMultiFactorResolver(auth, err);
+        const ipucu = (resolver.hints || []).find(h => h.factorId === "totp") || (resolver.hints || [])[0];
+        _bekleyenMfa = { resolver, ipucu };
+        return {
+          ok: false,
+          mfa: true,
+          yontem: ipucu && ipucu.factorId === "totp" ? "totp" : "sms",
+          ipucu: ipucu ? (ipucu.displayName || "") : ""
+        };
+      } catch (e) {
+        return { ok: false, error: "İkinci faktör başlatılamadı: " + (e.message || "") };
+      }
+    }
+    return { ok: false, error: "E-posta veya şifre hatalı." };
+  }
+}
+
+/* İkinci faktör kodunu doğrula (TOTP veya SMS) */
+async function adminMfaDogrula(kod) {
+  if (!_bekleyenMfa) return { ok: false, error: "Doğrulama oturumu bulunamadı, tekrar giriş yapın." };
+  const temiz = (kod || "").replace(/\s/g, "");
+  if (!/^[0-9]{6,8}$/.test(temiz)) return { ok: false, error: "6 haneli kodu girin." };
+
+  try {
+    const { resolver, ipucu } = _bekleyenMfa;
+    let assertion;
+
+    if (ipucu && ipucu.factorId === "totp") {
+      assertion = TotpMultiFactorGenerator.assertionForSignIn(ipucu.uid, temiz);
+    } else if (ipucu && ipucu.factorId === "phone") {
+      const cred = PhoneAuthProvider.credential(ipucu.sessionInfo.verificationId, temiz);
+      assertion = PhoneMultiFactorGenerator.assertion(cred);
+    } else {
+      return { ok: false, error: "Desteklenmeyen ikinci faktör türü." };
+    }
+
+    const res = await resolver.resolveSignIn(assertion);
+    if (res.user.email !== ADMIN_EMAIL) {
+      await signOut(auth);
+      return { ok: false, error: "Bu hesap yönetici olarak tanımlı değil." };
+    }
+    _bekleyenMfa = null;
+    return { ok: true, user: res.user };
+  } catch (err) {
+    return { ok: false, error: "Kod hatalı veya süresi dolmuş." };
+  }
+}
+
+/* Google ile yönetici girişi — Google hesabının 2FA'sı devreye girer */
+async function adminGoogleSignIn() {
+  try {
+    const res = await signInWithPopup(auth, googleProvider);
+    const email = (res.user.email || "").toLowerCase();
+    if (email !== ADMIN_EMAIL.toLowerCase()) {
+      await signOut(auth);
+      return { ok: false, error: "Bu Google hesabı yönetici olarak tanımlı değil." };
+    }
+    const ikinciFaktor = res.user.multiFactor && res.user.multiFactor.enrolledFactors || [];
+    return { ok: true, user: res.user, mfaSayisi: ikinciFaktor.length };
+  } catch (err) {
+    return { ok: false, error: err && err.message ? err.message : "Google girişi başarısız." };
   }
 }
 
@@ -282,7 +358,7 @@ function deleteTreatment(id) {
 
 window.fb = {
   ready: true,
-  signInGoogle, adminSignIn, signOutUser, onAuthChange,
+  signInGoogle, adminSignIn, adminMfaDogrula, adminGoogleSignIn, signOutUser, onAuthChange,
   subscribeReviews: (cb) => subscribe("reviews", cb),
   addReview: (data) => addItem("reviews", data),
   subscribeProducts: (cb) => subscribe("products_custom", cb),
