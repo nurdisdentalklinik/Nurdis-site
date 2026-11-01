@@ -2698,6 +2698,7 @@ function renderAdminPanel() {
     { id: "appointments", label: "📅 Randevular", count: state.appointments.length },
     { id: "orders", label: "📦 Siparişler", count: state.orders.length },
     { id: "products", label: "🛍️ Ürünler", count: 0 },
+    { id: "doctors-admin", label: "👨‍⚕️ Doktorlar", count: (state.doctors || []).filter(d => d.aktif !== false).length },
     { id: "videos", label: "🎥 Videolar", count: 0 },
     { id: "social", label: "📱 Sosyal Medya", count: 0 },
     { id: "reviews", label: "⭐ Yorumlar", count: state.reviews.length },
@@ -2730,6 +2731,10 @@ function renderAdminPanel() {
 
   if (state.adminTab === "products") {
     tabContent = renderAccMagaza();
+  }
+
+  if (state.adminTab === "doctors-admin") {
+    tabContent = renderAccDoktor();
   }
 
   if (state.adminTab === "social") {

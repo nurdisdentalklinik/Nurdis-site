@@ -225,7 +225,9 @@ function saveAccountingToFirebase() {
       anketler: (state.anketler || []).slice(0, 1500),
       anketSablon: state.anketSablon || null,
       bonusAyar: state.bonusAyar || null,
-      kvkkTalepler: (state.kvkkTalepler || []).slice(0, 200)
+      kvkkTalepler: (state.kvkkTalepler || []).slice(0, 200),
+      products: state.products || [],
+      doctors: state.doctors || []
     });
   }
   return Promise.resolve();
@@ -447,6 +449,8 @@ function startAdminSubscriptions() {
         if (data.anketSablon) { state.anketSablon = data.anketSablon; localStorage.setItem("nurdis_anket_sablon", JSON.stringify(state.anketSablon)); }
         if (data.bonusAyar) { state.bonusAyar = data.bonusAyar; localStorage.setItem("nurdis_bonus_ayar", JSON.stringify(state.bonusAyar)); }
         if (data.kvkkTalepler) { state.kvkkTalepler = data.kvkkTalepler; localStorage.setItem("nurdis_kvkk_talepler", JSON.stringify(state.kvkkTalepler)); }
+        if (data.products && data.products.length && !(state.products || []).length) { state.products = data.products; localStorage.setItem("nurdis_products", JSON.stringify(state.products)); }
+        if (data.doctors && data.doctors.length && !(state.doctors || []).length) { state.doctors = data.doctors; localStorage.setItem("nurdis_doctors", JSON.stringify(state.doctors)); }
         localStorage.setItem("nurdis_accounting", JSON.stringify(state.accounting)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_treatment_prices", JSON.stringify(state.treatmentPrices)); saveAccountingToFirebase();
         localStorage.setItem("nurdis_auto_expenses", JSON.stringify(state.autoExpenses)); saveAccountingToFirebase();
@@ -541,7 +545,7 @@ const SCREEN_MAP = {
   address: renderAddress, contact: renderContact, info: renderInfo, chatbot: renderChatbot,
   "admin-login": renderAdminLogin, "admin-panel": renderAdminPanel, account: renderAccount,
   "profile-edit": renderProfileEdit, "brushing-video": renderBrushingVideo, "family-add": renderFamilyAdd,
-  settings: renderSettings, kvkk: renderKvkk, portal: renderPortal, "magaza-urun": renderMagazaUrun,
+  settings: renderSettings, kvkk: renderKvkk, portal: renderPortal, "magaza-urun": renderMagazaUrun, "doktor-detay": renderDoktorDetay,
 };
 
 const validScreens = Object.keys(SCREEN_MAP);

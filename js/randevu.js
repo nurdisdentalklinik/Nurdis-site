@@ -207,6 +207,15 @@ function renderBookingV2() {
           ${geceUyari}
         </div>
 
+        ${doktorlar().length ? `<div class="field">
+          <label>Hekim Tercihi <span style="color:var(--muted);font-weight:400;">(isteğe bağlı)</span></label>
+          <select class="input" id="f-doctor" onchange="state.bookingForm.doctor=this.value;">
+            <option value="">— Fark etmez —</option>
+            ${doktorlar().map(d => `<option value="${escapeAttr(d.id)}" ${f.doctor === d.id ? "selected" : ""}>${escapeHtml((d.unvan || "") + " " + (d.adSoyad || ""))}${(d.uzmanliklar||[])[0] ? " · " + escapeHtml((d.uzmanliklar||[])[0]) : ""}</option>`).join("")}
+          </select>
+          <p style="font-size:9px;color:#888;margin:4px 0 0;">Hekim seçmezseniz uygun hekim atanır</p>
+        </div>` : ""}
+
         <div class="field"><label>Ad Soyad</label><input class="input" id="f-name" placeholder="Adınız Soyadınız" value="${escapeAttr(f.name)}" /></div>
         <div class="field"><label>Telefon</label><input class="input" id="f-phone" type="tel" placeholder="05xx xxx xx xx" value="${escapeAttr(f.phone)}" /></div>
         <div class="field"><label>Not (isteğe bağlı)</label><input class="input" id="f-note" placeholder="Örn: diş ağrım var" value="${escapeAttr(f.note || "")}" /></div>

@@ -388,6 +388,10 @@ let state = {
   magazaFavori: false,
   magazaUrunId: null,
   magazaUrunEdit: undefined,
+  doctors: [],
+  doktorEdit: undefined,
+  doktorId: null,
+  doktorDiplomaId: null,
   hhSablonAcik: false,
   mesajSablon: null,
   hhAyar: null,
@@ -401,7 +405,7 @@ let state = {
   gvDonem: 1,
   treatmentPrices: {},
   autoExpenses: { kira:50000, elektrik:3000, su:1500, dogalgaz:2000, sgk:8000, vergi:5000 },
-  bookingForm: { date:"", time:"", name:"", phone:"", note:"", kvkk:false },
+  bookingForm: { date:"", time:"", name:"", phone:"", note:"", kvkk:false, doctor:"" },
   bookingStatus: "idle",
   contactForm: { name:"", phone:"", msg:"" },
   contactStatus: "idle",
@@ -500,6 +504,7 @@ function loadAll() {
   try { state.patientNotes = JSON.parse(localStorage.getItem("nurdis_patient_notes") || "[]"); } catch(e){ state.patientNotes = []; }
   try { state.senkronKuyrugu = JSON.parse(localStorage.getItem("nurdis_senkron_kuyrugu") || "[]"); state.senkronBekleyen = state.senkronKuyrugu.length; } catch(e){}
   try { state.products = JSON.parse(localStorage.getItem("nurdis_products") || "[]"); } catch(e){ state.products = []; }
+  try { state.doctors = JSON.parse(localStorage.getItem("nurdis_doctors") || "[]"); } catch(e){ state.doctors = []; }
   try { state.bonusAyar = JSON.parse(localStorage.getItem("nurdis_bonus_ayar") || "null"); } catch(e){ state.bonusAyar = null; }
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}
@@ -699,6 +704,11 @@ function renderServices() {
 /* ---------------- DOKTORLAR ---------------- */
 
 function renderDoctors() {
+  return renderDoctorsV2();
+}
+
+/* Eski doktorlar (referans) */
+function renderDoctorsEski() {
   const cards = DOCTORS.map(d => {
     const expanded = state.expandedDoctor === d.id;
     return `

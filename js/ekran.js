@@ -253,6 +253,9 @@ document.addEventListener("click", (e) => {
   if (!_entrySoundPlayed) { _entrySoundPlayed = true; playSound("login"); }
   else if (action !== "send-chat") playSound("click"); // sendChat kendi tık sesini zaten çalıyor
 
+  // Doktorlar
+  if (typeof doktorAction === "function" && doktorAction(action, el)) return;
+
   // Mağaza
   if (typeof magazaAction === "function" && magazaAction(action, el)) return;
 
@@ -309,6 +312,7 @@ document.addEventListener("click", (e) => {
     const entry = {
       date: f.date, time: f.time, name: f.name, phone: f.phone,
       note, service: "Muayene",
+      doctor: f.doctor || "",
       status: "bekliyor",
       kvkkOnay: true,
       kvkkTarih: new Date().toISOString(),
@@ -336,7 +340,7 @@ document.addEventListener("click", (e) => {
       state.lastBooking = entry;
       state.myAppointments.push({ id: Date.now(), ...entry });
       state.bookingStatus = bulutOk ? "done" : "done_offline";
-      state.bookingForm = { date: "", time: "", name: "", phone: "", note: "", kvkk: false };
+      state.bookingForm = { date: "", time: "", name: "", phone: "", note: "", kvkk: false, doctor: "" };
       playSound("success");
       render();
       window.scrollTo(0, 0);
