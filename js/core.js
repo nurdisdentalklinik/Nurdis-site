@@ -369,6 +369,8 @@ let state = {
   portalAdminTab: "notlar",
   patientFiles: [],
   patientNotes: [],
+  senkronKuyrugu: [],
+  senkronBekleyen: 0,
   hhSablonAcik: false,
   mesajSablon: null,
   hhAyar: null,
@@ -479,6 +481,7 @@ function loadAll() {
   try { const so = localStorage.getItem("nurdis_stok_oto"); if (so !== null) state.stokOtoAktif = so === "1"; } catch(e){}
   try { state.patientFiles = JSON.parse(localStorage.getItem("nurdis_patient_files") || "[]"); } catch(e){ state.patientFiles = []; }
   try { state.patientNotes = JSON.parse(localStorage.getItem("nurdis_patient_notes") || "[]"); } catch(e){ state.patientNotes = []; }
+  try { state.senkronKuyrugu = JSON.parse(localStorage.getItem("nurdis_senkron_kuyrugu") || "[]"); state.senkronBekleyen = state.senkronKuyrugu.length; } catch(e){}
   try { state.bonusAyar = JSON.parse(localStorage.getItem("nurdis_bonus_ayar") || "null"); } catch(e){ state.bonusAyar = null; }
   try { state.customProducts = JSON.parse(localStorage.getItem("nurdis_custom_products") || "[]"); } catch(e){ state.customProducts = []; }
   try { const s = JSON.parse(localStorage.getItem("nurdis_settings")); if (s) state.settings = { ...state.settings, ...s }; } catch(e){}
@@ -731,6 +734,24 @@ function renderDevices() {
 /* ---------------- REFERANSLAR ---------------- */
 
 /* ---------------- GİRİŞ GEREKTİREN İŞLEMLER İÇİN ORTAK KART ---------------- */
+/* ---------------- MİSAFİR (GİRİŞSİZ) OTURUM ----------------
+   Hastaların giriş yapmadan randevu alabilmesi için yerel misafir kimliği.
+   Firebase'e kaydederken uid gerekir — bu fonksiyon onu üretir. */
+function guestUser() {
+  let g = null;
+  try { g = JSON.parse(localStorage.getItem("nurdis_guest") || "null"); } catch (e) { g = null; }
+  if (!g || !g.uid) {
+    g = {
+      uid: "guest_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8),
+      name: "Misafir",
+      email: "",
+      isGuest: true
+    };
+    localStorage.setItem("nurdis_guest", JSON.stringify(g));
+  }
+  return g;
+}
+
 function authGate(message) {
   if (state.user) return "";
   return `<div class="card p4 mb4" style="text-align:center;">

@@ -1956,6 +1956,16 @@ function accAction(action, el) {
     return true;
   }
 
+  if (A("kuyruk-simdi-gonder")) {
+    if (typeof kuyrukGonder !== "function") return true;
+    kuyrukGonder().then((r) => {
+      if (r.gonderilen > 0) alert("✅ " + r.gonderilen + " kayıt buluta gönderildi.");
+      else alert("⚠️ Gönderilemedi.\n\nFirestore güvenlik kurallarında yazma izni gerekiyor.\n(Firebase Konsolu → Firestore → Rules)");
+      render();
+    });
+    return true;
+  }
+
   /* ---- RANDEVU YÖNETİMİ ---- */
   if (A("rv-filtre")) { state.rvFiltre = el.dataset.f; render(); return true; }
   if (A("rv-new")) { state.rvEdit = ""; render(); window.scrollTo(0, 0); return true; }
@@ -2980,6 +2990,19 @@ function renderAdminPanel() {
 
   if (state.adminTab === "portal") {
     tabContent = renderAccPortal();
+  }
+
+  if (state.adminTab === "appointments") {
+    const kq = (typeof kuyrukOzeti === "function") ? kuyrukOzeti() : { toplam: 0 };
+    if (kq.toplam > 0) {
+      tabContent = `<div class="card p3 mb3" style="background:#FFF3E0;border:1px solid #FFB74D;">
+        <p style="font-size:12px;font-weight:700;color:#E65100;margin:0 0 4px;">📥 ${kq.toplam} kayıt buluta gönderilmeyi bekliyor</p>
+        <p style="font-size:10px;color:#BF360C;margin:0 0 8px;line-height:1.5;">
+          Bu cihazda kayıtlı ama sunucuya iletilemedi. Yönetici girişi yapınca otomatik gönderilir.
+        </p>
+        <button class="btn-primary" style="background:#E65100;font-size:11px;padding:9px;" data-action="kuyruk-simdi-gonder">🔄 Şimdi Gönder</button>
+      </div>` + tabContent;
+    }
   }
 
   if (state.adminTab === "accounting") {

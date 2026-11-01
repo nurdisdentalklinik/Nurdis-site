@@ -19,13 +19,43 @@ function requestNotifPermission() {
   }
 }
 
-function showNotif(title, body) {
+function showNotif(title, body, sesTipi) {
+  // Sesli uyarı
+  try {
+    if (typeof playSound === "function") playSound(sesTipi || "notif");
+  } catch (e) {}
+
   // Sayfa bildirim (her zaman çalışır)
   _showInAppNotif(title, body);
+
   // Browser bildirimi (izin gerekli)
   if ("Notification" in window && Notification.permission === "granted") {
-    try { new Notification(title, { body, icon: "/icon-192.png" }); } catch(e) {}
+    try {
+      const n = new Notification(title, { body, icon: "./icon-192.png", badge: "./icon-192.png", tag: "nurdis-" + Date.now(), renotify: true });
+      n.onclick = () => { window.focus(); n.close(); };
+      setTimeout(() => { try { n.close(); } catch (e) {} }, 12000);
+    } catch (e) {}
   }
+
+  // Titreşim (mobil)
+  try { if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]); } catch (e) {}
+}
+
+/* Sekme başlığını yanıp söndür (masaüstünde dikkat çeker) */
+let _baslikTimer = null;
+function _baslikYanipSonsun() {
+  if (_baslikTimer) return;
+  const orj = document.title;
+  let n = 0;
+  _baslikTimer = setInterval(() => {
+    document.title = (n % 2 === 0) ? "🔔 YENİ RANDEVU!" : orj;
+    n++;
+    if (n >= 12) { clearInterval(_baslikTimer); _baslikTimer = null; document.title = orj; }
+  }, 700);
+  // Sekmeye dönünce durdur
+  const durdur = () => { if (_baslikTimer) { clearInterval(_baslikTimer); _baslikTimer = null; } document.title = orj; document.removeEventListener("visibilitychange", durdur); };
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) durdur(); });
+  setTimeout(durdur, 12000);
 }
 
 function _showInAppNotif(title, body) {
@@ -352,7 +382,11 @@ function startAdminSubscriptions() {
     // Bildirim: yeni randevu
     if (!_notifFirstLoad.appointments && items.length > state.appointments.length) {
       const yeni = items.find(i => !state.appointments.some(r => r.id === i.id));
-      if (yeni) showNotif("📅 Yeni Randevu!", `${yeni.name} — ${yeni.date||""} ${yeni.time||""}`);
+      if (yeni) {
+        showNotif("📅 YENİ RANDEVU!", `${yeni.name} — ${yeni.date || ""} ${yeni.time || ""}${yeni.phone ? " · " + yeni.phone : ""}`, "appointment");
+        // Masaüstü başlığı da yanıp sönsün
+        _baslikYanipSonsun();
+      }
     }
     _notifFirstLoad.appointments = false;
     state.appointments = items; render();
@@ -474,6 +508,18 @@ function playSound(kind) {
       tone(ctx, 523.25, 0.00, 0.16, "sine", 0.08);   // Do
       tone(ctx, 659.25, 0.08, 0.16, "sine", 0.08);   // Mi
       tone(ctx, 783.99, 0.16, 0.28, "sine", 0.09);   // Sol
+    } else if (kind === "appointment") {
+      // Yeni randevu zili — dikkat çekici, tekrarlı (2 kez)
+      [0, 0.55].forEach(gecikme => {
+        tone(ctx, 880.00, gecikme + 0.00, 0.12, "sine", 0.13);   // La5
+        tone(ctx, 1108.73, gecikme + 0.12, 0.12, "sine", 0.13);  // Do#6
+        tone(ctx, 880.00, gecikme + 0.24, 0.12, "sine", 0.12);   // La5
+        tone(ctx, 1318.51, gecikme + 0.36, 0.22, "sine", 0.11);  // Mi6
+      });
+    } else if (kind === "notif") {
+      // Kısa bildirim sesi
+      tone(ctx, 1046.50, 0.00, 0.10, "sine", 0.10);
+      tone(ctx, 1396.91, 0.10, 0.18, "sine", 0.09);
     } else if (kind === "error") {
       tone(ctx, 300, 0.00, 0.16, "sawtooth", 0.05);
       tone(ctx, 220, 0.10, 0.22, "sawtooth", 0.05);
@@ -508,6 +554,11 @@ render();
 setTimeout(() => {
   try { if (typeof yedekHatirlatmaKontrol === "function") yedekHatirlatmaKontrol(); } catch (e) {}
 }, 5000);
+
+/* Senkron kuyruğunu otomatik başlat */
+setTimeout(() => {
+  try { if (typeof kuyrukOtomatikBaslat === "function") kuyrukOtomatikBaslat(); } catch (e) {}
+}, 3000);
 
 /* Android/tarayıcı GERİ tuşu: uygulamadan çıkmak yerine önceki ekrana dönsün.
    Zaten "home" ekranındaysak ve geri basılırsa, tarayıcının/uygulamanın

@@ -184,6 +184,9 @@ function renderBookingV2() {
     </div>`;
   }
   if (state.bookingStatus === "error") statusHtml = `<p class="status-err">Kaydedilemedi, lütfen tekrar deneyin.</p>`;
+  if (state.bookingStatus === "done_offline") statusHtml = `<div class="card p3 mt2" style="background:#FFF8E1;border:1px solid #FFD54F;">
+      <p style="font-size:11px;color:#8D6E00;margin:0;line-height:1.5;">⚠️ Randevunuz alındı ancak şu an sunucuya iletilemedi. Kliniğe ulaştığında bilgilendirileceksiniz. <b>Kayıt cihazınızda güvende.</b></p>
+    </div>`;
 
   return `${topbar("Randevu Al", "Giriş yapmadan da randevu alabilirsiniz.")}
     <div class="content">

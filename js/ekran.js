@@ -315,22 +315,24 @@ document.addEventListener("click", (e) => {
     };
 
     (async () => {
-      let saved = false;
-      try {
-        if (window.fb && state.fbReady && !(state.user && state.user.isGuest)) {
-          await window.fb.addAppointment(entry);
-          saved = true;
-        }
-      } catch (e) { saved = false; }
+      /* Her durumda YERELE kaydet — asla kaybolmasın */
+      const yerelKayit = { id: "rv_" + Date.now(), ...entry };
+      state.appointments.push(yerelKayit);
+      persist("nurdis_appointments", state.appointments);
 
-      if (!saved) {
-        state.appointments.push({ id: "rv_" + Date.now(), ...entry });
-        persist("nurdis_appointments", state.appointments);
+      /* Buluta gönder — başarısız olursa kuyruğa girer */
+      let bulutOk = false;
+      if (typeof bulutaYaz === "function") {
+        const r = await bulutaYaz("appointment", entry);
+        bulutOk = !!r.ok;
+        if (!bulutOk) {
+          console.warn("Randevu kuyruğa alındı:", r.neden, r.izinHatasi ? "(yetki)" : "");
+        }
       }
 
       state.lastBooking = entry;
       state.myAppointments.push({ id: Date.now(), ...entry });
-      state.bookingStatus = "done";
+      state.bookingStatus = bulutOk ? "done" : "done_offline";
       state.bookingForm = { date: "", time: "", name: "", phone: "", note: "", kvkk: false };
       playSound("success");
       render();
