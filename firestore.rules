@@ -102,6 +102,11 @@ service cloud.firestore {
     }
 
     // Engellenen kullanıcılar — sadece uid listesi (kişisel veri yok)
+    // Hizmet videolari / urun gorselleri (id -> {url}) — herkese acik
+    match /service_videos/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /product_images/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /device_videos/{id}  { allow read: if true; allow write: if isAdmin(); }
+
     match /blocked_users/{id} {
       allow read: if true;
       allow write: if isAdmin();

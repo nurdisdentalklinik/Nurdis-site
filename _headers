@@ -29,5 +29,5 @@
   Strict-Transport-Security: max-age=31536000; includeSubDomains
 
   # --- Kross-origin izolasyonu ---
-  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
   Cross-Origin-Resource-Policy: same-site
