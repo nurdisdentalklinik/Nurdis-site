@@ -2089,6 +2089,36 @@ function accAction(action, el) {
     return true;
   }
 
+  if (A("kupon-ayarlar")) { state.kuponAyar = !state.kuponAyar; render(); return true; }
+
+  if (A("kupon-ekle")) {
+    const kod = (document.getElementById("kp-kod")?.value || "").trim().toUpperCase();
+    const tip = document.getElementById("kp-tip")?.value || "yuzde";
+    const deger = accNum(document.getElementById("kp-deger")?.value);
+    const minTutar = accNum(document.getElementById("kp-min")?.value) || 0;
+    const sonTarih = (document.getElementById("kp-tarih")?.value || "").trim();
+    if (!kod) { alert("Kupon kodu girin."); return true; }
+    if (!(deger > 0)) { alert("İndirim değeri girin."); return true; }
+    if (!state.kuponlar) state.kuponlar = [];
+    if (state.kuponlar.some(k => k.kod === kod)) { alert("Bu kod zaten var."); return true; }
+    state.kuponlar.push({ kod, tip, deger, minTutar, sonTarih, aktif: true });
+    try { localStorage.setItem("nurdis_kuponlar", JSON.stringify(state.kuponlar)); } catch (e) {}
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    alert("✅ Kupon eklendi: " + kod);
+    render();
+    return true;
+  }
+
+  if (A("kupon-sil")) {
+    const kod = el.dataset.id;
+    if (!confirm("\"" + kod + "\" kuponu silinsin mi?")) return true;
+    state.kuponlar = (state.kuponlar || []).filter(k => k.kod !== kod);
+    try { localStorage.setItem("nurdis_kuponlar", JSON.stringify(state.kuponlar)); } catch (e) {}
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    render();
+    return true;
+  }
+
   /* ================= SİPARİŞ YÖNETİMİ ================= */
   /* Kargo hızlı işlem: detayı açar, kargo alanına odaklanır */
   if (A("sip-kargo-hizli")) {
@@ -3597,6 +3627,41 @@ function renderSiparisYonetimi() {
             style="width:100%;font-size:10px;padding:5px 8px;margin-top:3px;" />
         </div>`).join("")}
       <button class="btn-primary" style="width:100%;margin-top:10px;font-size:12px;padding:9px;" data-action="kargo-firma-kaydet">💾 Kargo Firmalarını Kaydet</button>
+      ` : ""}
+    </div>
+
+    <!-- Kupon yönetimi (açılır) -->
+    <div class="card p4 mb3" style="padding:10px 12px;">
+      <button data-action="kupon-ayarlar"
+        style="width:100%;background:none;border:none;display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:0;">
+        <span style="font-size:12px;font-weight:800;color:var(--ink);">🎟️ İndirim Kuponları <span style="color:var(--muted);font-weight:600;">(${(state.kuponlar || []).length})</span></span>
+        <span style="font-size:11px;color:var(--muted);">${state.kuponAyar ? "kapat ▲" : "düzenle ▼"}</span>
+      </button>
+      ${state.kuponAyar ? `
+      ${(state.kuponlar || []).map(k => `
+        <div style="border-top:1px solid var(--line);padding:8px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <div style="min-width:0;">
+            <p style="margin:0;font-size:12px;font-weight:800;letter-spacing:.5px;">${escapeHtml(k.kod)}</p>
+            <p class="desc" style="margin:1px 0 0;font-size:10px;">${k.tip === "yuzde" ? "%" + accNum(k.deger) : accTL(k.deger)}${k.minTutar ? " · min " + accTL(k.minTutar) : ""}${k.sonTarih ? " · " + escapeHtml(k.sonTarih) : ""}</p>
+          </div>
+          <button data-action="kupon-sil" data-id="${escapeAttr(k.kod)}"
+            style="padding:5px 9px;border-radius:6px;border:1px solid #EF9A9A;background:#FFEBEE;color:#C62828;font-size:10px;font-weight:700;cursor:pointer;">Sil</button>
+        </div>`).join("") || `<p class="desc" style="margin:8px 0;font-size:11px;">Henüz kupon yok.</p>`}
+      <div style="border-top:1px solid var(--line);padding-top:9px;margin-top:4px;">
+        <input class="input" id="kp-kod" placeholder="KUPON KODU (örn. NUR10)" style="font-size:11.5px;margin-bottom:5px;text-transform:uppercase;" />
+        <div style="display:flex;gap:5px;margin-bottom:5px;">
+          <select class="input" id="kp-tip" style="flex:1;font-size:11px;">
+            <option value="yuzde">Yüzde (%)</option>
+            <option value="tutar">Tutar (₺)</option>
+          </select>
+          <input class="input" id="kp-deger" type="number" placeholder="Değer" style="flex:1;font-size:11px;" />
+        </div>
+        <div style="display:flex;gap:5px;">
+          <input class="input" id="kp-min" type="number" placeholder="Min tutar (₺)" style="flex:1;font-size:11px;" />
+          <input class="input" id="kp-tarih" type="date" style="flex:1;font-size:11px;" />
+        </div>
+        <button class="btn-primary" style="width:100%;margin-top:8px;font-size:11.5px;padding:8px;" data-action="kupon-ekle">+ Kupon Ekle</button>
+      </div>
       ` : ""}
     </div>
 

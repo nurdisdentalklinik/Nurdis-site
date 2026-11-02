@@ -429,6 +429,15 @@ let state = {
   settings: { muted: false, lang: "tr" },
   adminLoggedIn: false,
   adminForm: { email:"", pass:"" },
+  hesapMod: "giris",        // Hesabım: giris | kayit | sifre
+  hesapForm: {},            // Hesabım form değerleri
+  hesapHata: "",
+  hesapBusy: false,
+  hesapSekme: "siparisler", // Hesap merkezi sekmesi
+  hesapSiparisAcik: null,   // Açık sipariş
+  adresForm: null,          // Adres düzenleme
+  kuponlar: null,           // Kupon listesi
+  kullanilanKuponlar: null, // Kullanılmış kupon kodları
   kargoNo: "",              // Kargo takip: girilen numara
   kargoFirma: "",           // Kargo takip: seçilen firma
   kargoSonuc: null,         // API sonucu (varsa)
@@ -1237,24 +1246,116 @@ function renderCheckout() {
   const lines = [];
   const all = allProducts();
   for (const cat of all) for (const p of cat.items) if (state.cart[p.id]) lines.push(`${p.name} × ${state.cart[p.id]} = ${p.price*state.cart[p.id]} ₺`);
-  return `${topbar("Siparişi Tamamla","Ödeme banka hesabı üzerinden yapılır, kargo bilgisi telefonunuza iletilir.")}
+
+  /* ---- HESAP ZORUNLU (Trendyol mantığı) ---- */
+  if (!state.user || !state.user.uid) {
+    return `${topbar("Siparişi Tamamla", "Devam etmek için giriş yapın.", { back: "store" })}
+      <div class="content">
+        <div class="card p4 mb3">
+          <p class="name" style="font-size:14px;margin:0 0 8px;">Sipariş özeti</p>
+          ${lines.map(l => `<p class="desc" style="margin:2px 0;font-size:12px;">${l}</p>`).join("")}
+          <div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:8px;padding-top:8px;">
+            <span style="font-weight:800;font-size:13px;">Toplam</span>
+            <span style="font-weight:800;font-size:15px;color:var(--teal);">${accTL(cartTotal())}</span>
+          </div>
+        </div>
+
+        <div class="card p4 mb3" style="background:linear-gradient(135deg,#0B6E86,#0E8FA8);color:#fff;border:none;text-align:center;">
+          <p style="font-size:32px;margin:0 0 6px;">🔐</p>
+          <p style="font-size:14px;font-weight:800;margin:0 0 4px;">Hesap gerekli</p>
+          <p style="font-size:11.5px;opacity:.92;margin:0;line-height:1.5;">
+            Siparişinizi takip edebilmeniz için hesap oluşturmanız gerekiyor.
+            Sadece 10 saniye sürer.
+          </p>
+        </div>
+
+        <button class="btn-primary" style="width:100%;margin-bottom:8px;" data-action="checkout-giris">Giriş Yap / Hesap Oluştur</button>
+        <button class="btn-primary" style="width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--line);" data-action="back-to-store">← Mağazaya dön</button>
+      </div>`;
+  }
+
+  /* ---- VARSAYILAN ADRES KISAYOLU ---- */
+  const va = (typeof varsayilanAdres === "function") ? varsayilanAdres() : null;
+  const adresler = (typeof adreslerim === "function") ? adreslerim() : [];
+
+  /* ---- KUPON ---- */
+  const kupon = state.sepetKupon ? (typeof kuponlarim === "function"
+      ? kuponlarim().find(k => k.kod === state.sepetKupon) : null) : null;
+  const indirim = (kupon && typeof kuponIndirimi === "function") ? kuponIndirimi(kupon, cartTotal()) : 0;
+  const odenecek = Math.max(0, cartTotal() - indirim);
+
+  return `${topbar("Siparişi Tamamla", "Teslimat bilgilerinizi kontrol edin.", { back: "store" })}
     <div class="content">
-      <div class="card p4 mb4">
-        <p class="name" style="font-size:14px;margin-bottom:8px;">Sipariş özeti</p>
-        ${lines.map(l=>`<p class="desc">${l}</p>`).join("")}
-        <p class="name" style="margin-top:8px;">Toplam: ${cartTotal()} ₺</p>
+
+      <!-- Ürünler -->
+      <div class="card p4 mb3">
+        <p class="name" style="font-size:13.5px;margin:0 0 8px;">🛒 Sipariş özeti</p>
+        ${lines.map(l => `<p class="desc" style="margin:2px 0;font-size:11.5px;">${l}</p>`).join("")}
       </div>
-      ${authGate("Sipariş verebilmek için Google ile giriş yapman gerekiyor.")}
-      ${state.user ? `<div class="card p5 mb4">
-        <div class="field"><label>Ad Soyad</label><input class="input" id="ck-name" value="${escapeAttr(c.name)}" /></div>
-        <div class="field"><label>Telefon</label><input class="input" id="ck-phone" placeholder="05xx xxx xx xx" value="${escapeAttr(c.phone)}" /></div>
-        <div class="field"><label>Teslimat Adresi</label><textarea id="ck-address" placeholder="Açık adres">${escapeHtml(c.address)}</textarea></div>
-        <button class="btn-primary" data-action="submit-order" ${!canSubmit?"disabled":""}>Siparişi Onayla</button>
+
+      <!-- Adres seçimi -->
+      ${adresler.length ? `
+      <div class="card p4 mb3">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <p class="name" style="font-size:13px;margin:0;">📍 Kayıtlı adreslerim</p>
+          <button data-action="goto" data-screen="account"
+            style="background:none;border:none;color:var(--teal);font-size:10.5px;font-weight:700;cursor:pointer;">Yönet →</button>
+        </div>
+        ${adresler.map(a => `
+          <button data-action="checkout-adres" data-id="${a.id}"
+            style="width:100%;text-align:left;padding:9px 11px;border-radius:9px;margin-bottom:6px;cursor:pointer;
+            border:1.5px solid ${(state.checkoutAdresId === a.id || (!state.checkoutAdresId && a.varsayilan)) ? "var(--teal)" : "var(--line)"};
+            background:${(state.checkoutAdresId === a.id || (!state.checkoutAdresId && a.varsayilan)) ? "#E0F3F7" : "var(--surface)"};">
+            <p style="margin:0;font-size:11.5px;font-weight:800;">${escapeHtml(a.baslik || "Adres")}</p>
+            <p class="desc" style="margin:2px 0 0;font-size:10.5px;line-height:1.4;">${escapeHtml(a.ad || "")} · ${escapeHtml(a.tel || "")}<br/>${escapeHtml((a.il || "") + " " + (a.acik || ""))}</p>
+          </button>`).join("")}
       </div>` : ""}
-      <div class="card p4">
-        <p class="footnote" style="margin:0;">💳 Ödeme: klinik IBAN'ına havale/EFT ile yapılır (yönetici panelinden IBAN eklenebilir). Ödeme dekontu WhatsApp/telefon ile iletilmelidir. Kargo takip numarası SMS ile paylaşılır.</p>
+
+      <!-- Teslimat formu -->
+      <div class="card p4 mb3">
+        <p class="name" style="font-size:13px;margin:0 0 10px;">Teslimat bilgileri</p>
+        <div class="field"><label>Ad Soyad *</label><input class="input" id="ck-name" value="${escapeAttr(c.name)}" placeholder="Ad Soyad" /></div>
+        <div class="field"><label>Telefon *</label><input class="input" id="ck-phone" type="tel" placeholder="05xx xxx xx xx" value="${escapeAttr(c.phone)}" inputmode="tel" /></div>
+        <div class="field"><label>Açık Adres *</label><textarea class="input" id="ck-address" rows="3" placeholder="Mahalle, sokak, no, daire…">${escapeHtml(c.address)}</textarea></div>
       </div>
-      <button class="linklike" style="margin-top:12px;" data-action="back-to-store">← Mağazaya dön</button>
+
+      <!-- Kupon -->
+      <div class="card p4 mb3">
+        <p class="name" style="font-size:13px;margin:0 0 8px;">🎟️ İndirim kuponu</p>
+        ${kupon ? `
+          <div style="display:flex;justify-content:space-between;align-items:center;background:#E8F5E9;border-radius:9px;padding:9px 11px;">
+            <div>
+              <p style="margin:0;font-size:12px;font-weight:800;color:#2E7D32;">${escapeHtml(kupon.kod)}</p>
+              <p style="margin:1px 0 0;font-size:10.5px;color:#388E3C;">− ${accTL(indirim)} indirim uygulandı</p>
+            </div>
+            <button data-action="kupon-kaldir" style="background:none;border:none;color:#C62828;font-size:11px;font-weight:700;cursor:pointer;">Kaldır</button>
+          </div>` : `
+          <div style="display:flex;gap:6px;">
+            <input class="input" id="ck-kupon" placeholder="Kupon kodu" style="flex:1;font-size:12.5px;text-transform:uppercase;" />
+            <button class="qty-btn" style="width:auto;padding:0 14px;font-size:11.5px;" data-action="kupon-uygula">Uygula</button>
+          </div>`}
+      </div>
+
+      <!-- Toplam -->
+      <div class="card p4 mb3">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
+          <span class="desc">Ara toplam</span><span>${accTL(cartTotal())}</span>
+        </div>
+        ${indirim ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;color:#2E7D32;">
+          <span>Kupon indirimi</span><span>− ${accTL(indirim)}</span>
+        </div>` : ""}
+        <div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:8px;padding-top:8px;">
+          <span style="font-weight:800;font-size:13.5px;">Ödenecek</span>
+          <span style="font-weight:800;font-size:17px;color:var(--teal);">${accTL(odenecek)}</span>
+        </div>
+      </div>
+
+      <button class="btn-primary" style="width:100%;" data-action="submit-order" ${!canSubmit ? "disabled" : ""}>Siparişi Onayla</button>
+      <button class="btn-primary" style="width:100%;margin-top:8px;background:var(--surface);color:var(--ink);border:1px solid var(--line);" data-action="back-to-store">← Mağazaya dön</button>
+
+      <div class="card p4 mb3" style="margin-top:12px;">
+        <p class="footnote" style="margin:0;line-height:1.55;">💳 Ödeme: klinik IBAN'ına havale/EFT (yönetici panelinden IBAN eklenebilir). Dekontu WhatsApp ile iletin. Kargo takip numarası WhatsApp'tan gönderilir.</p>
+      </div>
     </div>`;
 }
 

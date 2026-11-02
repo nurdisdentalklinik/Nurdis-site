@@ -9,7 +9,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut,
-  signInWithEmailAndPassword, onAuthStateChanged,
+  signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile,
+  sendPasswordResetEmail, onAuthStateChanged,
   signInWithRedirect, getRedirectResult,
   getMultiFactorResolver, TotpMultiFactorGenerator,
   PhoneAuthProvider, PhoneMultiFactorGenerator
@@ -184,6 +185,56 @@ const _redirectHazir = getRedirectResult(auth).then((res) => {
   }
   return _redirectSonucu;
 }).catch(() => null);
+
+
+/* ---------------- MÜŞTERİ HESABI (e-posta / şifre) ----------------
+   Trendyol mantığı: alışverişten ÖNCE hesap zorunlu.
+   Google ile de girilebilir; iki yol da aynı profile bağlanır. */
+
+async function musteriKayit(adSoyad, email, sifre) {
+  try {
+    const temizEmail = (email || "").trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(temizEmail)) {
+      return { ok: false, error: "Geçerli bir e-posta girin." };
+    }
+    if ((sifre || "").length < 6) {
+      return { ok: false, error: "Şifre en az 6 karakter olmalı." };
+    }
+    const res = await createUserWithEmailAndPassword(auth, temizEmail, sifre);
+    if (adSoyad) { try { await updateProfile(res.user, { displayName: adSoyad.trim() }); } catch (e) {} }
+    return { ok: true, user: res.user };
+  } catch (err) {
+    const kod = (err && err.code) || "";
+    if (kod.indexOf("email-already-in-use") !== -1) return { ok: false, error: "Bu e-posta ile zaten bir hesap var. Giriş yapın." };
+    if (kod.indexOf("weak-password") !== -1) return { ok: false, error: "Şifre çok zayıf. En az 6 karakter girin." };
+    if (kod.indexOf("invalid-email") !== -1) return { ok: false, error: "E-posta adresi geçersiz." };
+    if (kod.indexOf("operation-not-allowed") !== -1) return { ok: false, error: "E-posta ile kayıt şu an kapalı. Google ile giriş yapabilirsiniz." };
+    return { ok: false, error: "Kayıt başarısız: " + (err.message || "") };
+  }
+}
+
+async function musteriGiris(email, sifre) {
+  try {
+    const res = await signInWithEmailAndPassword(auth, (email || "").trim().toLowerCase(), sifre);
+    return { ok: true, user: res.user };
+  } catch (err) {
+    const kod = (err && err.code) || "";
+    if (kod.indexOf("user-not-found") !== -1 || kod.indexOf("wrong-password") !== -1 || kod.indexOf("invalid-credential") !== -1) {
+      return { ok: false, error: "E-posta veya şifre hatalı." };
+    }
+    if (kod.indexOf("too-many-requests") !== -1) return { ok: false, error: "Çok fazla deneme. Biraz sonra tekrar deneyin." };
+    return { ok: false, error: "Giriş başarısız: " + (err.message || "") };
+  }
+}
+
+async function sifreSifirla(email) {
+  try {
+    await sendPasswordResetEmail(auth, (email || "").trim().toLowerCase());
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: "Sıfırlama e-postası gönderilemedi." };
+  }
+}
 
 function signOutUser() { return signOut(auth); }
 
@@ -407,6 +458,7 @@ function deleteTreatment(id) {
 
 window.fb = {
   ready: true,
+  musteriKayit, musteriGiris, sifreSifirla,
   signInGoogle, adminSignIn, adminMfaDogrula, adminGoogleSignIn, signOutUser, onAuthChange,
   getRedirectResultSafe: () => _redirectHazir.then(() => _redirectSonucu),
   subscribeReviews: (cb) => subscribe("reviews", cb),

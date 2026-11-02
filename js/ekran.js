@@ -302,6 +302,9 @@ document.addEventListener("click", (e) => {
   // Doktorlar
   if (typeof doktorAction === "function" && doktorAction(action, el)) return;
 
+  // Hesap merkezi (kayıt, giriş, siparişler, adresler, kuponlar)
+  if (typeof hesapAction === "function" && hesapAction(el, action)) return;
+
   // Kargo takip (müşteri)
   if (typeof kargoAction === "function" && kargoAction(el, action)) return;
 
@@ -446,14 +449,74 @@ document.addEventListener("click", (e) => {
   }
   if (action === "cart-inc") { state.cart[el.dataset.id] = (state.cart[el.dataset.id]||0)+1; render(); }
   if (action === "cart-dec") { state.cart[el.dataset.id] = Math.max(0,(state.cart[el.dataset.id]||0)-1); render(); }
+  if (action === "checkout-giris") {
+    state.hesapMod = "kayit";
+    state.screen = "account";
+    state.checkoutStatus = "idle";
+    render();
+    window.scrollTo(0, 0);
+    return;
+  }
+
+  if (action === "checkout-adres") {
+    const a = (typeof adreslerim === "function") ? adreslerim().find(x => x.id === el.dataset.id) : null;
+    if (!a) return;
+    state.checkoutAdresId = a.id;
+    state.checkoutForm = {
+      name: a.ad || "", phone: a.tel || "",
+      address: ((a.il || "") + " " + (a.acik || "")).trim()
+    };
+    render();
+    return;
+  }
+
+  if (action === "kupon-uygula") {
+    const kod = (document.getElementById("ck-kupon")?.value || "").trim().toUpperCase();
+    if (!kod) { alert("Kupon kodu girin."); return; }
+    const liste = (typeof kuponlarim === "function") ? kuponlarim() : [];
+    const k = liste.find(x => x.kod === kod);
+    if (!k) { alert("Böyle bir kupon bulunamadı."); return; }
+    const uygun = (typeof kuponGecerliMi === "function") ? kuponGecerliMi(k, cartTotal()) : { ok: true };
+    if (!uygun.ok) { alert("Kupon kullanılamıyor:\n\n" + uygun.mesaj); return; }
+    state.sepetKupon = kod;
+    render();
+    return;
+  }
+
+  if (action === "kupon-kaldir") {
+    state.sepetKupon = null;
+    render();
+    return;
+  }
+
   if (action === "goto-checkout") { state.checkoutStatus = "form"; render(); }
   if (action === "back-to-store") { state.checkoutStatus = "idle"; render(); }
   if (action === "submit-order") {
     const c = state.checkoutForm;
-    if (!(c.name && c.phone && c.address) || !state.user) return;
+    if (!(c.name && c.phone && c.address)) return;
+    /* HESAP ZORUNLU — misafir sipariş yok (Trendyol mantığı) */
+    if (!state.user || !state.user.uid) {
+      state.hesapMod = "kayit";
+      state.screen = "account";
+      render();
+      return;
+    }
     const items = []; const all = allProducts();
     for (const cat of all) for (const p of cat.items) if (state.cart[p.id]) items.push({name:p.name, qty:state.cart[p.id], price:p.price});
-    const entry = { ...c, items, total: cartTotal(), uid: state.user.uid };
+    /* Kupon indirimi uygula */
+    let indirim = 0;
+    if (state.sepetKupon && typeof kuponlarim === "function") {
+      const k = kuponlarim().find(x => x.kod === state.sepetKupon);
+      if (k) indirim = kuponIndirimi(k, cartTotal());
+    }
+    const toplam = Math.max(0, cartTotal() - indirim);
+    const entry = Object.assign({}, c, {
+      items, total: toplam,
+      araToplam: cartTotal(), indirim: indirim || 0,
+      kupon: state.sepetKupon || "",
+      durum: "yeni",
+      uid: state.user.uid
+    });
     (async () => {
       try {
         if (window.fb && state.fbReady) await window.fb.addOrder(entry);
@@ -462,6 +525,15 @@ document.addEventListener("click", (e) => {
           list.push({ id:Date.now(), ...entry });
           persist("nurdis_orders", list);
         }
+        if (state.sepetKupon) {
+          try {
+            const kk = JSON.parse(localStorage.getItem("nurdis_kullanilan_kupon") || "[]");
+            if (kk.indexOf(state.sepetKupon) === -1) kk.push(state.sepetKupon);
+            localStorage.setItem("nurdis_kullanilan_kupon", JSON.stringify(kk));
+            state.kullanilanKuponlar = kk;
+          } catch (e) {}
+        }
+        state.sepetKupon = null;
         state.cart = {};
         state.checkoutForm = { name:"", phone:"", address:"" };
         state.checkoutStatus = "idle";

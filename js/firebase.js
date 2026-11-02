@@ -316,6 +316,7 @@ function saveAccountingToFirebase() {
       accTamamlanan: state.accTamamlanan || {},
       firmaBilgi: state.firmaBilgi || null,
       kargoFirmalari: state.kargoFirmalari || null,
+      kuponlar: state.kuponlar || [],
       stok: state.stok || [],
       stokHareket: (state.stokHareket || []).slice(0, 800),
       tedaviMalzeme: state.tedaviMalzeme || {},
@@ -622,6 +623,7 @@ function startAdminSubscriptions() {
         if (data.demirbaslar) { state.demirbaslar = data.demirbaslar; localStorage.setItem("nurdis_demirbaslar", JSON.stringify(state.demirbaslar)); }
         if (data.accTamamlanan) { state.accTamamlanan = data.accTamamlanan; localStorage.setItem("nurdis_beyan_tamam", JSON.stringify(state.accTamamlanan)); }
         if (data.firmaBilgi) { state.firmaBilgi = data.firmaBilgi; localStorage.setItem("nurdis_firma_bilgi", JSON.stringify(state.firmaBilgi)); }
+        if (data.kuponlar) { state.kuponlar = data.kuponlar; localStorage.setItem("nurdis_kuponlar", JSON.stringify(state.kuponlar)); }
         if (data.kargoFirmalari) { state.kargoFirmalari = data.kargoFirmalari; localStorage.setItem("nurdis_kargo_firmalari", JSON.stringify(state.kargoFirmalari)); }
         if (data.stok) { state.stok = data.stok; localStorage.setItem("nurdis_stok", JSON.stringify(state.stok)); }
         if (data.stokHareket) { state.stokHareket = data.stokHareket; localStorage.setItem("nurdis_stok_hareket", JSON.stringify(state.stokHareket)); }
@@ -756,7 +758,7 @@ const SCREEN_MAP = {
   address: renderAddress, contact: renderContact, info: renderInfo, chatbot: renderChatbot,
   "admin-login": renderAdminLogin, "admin-panel": renderAdminPanel, account: renderAccount,
   "profile-edit": renderProfileEdit, "brushing-video": renderBrushingVideo, "family-add": renderFamilyAdd,
-  settings: renderSettings, kvkk: renderKvkk, portal: renderPortal, "magaza-urun": renderMagazaUrun, "doktor-detay": renderDoktorDetay, fircalama: renderFircalama, "kargo-takip": renderKargoTakip,
+  settings: renderSettings, kvkk: renderKvkk, portal: renderPortal, "magaza-urun": renderMagazaUrun, "doktor-detay": renderDoktorDetay, fircalama: renderFircalama, "kargo-takip": renderKargoTakip, account: hesapEkrani,
 };
 
 const validScreens = Object.keys(SCREEN_MAP);
