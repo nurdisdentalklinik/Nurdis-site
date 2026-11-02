@@ -10,6 +10,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut,
   signInWithEmailAndPassword, onAuthStateChanged,
+  signInWithRedirect, getRedirectResult,
   getMultiFactorResolver, TotpMultiFactorGenerator,
   PhoneAuthProvider, PhoneMultiFactorGenerator
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -41,8 +42,9 @@ const googleProvider = new GoogleAuthProvider();
 
 async function signInGoogle() {
   try {
-    const res = await signInWithPopup(auth, googleProvider);
-    return { ok: true, user: res.user };
+    const sonuc = await _googleGirisDene();
+    if (sonuc.tip === "redirect") return { ok: false, redirect: true };
+    return { ok: true, user: sonuc.user };
   } catch (err) {
     console.error("Google giriş hatası:", err);
     return { ok: false, error: err.message };
@@ -120,21 +122,50 @@ async function adminMfaDogrula(kod) {
   }
 }
 
-/* Google ile yönetici girişi — Google hesabının 2FA'sı devreye girer */
-async function adminGoogleSignIn() {
+/* Google ile giriş — İKİ AŞAMALI DAYANIKLI YÖNTEM
+   1) Popup denenir (hızlı, sayfa yenilenmez)
+   2) Popup engellenirse veya tarayıcı desteklemezse tam sayfa
+      yönlendirmesine (redirect) geçilir.
+   Mobil tarayıcılarda (Instagram/WhatsApp içi tarayıcı, Safari ITP)
+   popup sık engellendiği için redirect yedek yolu şart. */
+async function _googleGirisDene() {
   try {
     const res = await signInWithPopup(auth, googleProvider);
-    const email = (res.user.email || "").toLowerCase();
+    return { tip: "popup", user: res.user };
+  } catch (err) {
+    const kod = (err && err.code) || "";
+    const gecici = /popup-blocked|popup-closed-by-user|cancelled-popup-request|internal-error|operation-not-supported|web-storage-unsupported/i.test(kod);
+    if (!gecici) throw err;                 // gerçek hata: yukarı fırlat
+    await signInWithRedirect(auth, googleProvider);
+    return { tip: "redirect" };             // sayfa yönlenecek, buradan dönülmez
+  }
+}
+
+async function adminGoogleSignIn() {
+  try {
+    const sonuc = await _googleGirisDene();
+    if (sonuc.tip === "redirect") return { ok: false, redirect: true, error: "" };
+
+    const email = (sonuc.user.email || "").toLowerCase();
     if (email !== ADMIN_EMAIL.toLowerCase()) {
       await signOut(auth);
       return { ok: false, error: "Bu Google hesabı yönetici olarak tanımlı değil." };
     }
-    const ikinciFaktor = res.user.multiFactor && res.user.multiFactor.enrolledFactors || [];
-    return { ok: true, user: res.user, mfaSayisi: ikinciFaktor.length };
+    const ikinciFaktor = (sonuc.user.multiFactor && sonuc.user.multiFactor.enrolledFactors) || [];
+    return { ok: true, user: sonuc.user, mfaSayisi: ikinciFaktor.length };
   } catch (err) {
-    return { ok: false, error: err && err.message ? err.message : "Google girişi başarısız." };
+    return { ok: false, error: "Google girişi başarısız: " + ((err && err.code) || "bilinmeyen hata") };
   }
 }
+
+/* Yönlendirmeden dönen kullanıcıyı yakala (sayfa yeniden yüklendiğinde) */
+let _redirectSonucu = null;
+const _redirectHazir = getRedirectResult(auth).then((res) => {
+  if (res && res.user) {
+    _redirectSonucu = { email: res.user.email, uid: res.user.uid };
+  }
+  return _redirectSonucu;
+}).catch(() => null);
 
 function signOutUser() { return signOut(auth); }
 
@@ -359,6 +390,7 @@ function deleteTreatment(id) {
 window.fb = {
   ready: true,
   signInGoogle, adminSignIn, adminMfaDogrula, adminGoogleSignIn, signOutUser, onAuthChange,
+  getRedirectResultSafe: () => _redirectHazir.then(() => _redirectSonucu),
   subscribeReviews: (cb) => subscribe("reviews", cb),
   addReview: (data) => addItem("reviews", data),
   subscribeProducts: (cb) => subscribe("products_custom", cb),

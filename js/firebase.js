@@ -653,7 +653,30 @@ function stopAdminSubscriptions() {
   state.appointments = []; state.orders = [];
 }
 
-window.addEventListener("fb-ready", wireFirebase);
+
+/* ---------------- GOOGLE YÖNLENDİRME DÖNÜŞÜ ----------------
+   Mobil tarayıcılarda popup engellendiğinde tam sayfa yönlendirme
+   kullanılır. Kullanıcı Google'dan dönünce sayfa yeniden yüklenir;
+   oturumu burada tamamlıyoruz (aksi halde giriş "kaybolmuş" görünür). */
+function _googleDonusKontrol() {
+  if (!(window.fb && window.fb.getRedirectResultSafe)) return;
+  window.fb.getRedirectResultSafe().then((r) => {
+    if (!r || !r.email) return;
+    const adminMi = (r.email || "").toLowerCase() === "nurdisdentalklinik@gmail.com";
+    if (adminMi) {
+      state.adminLoggedIn = true;
+      try { localStorage.setItem("nurdis_admin_logged_in", "true"); } catch (e) {}
+      if (typeof gvOturumBaslat === "function") gvOturumBaslat();
+      state.screen = "admin-panel";
+      state.adminError = "";
+      if (typeof gvDenetim === "function") gvDenetim("giris", "Google yönlendirmesi ile yönetici girişi");
+      startAdminSubscriptions();
+      render();
+    }
+  }).catch(() => {});
+}
+
+window.addEventListener("fb-ready", () => { wireFirebase(); _googleDonusKontrol(); });
 // firebase-init.js modülü app.js'ten önce yüklenip olayı kaçırmış olabilir ihtimaline karşı:
 if (window.fb && window.fb.ready) wireFirebase();
 
