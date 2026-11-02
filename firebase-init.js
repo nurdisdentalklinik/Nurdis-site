@@ -467,6 +467,17 @@ window.fb = {
   addProduct: (data) => addItem("products_custom", data),
   subscribeAppointments: (cb) => subscribe("appointments", cb),
   addAppointment: (data) => addItem("appointments", data),
+  /* İade / değişim talepleri */
+  subscribeIade: (cb) => subscribe("returns", cb),
+  addIade: (data) => addItem("returns", data),
+  updateIade: (id, veri) => updateDoc(doc(db, "returns", id), { ...veri, guncelleme: new Date().toISOString() }),
+  deleteIade: (id) => deleteDoc(doc(db, "returns", id)),
+
+  /* Ürün yorumları */
+  subscribeUrunYorum: (cb) => subscribe("product_reviews", cb),
+  addUrunYorum: (data) => addItem("product_reviews", data),
+  deleteUrunYorum: (id) => deleteDoc(doc(db, "product_reviews", id)),
+
   subscribeOrders: (cb) => subscribe("orders", cb),
   addOrder: (data) => addItem("orders", data),
   /* Sipariş yönetimi (Trendyol mantığı) — yönetici günceller/siler */

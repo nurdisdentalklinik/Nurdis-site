@@ -290,6 +290,8 @@ function renderMagazaUrun() {
         <span style="font-size:11px;font-weight:800;color:#E65100;">🔥 %${ind} İNDİRİM · ${accTL0(accNum(p.fiyat) - fiyat)} kazancınız</span>
       </div>` : ""}
 
+      ${typeof urunYorumlarHTML === "function" ? urunYorumlarHTML(p.id) : ""}
+
       <div class="card p4 mb3">
         ${p.marka ? `<p style="font-size:10px;color:#F27A1A;font-weight:700;margin:0 0 4px;">${escapeHtml(p.marka)}</p>` : ""}
         <p style="font-size:14px;font-weight:700;margin:0 0 8px;line-height:1.4;color:#222;">${escapeHtml(p.ad)}</p>

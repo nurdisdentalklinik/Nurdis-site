@@ -438,6 +438,15 @@ function wireFirebase() {
   }
   unsubProducts = window.fb.subscribeProducts((items) => { state.customProducts = items; render(); });
 
+  /* Ürün yorumları — herkese açık (ürün sayfasında gösterilir) */
+  if (window.fb.subscribeUrunYorum) {
+    window.fb.subscribeUrunYorum((items) => {
+      state.urunYorumlar = items;
+      try { localStorage.setItem("nurdis_urun_yorumlar", JSON.stringify(items)); } catch (e) {}
+      render();
+    });
+  }
+
   /* HALKA AÇIK KLİNİK VERİSİ (ürün, doktor, fiyat, kampanya)
      Finansal doküman artık herkese açık değil; site bu dokümandan beslenir.
      Doküman henüz yoksa uygulama koddaki varsayılanlarla çalışır. */
@@ -578,6 +587,21 @@ function startAdminSubscriptions() {
     _notifFirstLoad.appointments = false;
     state.appointments = items; render();
   });
+  if (window.fb.subscribeIade) {
+    window.fb.subscribeIade((items) => {
+      const onceki = (state.iadeler || []).length;
+      state.iadeler = items;
+      if (items.length > onceki && onceki > 0) {
+        const yeni = items.find(i => (state.iadeler || []).indexOf(i) === -1) || items[0];
+        if (yeni && typeof showNotif === "function") {
+          showNotif("↩️ Yeni İade Talebi", (yeni.musteri || "Müşteri") + " · " + (yeni.nedenAd || ""), "appointment");
+        }
+      }
+      try { localStorage.setItem("nurdis_iadeler", JSON.stringify(items)); } catch (e) {}
+      render();
+    });
+  }
+
   unsubOrders = window.fb.subscribeOrders((items) => {
     // Bildirim: yeni sipariş
     if (!_notifFirstLoad.orders && items.length > state.orders.length) {
@@ -758,7 +782,7 @@ const SCREEN_MAP = {
   address: renderAddress, contact: renderContact, info: renderInfo, chatbot: renderChatbot,
   "admin-login": renderAdminLogin, "admin-panel": renderAdminPanel, account: renderAccount,
   "profile-edit": renderProfileEdit, "brushing-video": renderBrushingVideo, "family-add": renderFamilyAdd,
-  settings: renderSettings, kvkk: renderKvkk, portal: renderPortal, "magaza-urun": renderMagazaUrun, "doktor-detay": renderDoktorDetay, fircalama: renderFircalama, "kargo-takip": renderKargoTakip, account: hesapEkrani,
+  settings: renderSettings, kvkk: renderKvkk, portal: renderPortal, "magaza-urun": renderMagazaUrun, "doktor-detay": renderDoktorDetay, fircalama: renderFircalama, "kargo-takip": renderKargoTakip, account: hesapEkrani, "iade-talebi": renderIadeTalebi, "yorum-yaz": renderYorumYaz,
 };
 
 const validScreens = Object.keys(SCREEN_MAP);

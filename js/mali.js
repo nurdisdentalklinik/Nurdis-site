@@ -2119,6 +2119,47 @@ function accAction(action, el) {
     return true;
   }
 
+  /* ================= İADE / DEĞİŞİM YÖNETİMİ ================= */
+  if (A("iade-ayarlar")) { state.iadeAyar = !state.iadeAyar; render(); return true; }
+
+  if (A("iade-durum")) {
+    const id = el.dataset.id, yeni = el.dataset.durum;
+    const x = (state.iadeler || []).find(i => i.id === id);
+    if (!x) return true;
+    let not = x.yoneticiNot || "";
+    if (yeni === "reddedildi" || yeni === "onaylandi") {
+      const cevap = prompt(yeni === "reddedildi"
+        ? "Müşteriye iletilecek açıklama (red sebebi):"
+        : "Müşteriye iletilecek açıklama (onay detayı):", not);
+      if (cevap === null) return true;
+      not = cevap;
+    }
+    x.durum = yeni;
+    x.yoneticiNot = not;
+    render();
+
+    if (window.fb && state.fbReady && window.fb.updateIade) {
+      window.fb.updateIade(id, { durum: yeni, yoneticiNot: not }).catch(() => {
+        alert("Durum güncellenemedi.");
+      });
+    }
+    if (typeof gvDenetim === "function") gvDenetim("iade-durum", (x.musteri || "") + " → " + yeni);
+    return true;
+  }
+
+  if (A("iade-wa")) {
+    const x = (state.iadeler || []).find(i => i.id === el.dataset.id);
+    if (!x || !x.telefon) { alert("Telefon numarası yok."); return true; }
+    const d = iadeDurum(x.durum);
+    const mesaj = "Merhaba " + (x.musteri || "") + ", " +
+      (x.tip === "degisim" ? "değişim" : "iade") + " talebiniz hakkında: " + d.ad +
+      (x.yoneticiNot ? "\n\n" + x.yoneticiNot : "") +
+      "\n\nNur Diş & Dental Klinik";
+    if (typeof guvenliWhatsApp === "function") guvenliWhatsApp(x.telefon, mesaj, "İade — " + (x.musteri || ""));
+    else if (typeof waLink === "function") window.open(waLink(x.telefon, mesaj), "_blank");
+    return true;
+  }
+
   /* ================= SİPARİŞ YÖNETİMİ ================= */
   /* Kargo hızlı işlem: detayı açar, kargo alanına odaklanır */
   if (A("sip-kargo-hizli")) {
@@ -3628,6 +3669,45 @@ function renderSiparisYonetimi() {
         </div>`).join("")}
       <button class="btn-primary" style="width:100%;margin-top:10px;font-size:12px;padding:9px;" data-action="kargo-firma-kaydet">💾 Kargo Firmalarını Kaydet</button>
       ` : ""}
+    </div>
+
+    <!-- İade / değişim talepleri -->
+    <div class="card p4 mb3" style="padding:10px 12px;${(state.iadeler || []).filter(x => x.durum === "bekliyor").length ? "border:1.5px solid #FFB74D;" : ""}">
+      <button data-action="iade-ayarlar"
+        style="width:100%;background:none;border:none;display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:0;">
+        <span style="font-size:12px;font-weight:800;color:var(--ink);">↩️ İade / Değişim Talepleri
+          ${(state.iadeler || []).filter(x => x.durum === "bekliyor").length ? `<span style="background:#FFEB3B;color:#7A5C00;border-radius:9px;padding:1px 7px;font-size:10px;margin-left:5px;">${(state.iadeler || []).filter(x => x.durum === "bekliyor").length} yeni</span>` : ""}
+        </span>
+        <span style="font-size:11px;color:var(--muted);">${state.iadeAyar ? "kapat ▲" : "aç ▼"}</span>
+      </button>
+      ${state.iadeAyar ? `
+      <div style="margin-top:10px;">
+        ${(state.iadeler || []).length ? (state.iadeler || []).map(x => {
+          const d = iadeDurum(x.durum);
+          return `<div style="border-top:1px solid var(--line);padding:9px 0;">
+            <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:4px;">
+              <div style="min-width:0;">
+                <span style="font-size:9px;font-weight:800;background:${d.arka};color:${d.renk};padding:2px 6px;border-radius:4px;">${d.ikon} ${d.ad.toUpperCase()}</span>
+                <p style="margin:5px 0 0;font-size:12px;font-weight:700;">${escapeHtml(x.musteri || "Müşteri")} · ${accTL(x.tutar || 0)}</p>
+              </div>
+              <p style="font-size:9.5px;color:var(--muted);margin:0;white-space:nowrap;">${x.zaman ? new Date(x.zaman).toLocaleDateString("tr-TR") : ""}</p>
+            </div>
+            <p class="desc" style="margin:0 0 2px;font-size:10.5px;">${escapeHtml(x.siparisOzet || "")}</p>
+            <p class="desc" style="margin:0 0 2px;font-size:10.5px;">${x.tip === "degisim" ? "🔄 Değişim" : "↩️ İade"} · ${escapeHtml(x.nedenAd || "")}</p>
+            ${x.not ? `<p class="desc" style="margin:0 0 2px;font-size:10px;line-height:1.4;">${escapeHtml(x.not)}</p>` : ""}
+            <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;">
+              <button data-action="iade-durum" data-id="${x.id}" data-durum="onaylandi"
+                style="padding:5px 9px;border-radius:6px;border:1px solid #A5D6A7;background:#E8F5E9;color:#2E7D32;font-size:9.5px;font-weight:700;cursor:pointer;">✅ Onayla</button>
+              <button data-action="iade-durum" data-id="${x.id}" data-durum="reddedildi"
+                style="padding:5px 9px;border-radius:6px;border:1px solid #EF9A9A;background:#FFEBEE;color:#C62828;font-size:9.5px;font-weight:700;cursor:pointer;">✖️ Reddet</button>
+              <button data-action="iade-durum" data-id="${x.id}" data-durum="tamamlandi"
+                style="padding:5px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:9.5px;font-weight:700;cursor:pointer;">🏁 Tamamlandı</button>
+              <button data-action="iade-wa" data-id="${x.id}"
+                style="padding:5px 9px;border-radius:6px;border:1px solid #90CAF9;background:#E3F2FD;color:#1565C0;font-size:9.5px;font-weight:700;cursor:pointer;">💬 Müşteriye yaz</button>
+            </div>
+          </div>`;
+        }).join("") : `<p class="desc" style="margin:8px 0;font-size:11px;">Henüz iade talebi yok.</p>`}
+      </div>` : ""}
     </div>
 
     <!-- Kupon yönetimi (açılır) -->

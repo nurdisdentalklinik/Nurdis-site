@@ -165,6 +165,24 @@ service cloud.firestore {
     // =====================================================================
     //  6. MESAJLAR  (hasta iletişim formu)
     // =====================================================================
+    // İade / değişim talepleri — hasta kendi talebini görür, yönetici yönetir
+    match /returns/{id} {
+      allow read: if isAdmin() || (girisVar() && resource.data.uid == request.auth.uid);
+      allow create: if girisVar() && makulBoyut();
+      allow update, delete: if isAdmin();
+    }
+
+    // Ürün yorumları — herkes okur, giriş yapmış yazar
+    match /product_reviews/{id} {
+      allow read: if true;
+      allow create: if girisVar()
+                    && metin(request.resource.data, 'metin', 5, 700)
+                    && request.resource.data.puan is int
+                    && request.resource.data.puan >= 1
+                    && request.resource.data.puan <= 5;
+      allow update, delete: if isAdmin();
+    }
+
     match /messages/{id} {
       allow read: if isAdmin();
       allow create: if makulBoyut()

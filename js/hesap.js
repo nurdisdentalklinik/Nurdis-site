@@ -17,6 +17,7 @@
 const HESAP_SEKME = [
   { id: "siparisler", ad: "Siparişlerim", ikon: "📦" },
   { id: "adresler",   ad: "Adreslerim",   ikon: "📍" },
+  { id: "iadelerim",  ad: "İadelerim",    ikon: "↩️" },
   { id: "kuponlar",   ad: "Kuponlarım",   ikon: "🎟️" },
   { id: "favoriler",  ad: "Favorilerim",  ikon: "❤️" },
   { id: "bilgiler",   ad: "Bilgilerim",   ikon: "⚙️" }
@@ -201,6 +202,7 @@ function renderHesapMerkezi() {
     let sayi = 0;
     if (s.id === "siparisler") sayi = siparisler.length;
     if (s.id === "adresler") sayi = adr.length;
+    if (s.id === "iadelerim") sayi = benimIadelerim().length;
     if (s.id === "kuponlar") sayi = kup.filter(k => !k.kullanildi).length;
     if (s.id === "favoriler") sayi = favoriAdet;
     return `<button data-action="hesap-sekme" data-id="${s.id}"
@@ -215,6 +217,7 @@ function renderHesapMerkezi() {
   let govde = "";
   if (sekme === "siparisler") govde = hesapSiparislerHTML();
   else if (sekme === "adresler") govde = hesapAdreslerHTML();
+  else if (sekme === "iadelerim") govde = hesapIadelerHTML();
   else if (sekme === "kuponlar") govde = hesapKuponlarHTML();
   else if (sekme === "favoriler") govde = hesapFavorilerHTML();
   else if (sekme === "bilgiler") govde = hesapBilgilerHTML();
@@ -308,11 +311,18 @@ function hesapSiparislerHTML() {
         </div>
         <p style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px;">Teslimat</p>
         <p class="desc" style="margin:0 0 12px;font-size:11.5px;line-height:1.5;">${escapeHtml(o.address || "—")}</p>
-        <a href="https://wa.me/905051050302?text=${encodeURIComponent("Siparişim hakkında bilgi almak istiyorum: #" + String(o.id).slice(-6))}"
-          target="_blank" rel="noopener"
-          style="display:block;text-align:center;padding:9px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:11.5px;font-weight:700;text-decoration:none;">
-          💬 Sipariş Hakkında Sor
-        </a>
+        <div style="display:flex;gap:6px;">
+          <a href="https://wa.me/905051050302?text=${encodeURIComponent("Siparişim hakkında bilgi almak istiyorum: #" + String(o.id).slice(-6))}"
+            target="_blank" rel="noopener"
+            style="flex:1;text-align:center;padding:9px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:11px;font-weight:700;text-decoration:none;">
+            💬 Sor
+          </a>
+          ${(o.durum === "teslim" || o.durum === "kargoda") && !siparisIadesi(o.id) ? `
+          <button data-action="iade-baslat" data-id="${o.id}"
+            style="flex:1;padding:9px;border-radius:9px;border:1px solid #FFCC80;background:#FFF3E0;color:#E65100;font-size:11px;font-weight:700;cursor:pointer;">
+            ↩️ İade / Değişim
+          </button>` : ""}
+        </div>
       </div>` : ""}
     </div>`;
   }).join("");
@@ -336,6 +346,31 @@ function hesapAdreslerHTML() {
         <input class="input" id="adr-il" value="${escapeAttr(a.il || "")}" placeholder="Mardin / Kızıltepe" /></div>
       <div class="field"><label>Açık Adres *</label>
         <textarea class="input" id="adr-acik" rows="3" placeholder="Mahalle, sokak, no, daire…">${escapeHtml(a.acik || "")}</textarea></div>
+      <!-- 🗺️ Konum -->
+      <p class="section-label" style="margin:4px 0 6px;">Konum (isteğe bağlı)</p>
+      <p class="desc" style="margin:0 0 8px;font-size:10.5px;line-height:1.5;">
+        Konum ekleyince kargo teslimatı kolaylaşır. Haritada doğru yeri işaretleyebilirsiniz.
+      </p>
+      ${state.adresKonum ? `
+        <div style="border-radius:10px;overflow:hidden;border:1px solid var(--line);margin-bottom:8px;">
+          <iframe src="${escapeAttr(haritaEmbed(state.adresKonum.lat, state.adresKonum.lon))}"
+            width="100%" height="180" style="border:0;display:block;" loading="lazy" title="Adres konumu"></iframe>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:14px;">
+          <button data-action="harita-ac" data-link="${escapeAttr(haritaLink(state.adresKonum.lat, state.adresKonum.lon))}"
+            style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:10.5px;font-weight:700;cursor:pointer;color:var(--ink);">
+            🗺️ Haritada Aç
+          </button>
+          <button data-action="adres-konum-temizle"
+            style="padding:8px 12px;border-radius:8px;border:1px solid #EF9A9A;background:#FFEBEE;color:#C62828;font-size:10.5px;font-weight:700;cursor:pointer;">
+            Kaldır
+          </button>
+        </div>` : `
+        <button data-action="adres-konum-al"
+          style="width:100%;padding:11px;border-radius:9px;border:1.5px dashed var(--line);background:var(--surface);font-size:11.5px;font-weight:700;cursor:pointer;color:var(--teal);margin-bottom:14px;">
+          📍 Konumumu Kullan
+        </button>`}
+
       <div style="display:flex;gap:8px;align-items:center;margin:6px 0 14px;">
         <input type="checkbox" id="adr-varsayilan" ${a.varsayilan ? "checked" : ""} style="width:17px;height:17px;" />
         <label for="adr-varsayilan" style="font-size:11.5px;color:var(--muted);">Varsayılan adresim olsun</label>
@@ -355,7 +390,10 @@ function hesapAdreslerHTML() {
       </div>
       <p class="desc" style="margin:0 0 3px;font-size:11.5px;">👤 ${escapeHtml(a.ad || "—")}</p>
       <p class="desc" style="margin:0 0 3px;font-size:11.5px;">📞 ${escapeHtml(a.tel || "—")}</p>
-      <p class="desc" style="margin:0 0 10px;font-size:11.5px;line-height:1.5;">📍 ${escapeHtml(a.il || "")} ${escapeHtml(a.acik || "")}</p>
+      <p class="desc" style="margin:0 0 6px;font-size:11.5px;line-height:1.5;">📍 ${escapeHtml(a.il || "")} ${escapeHtml(a.acik || "")}</p>
+      ${a.lat && a.lon ? `<button data-action="harita-ac" data-link="${escapeAttr(haritaLink(a.lat, a.lon))}"
+        style="background:none;border:none;color:var(--teal);font-size:10.5px;font-weight:700;cursor:pointer;padding:0;margin-bottom:8px;text-decoration:underline;">
+        🗺️ Haritada gör</button>` : ""}
       <div style="display:flex;gap:6px;">
         ${!a.varsayilan ? `<button data-action="adres-varsayilan" data-id="${a.id}"
           style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:10.5px;font-weight:700;cursor:pointer;color:var(--ink);">Varsayılan Yap</button>` : ""}
@@ -371,6 +409,47 @@ function hesapAdreslerHTML() {
       <p class="desc" style="margin:0;font-size:11.5px;">Kayıtlı adresiniz yok. Sipariş verirken bu adresleri kullanabilirsiniz.</p>
     </div>`}
     <button class="btn-primary" style="width:100%;margin-top:10px;" data-action="adres-ekle">+ Yeni Adres Ekle</button>`;
+}
+
+/* -------------------- ↩️ İADELERİM -------------------- */
+function hesapIadelerHTML() {
+  const liste = benimIadelerim();
+
+  if (!liste.length) {
+    return `<div class="card p4" style="text-align:center;padding:28px 20px;">
+      <p style="font-size:32px;margin:0 0 8px;">↩️</p>
+      <p class="name" style="font-size:13.5px;margin:0 0 4px;">İade/değişim talebiniz yok</p>
+      <p class="desc" style="margin:0;font-size:11.5px;line-height:1.5;">
+        Teslim edilen veya kargodaki bir siparişiniz için
+        <b>Siparişlerim</b> bölümünden talep oluşturabilirsiniz.
+      </p>
+    </div>`;
+  }
+
+  return liste.map(x => {
+    const d = iadeDurum(x.durum);
+    return `<div class="card p4 mb2" style="border-left:3px solid ${d.renk};">
+      <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:6px;">
+        <div style="min-width:0;">
+          <span style="font-size:9.5px;font-weight:800;background:${d.arka};color:${d.renk};padding:2px 7px;border-radius:5px;">${d.ikon} ${d.ad.toUpperCase()}</span>
+          <p class="name" style="font-size:12.5px;margin:6px 0 0;">${escapeHtml(x.siparisOzet || "Sipariş")}</p>
+        </div>
+        <p style="font-size:13px;font-weight:800;margin:0;white-space:nowrap;">${accTL(x.tutar || 0)}</p>
+      </div>
+      <p class="desc" style="margin:0 0 3px;font-size:11px;">
+        ${x.tip === "degisim" ? "🔄 Değişim" : "↩️ İade"} · ${escapeHtml(x.nedenAd || "")}
+      </p>
+      ${x.not ? `<p class="desc" style="margin:0 0 3px;font-size:10.5px;line-height:1.45;">${escapeHtml(x.not)}</p>` : ""}
+      ${x.yoneticiNot ? `
+      <div style="background:#F5F5F5;border-radius:7px;padding:7px 9px;margin-top:6px;">
+        <p style="margin:0;font-size:10px;font-weight:800;color:#666;">KLİNİK YANITI</p>
+        <p class="desc" style="margin:2px 0 0;font-size:10.5px;line-height:1.45;">${escapeHtml(x.yoneticiNot)}</p>
+      </div>` : ""}
+      <p class="desc" style="margin:6px 0 0;font-size:9.5px;color:#AAA;">
+        ${x.zaman ? new Date(x.zaman).toLocaleString("tr-TR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : ""}
+      </p>
+    </div>`;
+  }).join("");
 }
 
 /* -------------------- 🎟️ KUPONLARIM -------------------- */
@@ -635,11 +714,12 @@ function hesapAction(el, action) {
   }
 
   /* ---- Adresler ---- */
-  if (action === "adres-ekle") { state.adresForm = true; render(); return true; }
-  if (action === "adres-iptal") { state.adresForm = null; render(); return true; }
+  if (action === "adres-ekle") { state.adresForm = true; state.adresKonum = null; render(); return true; }
+  if (action === "adres-iptal") { state.adresForm = null; state.adresKonum = null; render(); return true; }
   if (action === "adres-duzenle") {
     const a = adreslerim().find(x => x.id === el.dataset.id);
     state.adresForm = a || true;
+    state.adresKonum = (a && a.lat && a.lon) ? { lat: a.lat, lon: a.lon } : null;
     render();
     return true;
   }
@@ -658,7 +738,9 @@ function hesapAction(el, action) {
     if (!acik) { alert("Açık adres gerekli."); return true; }
 
     let liste = adreslerim();
-    const kayit = { id: id || ("a" + Date.now()), baslik, ad, tel, il, acik, varsayilan };
+    const kayit = { id: id || ("a" + Date.now()), baslik, ad, tel, il, acik, varsayilan,
+      lat: state.adresKonum ? state.adresKonum.lat : null,
+      lon: state.adresKonum ? state.adresKonum.lon : null };
 
     if (id) {
       liste = liste.map(x => x.id === id ? kayit : x);

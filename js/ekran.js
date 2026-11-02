@@ -302,6 +302,9 @@ document.addEventListener("click", (e) => {
   // Doktorlar
   if (typeof doktorAction === "function" && doktorAction(action, el)) return;
 
+  // İade/değişim + ürün yorumları + harita
+  if (typeof iadeAction === "function" && iadeAction(el, action)) return;
+
   // Hesap merkezi (kayıt, giriş, siparişler, adresler, kuponlar)
   if (typeof hesapAction === "function" && hesapAction(el, action)) return;
 
@@ -412,7 +415,12 @@ document.addEventListener("click", (e) => {
     state.contactStatus = "saving"; render();
     (async () => {
       try {
-        if (window.fb && state.fbReady) await window.fb.addMessage(c);
+        if (window.fb && state.fbReady) {
+          await Promise.race([
+            window.fb.addMessage(c),
+            new Promise((r) => setTimeout(r, 8000))
+          ]).catch(() => {});
+        }
         else {
           let list=[]; try{ list = JSON.parse(localStorage.getItem("nurdis_messages")||"[]"); }catch(e){}
           list.push({ id:Date.now(), ...c });
@@ -519,7 +527,13 @@ document.addEventListener("click", (e) => {
     });
     (async () => {
       try {
-        if (window.fb && state.fbReady) await window.fb.addOrder(entry);
+        if (window.fb && state.fbReady) {
+          /* Çevrimdışıyken Firestore yazması hiç dönmeyebilir — 8 sn sınır */
+          await Promise.race([
+            window.fb.addOrder(entry),
+            new Promise((r) => setTimeout(r, 8000))
+          ]).catch(() => {});
+        }
         else {
           let list=[]; try{ list = JSON.parse(localStorage.getItem("nurdis_orders")||"[]"); }catch(e){}
           list.push({ id:Date.now(), ...entry });

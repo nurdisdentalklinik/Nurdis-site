@@ -58,6 +58,8 @@ function kuyrukGonder() {
     else if (item.tur === "patient_note") p = window.fb.addPatientNote(item.veri);
     else if (item.tur === "patient_file") p = window.fb.addPatientFile(item.veri);
     else if (item.tur === "order") p = window.fb.addOrder(item.veri);
+    else if (item.tur === "returns" && window.fb.addIade) p = window.fb.addIade(item.veri);
+    else if (item.tur === "product_reviews" && window.fb.addUrunYorum) p = window.fb.addUrunYorum(item.veri);
     else if (item.tur === "review") p = window.fb.addReview(item.veri);
     else if (item.tur === "message") p = window.fb.addMessage(item.veri);
     else return Promise.reject(new Error("bilinmeyen tür: " + item.tur));
@@ -105,6 +107,8 @@ function bulutaYaz(tur, veri, opts) {
       else if (tur === "order") p = window.fb.addOrder(veri);
       else if (tur === "review") p = window.fb.addReview(veri);
       else if (tur === "message") p = window.fb.addMessage(veri);
+      else if (tur === "returns") p = window.fb.addIade ? window.fb.addIade(veri) : null;
+      else if (tur === "product_reviews") p = window.fb.addUrunYorum ? window.fb.addUrunYorum(veri) : null;
       else { resolve({ ok: false, neden: "bilinmeyen tür" }); return; }
     } catch (e) {
       kuyrugaEkle(tur, veri, e && e.code);
