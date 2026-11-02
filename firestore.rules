@@ -96,8 +96,10 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+    // GÜVENLİK: tedavi kayıtlarında hasta adı ve telefonu var.
+    // "allow read: if true" olsaydı tüm hasta listesi internete açık olurdu.
     match /treatments/{id} {
-      allow read: if true;
+      allow read: if isAdmin() || (girisVar() && resource.data.uid == request.auth.uid);
       allow write: if isAdmin();
     }
 
