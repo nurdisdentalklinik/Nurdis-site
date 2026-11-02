@@ -428,6 +428,10 @@ let state = {
   settings: { muted: false, lang: "tr" },
   adminLoggedIn: false,
   adminForm: { email:"", pass:"" },
+  siparisFiltre: "tumu",     // Sipariş yönetimi: durum filtresi
+  siparisArama: "",          // Sipariş yönetimi: arama
+  siparisSirala: "yeni",      // Sipariş yönetimi: sıralama
+  siparisAcik: null,          // Açık sipariş kartı
   adminMfa: false,          // İki adımlı doğrulama adımı
   adminMfaYontem: null,     // 'totp' veya 'sms'
   adminGoogleErr: false,

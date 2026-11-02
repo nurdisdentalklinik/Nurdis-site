@@ -2008,22 +2008,49 @@ function accAction(action, el) {
     const r = (state.appointments || []).find(x => x.id === el.dataset.id);
     if (!r) return true;
     if (!confirm("\"" + (r.name || "") + "\" randevusu silinsin mi?\n\n" + accTarihTR(r.date) + " " + (r.time || ""))) return true;
-    state.appointments = state.appointments.filter(x => x.id !== el.dataset.id);
+
+    /* ÖNEMLİ: Önce BULUTTAN silinir. Eskiden sadece tarayıcıdan siliniyordu;
+       Firestore'daki kayıt durduğu için sayfa yenilenince randevu geri geliyordu. */
+    const id = el.dataset.id;
+    const simdiki = state.appointments.slice();
+    state.appointments = state.appointments.filter(x => x.id !== id);
     persist("nurdis_appointments", state.appointments);
-    if (window.fb && state.fbReady) {
-      try { window.fb.deleteAppointment?.(el.dataset.id); } catch (e) {}
-    }
     render();
+
+    if (window.fb && state.fbReady && window.fb.deleteAppointment) {
+      window.fb.deleteAppointment(id).then(() => {
+        if (typeof gvDenetim === "function") gvDenetim("randevu-sil", (r.name || "") + " · " + r.date);
+      }).catch((e) => {
+        // Buluttan silinemezse geri al — kullanıcıyı yanıltmayalım
+        state.appointments = simdiki;
+        persist("nurdis_appointments", state.appointments);
+        render();
+        alert("Randevu silinemedi.\n\nSebep: " + (e && e.message ? e.message : "bilinmeyen") +
+              "\n\nBulut bağlantısı olmadan silme kalıcı olmaz.");
+      });
+    } else {
+      alert("Randevu yalnızca bu cihazdan silindi.\n\nBulut bağlantısı kurulunca kalıcı olacak.");
+    }
     return true;
   }
 
   if (A("rv-durum")) {
     const r = (state.appointments || []).find(x => x.id === el.dataset.id);
     if (!r) return true;
+    const eskiDurum = r.status;
     r.status = el.dataset.st;
     persist("nurdis_appointments", state.appointments);
     if (r.status === "geldi") anketOlustur(r);
     render();
+
+    /* Durum da buluta yazılmalı — yoksa yenilenince eski hâline döner */
+    if (window.fb && state.fbReady && window.fb.updateAppointment) {
+      window.fb.updateAppointment(r.id, { status: r.status }).catch(() => {
+        r.status = eskiDurum;
+        persist("nurdis_appointments", state.appointments);
+        render();
+      });
+    }
     return true;
   }
 
@@ -2059,6 +2086,110 @@ function accAction(action, el) {
 
   if (A("slot-dolu")) {
     alert("Bu saat dilimi dolu. Lütfen başka bir saat seçin.");
+    return true;
+  }
+
+  /* ================= SİPARİŞ YÖNETİMİ ================= */
+
+  if (A("sip-filtre")) { state.siparisFiltre = el.dataset.id; render(); return true; }
+  if (A("sip-sirala")) { state.siparisSirala = el.dataset.id; render(); return true; }
+  if (A("sip-ac")) {
+    state.siparisAcik = (state.siparisAcik === el.dataset.id) ? null : el.dataset.id;
+    render(); return true;
+  }
+
+  /* Durum değiştir — buluta da yazılır */
+  if (A("sip-durum")) {
+    const id = el.dataset.id, yeniDurum = el.dataset.durum;
+    const o = (state.orders || []).find(x => x.id === id);
+    if (!o) return true;
+    const eski = o.durum;
+    o.durum = yeniDurum;
+    if (yeniDurum === "kargoda" && !o.kargoTarihi) o.kargoTarihi = new Date().toISOString();
+    render();
+
+    if (window.fb && state.fbReady && window.fb.updateOrder) {
+      window.fb.updateOrder(id, { durum: yeniDurum, kargoTarihi: o.kargoTarihi || null }).catch((e) => {
+        o.durum = eski;
+        render();
+        alert("Durum güncellenemedi: " + (e && e.message ? e.message : ""));
+      });
+    }
+    if (typeof gvDenetim === "function") gvDenetim("siparis-durum", (o.name || "") + " → " + siparisDurum(yeniDurum).ad);
+    return true;
+  }
+
+  if (A("sip-kargo")) {
+    const id = el.dataset.id;
+    const o = (state.orders || []).find(x => x.id === id);
+    if (!o) return true;
+    const no = (document.getElementById("sip-kargo-" + id)?.value || "").trim();
+    o.kargoNo = no;
+    if (window.fb && state.fbReady && window.fb.updateOrder) {
+      window.fb.updateOrder(id, { kargoNo: no }).catch(() => alert("Kargo no kaydedilemedi."));
+    }
+    alert("✅ Kargo takip numarası kaydedildi.");
+    render();
+    return true;
+  }
+
+  if (A("sip-not")) {
+    const id = el.dataset.id;
+    const o = (state.orders || []).find(x => x.id === id);
+    if (!o) return true;
+    const not = (document.getElementById("sip-not-" + id)?.value || "").trim();
+    o.adminNot = not;
+    if (window.fb && state.fbReady && window.fb.updateOrder) {
+      window.fb.updateOrder(id, { adminNot: not }).catch(() => alert("Not kaydedilemedi."));
+    }
+    alert("✅ Not kaydedildi.");
+    render();
+    return true;
+  }
+
+  /* Müşteriye WhatsApp — duruma göre hazır mesaj */
+  if (A("sip-wa")) {
+    const o = (state.orders || []).find(x => x.id === el.dataset.id);
+    if (!o) return true;
+    if (!o.phone) { alert("Bu siparişte telefon numarası yok."); return true; }
+    const mesaj = siparisMesaji(o, o.durum || "yeni");
+    if (typeof guvenliWhatsApp === "function") guvenliWhatsApp(o.phone, mesaj, "Sipariş — " + (o.name || ""));
+    else if (typeof waLink === "function") window.open(waLink(o.phone, mesaj), "_blank");
+    return true;
+  }
+
+  if (A("sip-kopyala")) {
+    const o = (state.orders || []).find(x => x.id === el.dataset.id);
+    if (!o) return true;
+    const metin = (o.name || "") + "\n" + (o.phone || "") + "\n" + (o.address || "");
+    if (typeof accCopy === "function") accCopy(metin);
+    else { try { navigator.clipboard.writeText(metin); } catch (e) {} }
+    alert("📋 Müşteri bilgileri kopyalandı.\n\nKargo firmasına yapıştırabilirsiniz.");
+    return true;
+  }
+
+  /* Sil — önce buluttan, sonra ekrandan */
+  if (A("sip-sil")) {
+    const id = el.dataset.id;
+    const o = (state.orders || []).find(x => x.id === id);
+    if (!o) return true;
+    if (!confirm("Sipariş silinsin mi?\n\n" + (o.name || "") + " — " + accTL(o.total || 0) + "\n\nBu işlem geri alınamaz.")) return true;
+
+    const simdiki = (state.orders || []).slice();
+    state.orders = state.orders.filter(x => x.id !== id);
+    render();
+
+    if (window.fb && state.fbReady && window.fb.deleteOrder) {
+      window.fb.deleteOrder(id).then(() => {
+        if (typeof gvDenetim === "function") gvDenetim("siparis-sil", (o.name || "") + " · " + accTL(o.total || 0));
+      }).catch((e) => {
+        state.orders = simdiki;
+        render();
+        alert("Sipariş silinemedi:\n" + (e && e.message ? e.message : ""));
+      });
+    } else {
+      alert("Sipariş yalnızca bu cihazdan silindi. Bulut bağlantısı kurulunca kalıcı olacak.");
+    }
     return true;
   }
 
@@ -2742,11 +2873,7 @@ function renderAdminPanel() {
   }
 
   if (state.adminTab === "orders") {
-    const ords = state.orders.slice().reverse().map(o=>`<div class="card p3 mb2"><p class="desc" style="margin:0;">${escapeHtml(o.name)} · ${escapeHtml(o.phone)} · ${o.total} ₺</p><p class="footnote" style="margin:2px 0 0;">${escapeHtml(o.address||"")}</p></div>`).join("") || `<p class="footnote">Henüz sipariş yok.</p>`;
-    tabContent = `
-      <p class="section-label">Gelen siparişler (canlı)</p>
-      <div class="mb4">${ords}</div>
-    `;
+    tabContent = renderSiparisYonetimi();
   }
 
   if (state.adminTab === "products") {
@@ -3097,4 +3224,241 @@ function renderGuvenlikPaneli() {
 
     <button class="btn-primary" style="width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--line);" data-action="guvenlik-log-temizle">Kayıtları temizle</button>
   `;
+}
+
+/* =====================================================================
+   🛍️ SİPARİŞ YÖNETİMİ — Trendyol mantığı
+   ---------------------------------------------------------------------
+   Sipariş akışı:  Yeni → Hazırlanıyor → Kargoda → Teslim
+                            ↘ İptal
+   Yönetici buradan: durum değiştirir, kargo takip no girer,
+   müşteriye WhatsApp'tan yazar, adresi kopyalar, not düşer, siler.
+   ===================================================================== */
+
+const SIPARIS_DURUM = [
+  { id: "yeni",         ad: "Yeni",          ikon: "🆕", renk: "#C62828", arka: "#FFEBEE" },
+  { id: "hazirlaniyor", ad: "Hazırlanıyor",  ikon: "📦", renk: "#E65100", arka: "#FFF3E0" },
+  { id: "kargoda",      ad: "Kargoda",       ikon: "🚚", renk: "#1565C0", arka: "#E3F2FD" },
+  { id: "teslim",       ad: "Teslim edildi", ikon: "✅", renk: "#2E7D32", arka: "#E8F5E9" },
+  { id: "iptal",        ad: "İptal",         ikon: "✖️", renk: "#616161", arka: "#F5F5F5" }
+];
+
+function siparisDurum(id) {
+  return SIPARIS_DURUM.find(d => d.id === id) || SIPARIS_DURUM[0];
+}
+
+/* Ürün listesini güvenli metne çevir */
+function siparisUrunleri(o) {
+  const items = o.items || [];
+  if (!items.length) return "—";
+  return items.map(i => {
+    const ad = i.name || i.ad || "Ürün";
+    const adet = i.qty || i.adet || 1;
+    return adet + "× " + ad;
+  }).join(", ");
+}
+
+function siparisTarih(o) {
+  const t = o.createdAt;
+  let d = null;
+  if (t && typeof t.toDate === "function") d = t.toDate();
+  else if (t && t.seconds) d = new Date(t.seconds * 1000);
+  else if (t) d = new Date(t);
+  if (!d || isNaN(d)) return "—";
+  return d.toLocaleString("tr-TR", { day:"2-digit", month:"2-digit", year:"2-digit", hour:"2-digit", minute:"2-digit" });
+}
+
+function renderSiparisYonetimi() {
+  const hepsi = (state.orders || []).slice();
+
+  /* Filtre */
+  const filtre = state.siparisFiltre || "tumu";
+  const arama = (state.siparisArama || "").toLocaleLowerCase("tr");
+  const sirala = state.siparisSirala || "yeni";
+
+  let liste = hepsi.filter(o => {
+    const durum = o.durum || "yeni";
+    if (filtre !== "tumu" && durum !== filtre) return false;
+    if (arama) {
+      /* Türkçe karakter duyarsız arama: "pinar" → "Pınar" bulur */
+      const norm = (x) => (x || "").toLocaleLowerCase("tr")
+        .replace(/ı/g, "i").replace(/ş/g, "s").replace(/ğ/g, "g")
+        .replace(/ü/g, "u").replace(/ö/g, "o").replace(/ç/g, "c");
+      const metin = norm((o.name || "") + " " + (o.phone || "") + " " + (o.address || "") + " " + siparisUrunleri(o));
+      if (metin.indexOf(norm(arama)) === -1) return false;
+    }
+    return true;
+  });
+
+  liste.sort((a, b) => {
+    if (sirala === "tutar") return (b.total || 0) - (a.total || 0);
+    if (sirala === "eski") return siparisZaman(a) - siparisZaman(b);
+    return siparisZaman(b) - siparisZaman(a);
+  });
+
+  /* Sayaçlar */
+  const say = {};
+  SIPARIS_DURUM.forEach(d => { say[d.id] = hepsi.filter(o => (o.durum || "yeni") === d.id).length; });
+  const ciro = hepsi.filter(o => (o.durum || "yeni") !== "iptal").reduce((t, o) => t + (accNum(o.total) || 0), 0);
+  const bekleyen = say.yeni + say.hazirlaniyor;
+
+  /* Filtre butonları */
+  const filtreBtn = [{ id:"tumu", ad:"Tümü", ikon:"📋", sayi:hepsi.length }]
+    .concat(SIPARIS_DURUM.map(d => ({ id:d.id, ad:d.ad, ikon:d.ikon, sayi:say[d.id] })))
+    .map(f => {
+      const aktif = filtre === f.id;
+      return `<button data-action="sip-filtre" data-id="${f.id}"
+        style="white-space:nowrap;flex-shrink:0;padding:7px 12px;border-radius:9px;font-size:11.5px;font-weight:700;cursor:pointer;
+        border:1px solid ${aktif ? "var(--teal)" : "var(--line)"};
+        background:${aktif ? "var(--teal)" : "var(--surface)"};
+        color:${aktif ? "#fff" : "var(--ink)"};">
+        ${f.ikon} ${f.ad}${f.sayi ? ` (${f.sayi})` : ""}
+      </button>`;
+    }).join("");
+
+  /* Sipariş kartları */
+  const kartlar = liste.map(o => {
+    const durum = siparisDurum(o.durum || "yeni");
+    const id = o.id;
+    const acik = state.siparisAcik === id;
+
+    const durumButonlari = SIPARIS_DURUM.map(d => {
+      const aktif = (o.durum || "yeni") === d.id;
+      return `<button data-action="sip-durum" data-id="${id}" data-durum="${d.id}"
+        style="flex:1;min-width:0;padding:7px 4px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;
+        border:1.5px solid ${aktif ? d.renk : "var(--line)"};
+        background:${aktif ? d.arka : "var(--surface)"};
+        color:${aktif ? d.renk : "var(--muted)"};">${d.ikon}<br/>${d.ad}</button>`;
+    }).join("");
+
+    return `
+    <div class="card p4 mb2" style="padding:0;overflow:hidden;border-left:3px solid ${durum.renk};">
+      <button data-action="sip-ac" data-id="${id}"
+        style="width:100%;background:none;border:none;text-align:left;padding:12px 14px;cursor:pointer;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+              <span style="font-size:9.5px;font-weight:800;background:${durum.arka};color:${durum.renk};padding:2px 7px;border-radius:5px;">${durum.ikon} ${durum.ad.toUpperCase()}</span>
+              <span style="font-size:10px;color:var(--muted);">#${String(id).slice(-6)}</span>
+            </div>
+            <p class="name" style="font-size:13.5px;margin:0;">${escapeHtml(o.name || "—")}</p>
+            <p class="desc" style="margin:2px 0 0;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(siparisUrunleri(o))}</p>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <p style="font-size:15px;font-weight:800;margin:0;">${accTL(o.total || 0)}</p>
+            <p style="font-size:9.5px;color:var(--muted);margin:2px 0 0;">${siparisTarih(o)}</p>
+          </div>
+        </div>
+      </button>
+
+      <div style="padding:0 14px 12px;display:flex;gap:5px;">${durumButonlari}</div>
+
+      ${acik ? `
+      <div style="padding:0 14px 14px;border-top:1px solid var(--line);padding-top:12px;">
+
+        <p style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px;">Müşteri</p>
+        <p class="desc" style="margin:0 0 2px;font-size:12.5px;">👤 ${escapeHtml(o.name || "—")}</p>
+        <p class="desc" style="margin:0 0 2px;font-size:12.5px;">📞 ${escapeHtml(o.phone || "—")}</p>
+        <p class="desc" style="margin:0 0 10px;font-size:12.5px;line-height:1.5;">📍 ${escapeHtml(o.address || "—")}</p>
+
+        <p style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px;">Ürünler</p>
+        <div style="background:var(--bg);border-radius:9px;padding:9px 11px;margin-bottom:10px;">
+          ${(o.items || []).map(i => `
+            <div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0;">
+              <span>${escapeHtml(i.name || i.ad || "Ürün")} × ${i.qty || i.adet || 1}</span>
+              <span style="font-weight:700;">${accTL((i.price || 0) * (i.qty || i.adet || 1))}</span>
+            </div>`).join("") || `<p class="desc" style="margin:0;font-size:12px;">—</p>`}
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:800;border-top:1px solid var(--line);margin-top:6px;padding-top:6px;">
+            <span>Toplam</span><span>${accTL(o.total || 0)}</span>
+          </div>
+        </div>
+
+        <p style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px;">Kargo takip no</p>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <input class="input" id="sip-kargo-${id}" value="${escapeAttr(o.kargoNo || "")}" placeholder="Takip numarası" style="flex:1;font-size:12px;" />
+          <button class="qty-btn" style="width:auto;padding:0 12px;font-size:11.5px;" data-action="sip-kargo" data-id="${id}">Kaydet</button>
+        </div>
+
+        <p style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px;">Yönetici notu</p>
+        <div style="display:flex;gap:6px;margin-bottom:12px;">
+          <input class="input" id="sip-not-${id}" value="${escapeAttr(o.adminNot || "")}" placeholder="Not ekle…" style="flex:1;font-size:12px;" />
+          <button class="qty-btn" style="width:auto;padding:0 12px;font-size:11.5px;" data-action="sip-not" data-id="${id}">Kaydet</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+          <button class="btn-primary" style="font-size:11.5px;padding:9px;" data-action="sip-wa" data-id="${id}">💬 WhatsApp</button>
+          <button class="btn-primary" style="font-size:11.5px;padding:9px;background:var(--surface);color:var(--ink);border:1px solid var(--line);" data-action="sip-kopyala" data-id="${id}">📋 Adresi Kopyala</button>
+        </div>
+        <button data-action="sip-sil" data-id="${id}"
+          style="width:100%;padding:9px;border-radius:10px;border:1px solid #EF9A9A;background:#FFEBEE;color:#C62828;font-size:11.5px;font-weight:700;cursor:pointer;">
+          🗑️ Siparişi Sil
+        </button>
+      </div>` : ""}
+    </div>`;
+  }).join("");
+
+  return `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:12px;">
+      <div class="card p4" style="text-align:center;padding:10px;">
+        <p style="font-size:19px;font-weight:800;margin:0;">${hepsi.length}</p>
+        <p class="desc" style="margin:2px 0 0;font-size:9.5px;">Sipariş</p>
+      </div>
+      <div class="card p4" style="text-align:center;padding:10px;">
+        <p style="font-size:19px;font-weight:800;margin:0;color:${bekleyen ? "#C62828" : "#2E7D32"};">${bekleyen}</p>
+        <p class="desc" style="margin:2px 0 0;font-size:9.5px;">İşlem bekliyor</p>
+      </div>
+      <div class="card p4" style="text-align:center;padding:10px;">
+        <p style="font-size:19px;font-weight:800;margin:0;color:var(--teal);">${accTL0(ciro)}</p>
+        <p class="desc" style="margin:2px 0 0;font-size:9.5px;">Toplam</p>
+      </div>
+    </div>
+
+    <div class="card p4 mb3" style="padding:9px 12px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:15px;">🔍</span>
+        <input id="sip-arama" class="input" placeholder="Ad, telefon, ürün ara…" value="${escapeAttr(state.siparisArama || "")}"
+          style="border:none;background:transparent;padding:0;font-size:13px;flex:1;outline:none;" />
+      </div>
+    </div>
+
+    <div class="chip-row mb3" style="flex-wrap:nowrap;overflow-x:auto;gap:6px;padding-bottom:4px;">${filtreBtn}</div>
+
+    <div style="display:flex;gap:6px;margin-bottom:12px;">
+      ${[["yeni","En yeni"],["eski","En eski"],["tutar","Tutar"]].map(([v,l]) => `
+        <button data-action="sip-sirala" data-id="${v}"
+          style="flex:1;padding:6px;border-radius:8px;font-size:10.5px;font-weight:700;cursor:pointer;
+          border:1px solid ${(state.siparisSirala||'yeni')===v?'var(--teal)':'var(--line)'};
+          background:${(state.siparisSirala||'yeni')===v?'#E0F3F7':'var(--surface)'};
+          color:${(state.siparisSirala||'yeni')===v?'#006064':'var(--muted)'};">${l}</button>`).join("")}
+    </div>
+
+    ${kartlar || `<div class="card p4" style="text-align:center;">
+      <p style="font-size:30px;margin:0 0 8px;">🛍️</p>
+      <p class="name" style="font-size:13.5px;margin:0;">Sipariş yok</p>
+      <p class="desc" style="margin:3px 0 0;font-size:11.5px;">${filtre !== "tumu" ? "Bu filtrede sipariş bulunmuyor." : "Mağazadan sipariş geldiğinde burada görünür."}</p>
+    </div>`}
+  `;
+}
+
+/* Sipariş sıralama için zaman */
+function siparisZaman(o) {
+  const t = o.createdAt;
+  if (t && typeof t.toDate === "function") return t.toDate().getTime();
+  if (t && t.seconds) return t.seconds * 1000;
+  if (t) { const d = new Date(t).getTime(); if (!isNaN(d)) return d; }
+  return 0;
+}
+
+/* Müşteriye gönderilecek hazır mesajlar */
+function siparisMesaji(o, durumId) {
+  const ad = (o.name || "").split(" ")[0] || "Merhaba";
+  const no = o.kargoNo ? ("\n\nKargo takip no: " + o.kargoNo) : "";
+  const mesajlar = {
+    yeni: "Merhaba " + ad + ", siparişiniz alındı. En kısa sürede hazırlanacak. Nur Diş & Dental Klinik",
+    hazirlaniyor: "Merhaba " + ad + ", siparişiniz hazırlanıyor. Kargoya verildiğinde bilgi vereceğiz. Nur Diş & Dental Klinik",
+    kargoda: "Merhaba " + ad + ", siparişiniz kargoya verildi." + no + "\n\nNur Diş & Dental Klinik",
+    teslim: "Merhaba " + ad + ", siparişiniz teslim edildi. Bizi tercih ettiğiniz için teşekkürler! Nur Diş & Dental Klinik",
+    iptal: "Merhaba " + ad + ", siparişiniz iptal edildi. Bir sorunuz varsa bize yazabilirsiniz. Nur Diş & Dental Klinik"
+  };
+  return mesajlar[durumId] || mesajlar.yeni;
 }

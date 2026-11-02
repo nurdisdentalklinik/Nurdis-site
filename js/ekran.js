@@ -243,6 +243,23 @@ function sendChat(imageBase64) {
 }
 
 
+
+/* Sipariş arama — yazarken canlı filtreleme */
+let _sipAramaZaman = null;
+document.addEventListener("input", (e) => {
+  const t = e.target;
+  if (!t || t.id !== "sip-arama") return;
+  const v = t.value || "";
+  state.siparisArama = v;
+  const imlec = t.selectionStart;
+  if (_sipAramaZaman) clearTimeout(_sipAramaZaman);
+  _sipAramaZaman = setTimeout(() => {
+    render();
+    const y = document.getElementById("sip-arama");
+    if (y) { y.focus(); try { y.setSelectionRange(imlec, imlec); } catch (err) {} }
+  }, 240);
+}, true);
+
 /* ---------------- DEĞİŞİM (change) OLAYLARI ----------------
    Satır içi onchange="" CSP tarafından engellendiği için
    data-change özniteliği ile merkezi olarak yönetilir. */

@@ -417,6 +417,15 @@ window.fb = {
   addAppointment: (data) => addItem("appointments", data),
   subscribeOrders: (cb) => subscribe("orders", cb),
   addOrder: (data) => addItem("orders", data),
+  /* Sipariş yönetimi (Trendyol mantığı) — yönetici günceller/siler */
+  updateOrder: (id, veri) => updateDoc(doc(db, "orders", id), { ...veri, guncelleme: new Date().toISOString() }),
+  deleteOrder: (id) => deleteDoc(doc(db, "orders", id)),
+
+  /* Randevu yönetimi — SİLME VE DURUM DEĞİŞİKLİĞİ
+     ÖNEMLİ: Bu iki fonksiyon eksikti. Silme sadece tarayıcıda oluyordu,
+     sayfa yenilenince Firestore'dan geri geliyordu. */
+  updateAppointment: (id, veri) => updateDoc(doc(db, "appointments", id), { ...veri, guncelleme: new Date().toISOString() }),
+  deleteAppointment: (id) => deleteDoc(doc(db, "appointments", id)),
   addMessage: (data) => addItem("messages", data),
   // Hasta portalı
   subscribePatientFiles: (uid, cb) => window.fb.subscribeMine("patient_files", uid, cb),
