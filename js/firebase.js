@@ -603,10 +603,24 @@ function startAdminSubscriptions() {
   }
 
   unsubOrders = window.fb.subscribeOrders((items) => {
-    // Bildirim: yeni sipariş
+    /* SESLİ SİPARİŞ BİLDİRİMİ
+       Yeni sipariş geldiğinde kasa sesi + titresim + bildirim.
+       Bildirime tıklayınca doğrudan o siparişin detayı açılır. */
     if (!_notifFirstLoad.orders && items.length > state.orders.length) {
-      const yeni = items.find(i => !state.orders.some(r => r.id === i.id));
-      if (yeni) showNotif("📦 Yeni Sipariş!", `${yeni.name} — ${yeni.total||0} ₺`);
+      const yeniler = items.filter(i => !state.orders.some(r => r.id === i.id));
+      if (yeniler.length) {
+        const yeni = yeniler[0];
+        if (typeof siparisBildir === "function") siparisBildir(yeni, yeniler.length);
+        else showNotif("📦 Yeni Sipariş!", `${yeni.name} — ${yeni.total||0} ₺`, "appointment");
+
+        /* STOK OTOMATİK DÜŞÜMÜ — yeni siparişin ürünleri stoktan iner */
+        if (typeof stokDusumSiparis === "function") {
+          try {
+            const r = stokDusumSiparis(yeni);
+            if (r.degisen) console.log("Stok düşüldü:", r.degisen, "ürün");
+          } catch (e) {}
+        }
+      }
     }
     _notifFirstLoad.orders = false;
     state.orders = items; render();
@@ -782,7 +796,7 @@ const SCREEN_MAP = {
   address: renderAddress, contact: renderContact, info: renderInfo, chatbot: renderChatbot,
   "admin-login": renderAdminLogin, "admin-panel": renderAdminPanel, account: renderAccount,
   "profile-edit": renderProfileEdit, "brushing-video": renderBrushingVideo, "family-add": renderFamilyAdd,
-  settings: renderSettings, kvkk: renderKvkk, portal: renderPortal, "magaza-urun": renderMagazaUrun, "doktor-detay": renderDoktorDetay, fircalama: renderFircalama, "kargo-takip": renderKargoTakip, account: hesapEkrani, "iade-talebi": renderIadeTalebi, "yorum-yaz": renderYorumYaz,
+  settings: renderSettings, kvkk: renderKvkk, portal: renderPortal, "magaza-urun": renderMagazaUrun, "doktor-detay": renderDoktorDetay, fircalama: renderFircalama, "kargo-takip": renderKargoTakip, account: hesapEkrani, "iade-talebi": renderIadeTalebi, "yorum-yaz": renderYorumYaz, kampanya: renderKampanya,
 };
 
 const validScreens = Object.keys(SCREEN_MAP);

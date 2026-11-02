@@ -179,6 +179,7 @@ const MORE_ITEMS = [
 
   { id:"reviews", label:"Yorumlar", img:"icon-reviews.png" },
   { id:"store", label:"Mağaza", img:"icon-store.png" },
+  { id:"kampanya", label:"Kampanyalar", img:"icon-store.png" },
   { id:"kargo-takip", label:"Kargo Takip", img:"icon-store.png" },
   { id:"address", label:"Adresimiz", img:"icon-address.png" },
   { id:"contact", label:"İletişim", img:"icon-contact.png" },
@@ -828,23 +829,23 @@ const LANGS = [
 const I18N = {
   tr: { home:"Ana Sayfa", services:"Hizmetler", booking:"Randevu", chatbot:"DİJİ RAMO", more:"Diğer",
     account:"Hesabım", doctors:"Doktorlarımız", devices:"Cihazlarımız",
-    reviews:"Yorumlar", store:"Mağaza", address:"Adresimiz", contact:"İletişim", info:"Diş Sağlığı Bilgileri", "kargo-takip":"Kargo Takip",
+    reviews:"Yorumlar", store:"Mağaza", address:"Adresimiz", contact:"İletişim", info:"Diş Sağlığı Bilgileri", "kargo-takip":"Kargo Takip", kampanya:"Kampanyalar",
     "admin-login":"Yönetici Girişi", settings:"Ayarlar", campaigns:"Kampanyalar", save:"Kaydet", send:"Gönder" },
   en: { home:"Home", services:"Services", booking:"Appointment", chatbot:"DİJİ RAMO", more:"More",
     account:"My Account", doctors:"Our Doctors", devices:"Our Devices", smile:"Design Your Smile",
-    reviews:"Reviews", store:"Store", address:"Our Address", contact:"Contact", info:"Dental Health Info", "kargo-takip":"Cargo Tracking",
+    reviews:"Reviews", store:"Store", address:"Our Address", contact:"Contact", info:"Dental Health Info", "kargo-takip":"Cargo Tracking", kampanya:"Campaigns",
     "admin-login":"Admin Login", settings:"Settings", campaigns:"Campaigns", save:"Save", send:"Send" },
   ar: { home:"الرئيسية", services:"الخدمات", booking:"موعد", chatbot:"DİJİ RAMO", more:"المزيد",
     account:"حسابي", doctors:"أطباؤنا", devices:"أجهزتنا", smile:"صمم ابتسامتك",
-    reviews:"التقييمات", store:"المتجر", address:"عنواننا", contact:"تواصل معنا", info:"معلومات صحة الأسنان", "kargo-takip":"تتبع الشحنة",
+    reviews:"التقييمات", store:"المتجر", address:"عنواننا", contact:"تواصل معنا", info:"معلومات صحة الأسنان", "kargo-takip":"تتبع الشحنة", kampanya:"العروض",
     "admin-login":"دخول المدير", settings:"الإعدادات", campaigns:"العروض", save:"حفظ", send:"إرسال" },
   de: { home:"Start", services:"Leistungen", booking:"Termin", chatbot:"DİJİ RAMO", more:"Mehr",
     account:"Mein Konto", doctors:"Unsere Ärzte", devices:"Unsere Geräte", smile:"Lächeln gestalten",
-    reviews:"Bewertungen", store:"Shop", address:"Unsere Adresse", contact:"Kontakt", info:"Zahngesundheit", "kargo-takip":"Sendungsverfolgung",
+    reviews:"Bewertungen", store:"Shop", address:"Unsere Adresse", contact:"Kontakt", info:"Zahngesundheit", "kargo-takip":"Sendungsverfolgung", kampanya:"Aktionen",
     "admin-login":"Admin-Login", settings:"Einstellungen", campaigns:"Aktionen", save:"Speichern", send:"Senden" },
   es: { home:"Inicio", services:"Servicios", booking:"Cita", chatbot:"DİJİ RAMO", more:"Más",
     account:"Mi Cuenta", doctors:"Nuestros Doctores", devices:"Nuestros Equipos", smile:"Diseña tu Sonrisa",
-    reviews:"Reseñas", store:"Tienda", address:"Nuestra Dirección", contact:"Contacto", info:"Salud Dental", "kargo-takip":"Seguimiento de Envío",
+    reviews:"Reseñas", store:"Tienda", address:"Nuestra Dirección", contact:"Contacto", info:"Salud Dental", "kargo-takip":"Seguimiento de Envío", kampanya:"Promociones",
     "admin-login":"Acceso Admin", settings:"Ajustes", campaigns:"Promociones", save:"Guardar", send:"Enviar" },
 };
 function t(key) {
@@ -1282,7 +1283,9 @@ function renderCheckout() {
   const kupon = state.sepetKupon ? (typeof kuponlarim === "function"
       ? kuponlarim().find(k => k.kod === state.sepetKupon) : null) : null;
   const indirim = (kupon && typeof kuponIndirimi === "function") ? kuponIndirimi(kupon, cartTotal()) : 0;
-  const odenecek = Math.max(0, cartTotal() - indirim);
+  const puanIndirim = (accNum(state.kullanPuan) || 0) > 0 && typeof puanParaDegeri === "function"
+    ? puanParaDegeri(state.kullanPuan) : 0;
+  const odenecek = Math.max(0, cartTotal() - indirim - puanIndirim);
 
   return `${topbar("Siparişi Tamamla", "Teslimat bilgilerinizi kontrol edin.", { back: "store" })}
     <div class="content">
@@ -1336,6 +1339,37 @@ function renderCheckout() {
           </div>`}
       </div>
 
+      <!-- 💎 Sadakat puanı -->
+      ${(() => {
+        const pd = (typeof puanlarim === "function") ? puanlarim() : { bakiye: 0 };
+        if (!pd.bakiye || pd.bakiye < 500) return "";
+        const kullanilabilir = Math.min(pd.bakiye, Math.floor(cartTotal() * 100)); // sepette en fazla tutar kadar
+        const seciliPuan = accNum(state.kullanPuan) || 0;
+        return `<div class="card p4 mb3" style="background:#E3F2FD;border-color:#90CAF9;">
+          <p class="name" style="font-size:13px;margin:0 0 6px;color:#1565C0;">💎 Puanlarım</p>
+          <p class="desc" style="margin:0 0 8px;font-size:11px;color:#1565C0;line-height:1.5;">
+            Bakiyeniz: <b>${accNum(pd.bakiye).toLocaleString("tr-TR")} puan</b> ≈ ${accTL(puanParaDegeri(pd.bakiye))}
+          </p>
+          ${seciliPuan > 0 ? `
+            <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:9px;padding:9px 11px;">
+              <div>
+                <p style="margin:0;font-size:12px;font-weight:800;color:#1565C0;">${seciliPuan.toLocaleString("tr-TR")} puan kullanılıyor</p>
+                <p style="margin:1px 0 0;font-size:10.5px;color:#1976D2;">− ${accTL(puanParaDegeri(seciliPuan))} indirim</p>
+              </div>
+              <button data-action="puan-kaldir" style="background:none;border:none;color:#C62828;font-size:11px;font-weight:700;cursor:pointer;">Kaldır</button>
+            </div>` : `
+            <div style="display:flex;gap:6px;">
+              <input class="input" id="ck-puan" type="number" inputmode="numeric"
+                placeholder="Kullanılacak puan (min 500)" max="${kullanilabilir}"
+                style="flex:1;font-size:12.5px;" />
+              <button class="qty-btn" style="width:auto;padding:0 14px;font-size:11.5px;" data-action="puan-kullan">Kullan</button>
+            </div>
+            <button data-action="puan-tumu" style="width:100%;margin-top:6px;padding:7px;border-radius:8px;border:1px dashed #90CAF9;background:#fff;color:#1565C0;font-size:10.5px;font-weight:700;cursor:pointer;">
+              Tümünü kullan (${kullanilabilir.toLocaleString("tr-TR")} puan)
+            </button>`}
+        </div>`;
+      })()}
+
       <!-- Toplam -->
       <div class="card p4 mb3">
         <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
@@ -1343,6 +1377,9 @@ function renderCheckout() {
         </div>
         ${indirim ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;color:#2E7D32;">
           <span>Kupon indirimi</span><span>− ${accTL(indirim)}</span>
+        </div>` : ""}
+        ${(accNum(state.kullanPuan) || 0) > 0 ? `<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;color:#1565C0;">
+          <span>Puan indirimi</span><span>− ${accTL(puanParaDegeri(state.kullanPuan))}</span>
         </div>` : ""}
         <div style="display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:8px;padding-top:8px;">
           <span style="font-weight:800;font-size:13.5px;">Ödenecek</span>

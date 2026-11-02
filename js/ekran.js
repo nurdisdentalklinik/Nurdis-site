@@ -466,6 +466,38 @@ document.addEventListener("click", (e) => {
     return;
   }
 
+  if (action === "puan-kullan") {
+    const deger = parseInt((document.getElementById("ck-puan")?.value || "0").replace(/\D/g, "")) || 0;
+    const pd = (typeof puanlarim === "function") ? puanlarim() : { bakiye: 0 };
+    if (deger < 500) { alert("En az 500 puan kullanabilirsiniz."); return; }
+    if (deger > pd.bakiye) { alert("Bakiyeniz yetersiz. Mevcut: " + pd.bakiye + " puan"); return; }
+    const ust = Math.floor(cartTotal() * 100);
+    if (deger > ust) { alert("Sepet tutarından fazla puan kullanamazsınız."); return; }
+    state.kullanPuan = deger;
+    render();
+    return;
+  }
+
+  if (action === "puan-tumu") {
+    const pd = (typeof puanlarim === "function") ? puanlarim() : { bakiye: 0 };
+    const ust = Math.floor(cartTotal() * 100);
+    state.kullanPuan = Math.min(pd.bakiye, ust);
+    render();
+    return;
+  }
+
+  if (action === "puan-kaldir") {
+    state.kullanPuan = 0;
+    render();
+    return;
+  }
+
+  if (action === "kargo-etiket") {
+    const o = (state.orders || []).find(x => x.id === el.dataset.id);
+    if (o && typeof kargoEtiketiYazdir === "function") kargoEtiketiYazdir(o);
+    return;
+  }
+
   if (action === "checkout-adres") {
     const a = (typeof adreslerim === "function") ? adreslerim().find(x => x.id === el.dataset.id) : null;
     if (!a) return;
@@ -547,6 +579,24 @@ document.addEventListener("click", (e) => {
             state.kullanilanKuponlar = kk;
           } catch (e) {}
         }
+        /* PUAN HARCAMA */
+        if (entry.kullanilanPuan > 0 && typeof puanHarca === "function") {
+          puanHarca(entry.kullanilanPuan, "Siparişte kullanıldı");
+        }
+        /* STOK DÜŞÜMÜ — sipariş verildiği anda */
+        if (typeof stokDusumSiparis === "function") {
+          try { stokDusumSiparis(entry); } catch (e) {}
+        }
+        /* PUAN KAZANMA — harcanan tutar kadar */
+        if (typeof puanKazan === "function") {
+          try {
+            const k = puanKazan({ total: toplam, id: Date.now() });
+            if (k > 0) setTimeout(() => {
+              if (typeof showNotif === "function") showNotif("💎 " + k + " puan kazandınız!", "Hesabınızdan takip edebilirsiniz.");
+            }, 600);
+          } catch (e) {}
+        }
+        state.kullanPuan = 0;
         state.sepetKupon = null;
         state.cart = {};
         state.checkoutForm = { name:"", phone:"", address:"" };

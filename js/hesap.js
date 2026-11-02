@@ -18,6 +18,7 @@ const HESAP_SEKME = [
   { id: "siparisler", ad: "Siparişlerim", ikon: "📦" },
   { id: "adresler",   ad: "Adreslerim",   ikon: "📍" },
   { id: "iadelerim",  ad: "İadelerim",    ikon: "↩️" },
+  { id: "puanlar",    ad: "Puanlarım",    ikon: "💎" },
   { id: "kuponlar",   ad: "Kuponlarım",   ikon: "🎟️" },
   { id: "favoriler",  ad: "Favorilerim",  ikon: "❤️" },
   { id: "bilgiler",   ad: "Bilgilerim",   ikon: "⚙️" }
@@ -203,6 +204,7 @@ function renderHesapMerkezi() {
     if (s.id === "siparisler") sayi = siparisler.length;
     if (s.id === "adresler") sayi = adr.length;
     if (s.id === "iadelerim") sayi = benimIadelerim().length;
+    if (s.id === "puanlar") sayi = puanlarim().bakiye || 0;
     if (s.id === "kuponlar") sayi = kup.filter(k => !k.kullanildi).length;
     if (s.id === "favoriler") sayi = favoriAdet;
     return `<button data-action="hesap-sekme" data-id="${s.id}"
@@ -218,6 +220,7 @@ function renderHesapMerkezi() {
   if (sekme === "siparisler") govde = hesapSiparislerHTML();
   else if (sekme === "adresler") govde = hesapAdreslerHTML();
   else if (sekme === "iadelerim") govde = hesapIadelerHTML();
+  else if (sekme === "puanlar") govde = (typeof hesapPuanHTML === "function" ? hesapPuanHTML() : "");
   else if (sekme === "kuponlar") govde = hesapKuponlarHTML();
   else if (sekme === "favoriler") govde = hesapFavorilerHTML();
   else if (sekme === "bilgiler") govde = hesapBilgilerHTML();

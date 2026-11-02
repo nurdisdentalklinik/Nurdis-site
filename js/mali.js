@@ -3583,6 +3583,8 @@ function renderSiparisYonetimi() {
           <div style="display:flex;gap:6px;margin-top:6px;">
             <button style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:11px;font-weight:700;cursor:pointer;color:var(--ink);"
               data-action="sip-kargo" data-id="${id}">💾 Kaydet</button>
+            <button style="flex:1;padding:8px;border-radius:8px;border:1px solid #CE93D8;background:#F3E5F5;color:#6A1B9A;font-size:11px;font-weight:700;cursor:pointer;"
+              data-action="kargo-etiket" data-id="${id}">🖨️ Etiket</button>
             <button style="flex:1;padding:8px;border-radius:8px;border:none;background:#1565C0;color:#fff;font-size:11px;font-weight:700;cursor:pointer;"
               data-action="sip-kargola" data-id="${id}">📦 Kargoya Ver + WhatsApp</button>
           </div>
