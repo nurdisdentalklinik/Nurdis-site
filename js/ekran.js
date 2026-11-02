@@ -529,48 +529,111 @@ document.addEventListener("click", (e) => {
     return;
   }
 
-  if (action === "goto-checkout") { state.checkoutStatus = "form"; render(); }
+  if (action === "goto-checkout") {
+    /* Kapı: giriş yapmamış kullanıcı sipariş akışına giremez */
+    if (!state.user || !state.user.uid || state.user.isGuest) {
+      state.hesapMod = "kayit";
+      state.screen = "account";
+      state.hesapHata = "";
+      render();
+      window.scrollTo(0, 0);
+      return;
+    }
+    state.checkoutStatus = "form";
+    render();
+  }
   if (action === "back-to-store") { state.checkoutStatus = "idle"; render(); }
   if (action === "submit-order") {
     const c = state.checkoutForm;
-    if (!(c.name && c.phone && c.address)) return;
-    /* HESAP ZORUNLU — misafir sipariş yok (Trendyol mantığı) */
-    if (!state.user || !state.user.uid) {
+
+    /* ============ KAPI 1: HESAP ZORUNLU ============
+       Misafir (giriş yapmamış) kullanıcı ASLA sipariş veremez.
+       Hem arayüzde hem burada kontrol ediliyor. */
+    if (!state.user || !state.user.uid || state.user.isGuest) {
       state.hesapMod = "kayit";
       state.screen = "account";
+      state.hesapHata = "";
+      state.checkoutStatus = "idle";
+      if (typeof showNotif === "function") showNotif("🔐 Giriş gerekli", "Sipariş vermek için hesap oluşturun.");
       render();
+      window.scrollTo(0, 0);
       return;
     }
-    const items = []; const all = allProducts();
-    for (const cat of all) for (const p of cat.items) if (state.cart[p.id]) items.push({name:p.name, qty:state.cart[p.id], price:p.price});
-    /* Kupon indirimi uygula */
+
+    /* ============ KAPI 2: ZORUNLU ALANLAR ============ */
+    if (!(c.name && c.phone && c.address)) {
+      alert("Lütfen ad soyad, telefon ve adres alanlarını doldurun.");
+      return;
+    }
+    if (!(state.cart && Object.keys(state.cart).length)) {
+      alert("Sepetiniz boş.");
+      return;
+    }
+
+    /* ============ SEPET ============ */
+    const items = [];
+    const all = allProducts();
+    for (const cat of all) for (const pr of cat.items) {
+      if (state.cart[pr.id]) items.push({ id: pr.id, name: pr.name, qty: state.cart[pr.id], price: pr.price });
+    }
+
+    /* ============ KUPON ============ */
     let indirim = 0;
     if (state.sepetKupon && typeof kuponlarim === "function") {
       const k = kuponlarim().find(x => x.kod === state.sepetKupon);
       if (k) indirim = kuponIndirimi(k, cartTotal());
     }
-    const toplam = Math.max(0, cartTotal() - indirim);
+
+    /* ============ PUAN ============ */
+    let puanInd = 0, kullanilanPuan = 0;
+    if ((accNum(state.kullanPuan) || 0) > 0 && typeof puanParaDegeri === "function") {
+      kullanilanPuan = accNum(state.kullanPuan);
+      puanInd = puanParaDegeri(kullanilanPuan);
+    }
+
+    const toplam = Math.max(0, cartTotal() - indirim - puanInd);
+
     const entry = Object.assign({}, c, {
       items, total: toplam,
-      araToplam: cartTotal(), indirim: indirim || 0,
+      araToplam: cartTotal(),
+      indirim: indirim || 0,
+      puanIndirim: puanInd || 0,
+      kullanilanPuan: kullanilanPuan || 0,
       kupon: state.sepetKupon || "",
       durum: "yeni",
-      uid: state.user.uid
+      uid: state.user.uid,
+      musteriEmail: state.user.email || ""
     });
+
     (async () => {
+      let yeniId = null;
       try {
         if (window.fb && state.fbReady) {
-          /* Çevrimdışıyken Firestore yazması hiç dönmeyebilir — 8 sn sınır */
-          await Promise.race([
+          const ref = await Promise.race([
             window.fb.addOrder(entry),
-            new Promise((r) => setTimeout(r, 8000))
-          ]).catch(() => {});
-        }
-        else {
-          let list=[]; try{ list = JSON.parse(localStorage.getItem("nurdis_orders")||"[]"); }catch(e){}
-          list.push({ id:Date.now(), ...entry });
+            new Promise((r) => setTimeout(() => r(null), 8000))
+          ]).catch(() => null);
+          if (ref && ref.id) yeniId = ref.id;
+        } else {
+          let list = [];
+          try { list = JSON.parse(localStorage.getItem("nurdis_orders") || "[]"); } catch (e) {}
+          yeniId = "o" + Date.now();
+          list.push(Object.assign({ id: yeniId }, entry));
           persist("nurdis_orders", list);
         }
+
+        /* Siparişi ANINDA listeye ekle (müşteri hemen görsün) */
+        try {
+          const yerel = Object.assign({}, entry, {
+            id: yeniId || ("o" + Date.now()),
+            createdAt: new Date().toISOString()
+          });
+          if (!Array.isArray(state.orders)) state.orders = [];
+          if (!state.orders.some(o => o.id === yerel.id)) state.orders.unshift(yerel);
+          try { localStorage.setItem("nurdis_orders_cache", JSON.stringify(state.orders)); } catch (e) {}
+        } catch (e) {}
+
+        /* Kuponu kullanıldı işaretle */
         if (state.sepetKupon) {
           try {
             const kk = JSON.parse(localStorage.getItem("nurdis_kullanilan_kupon") || "[]");
@@ -579,48 +642,52 @@ document.addEventListener("click", (e) => {
             state.kullanilanKuponlar = kk;
           } catch (e) {}
         }
-        /* PUAN HARCAMA */
-        if (entry.kullanilanPuan > 0 && typeof puanHarca === "function") {
-          puanHarca(entry.kullanilanPuan, "Siparişte kullanıldı");
+
+        /* Puan harca */
+        if (kullanilanPuan > 0 && typeof puanHarca === "function") {
+          puanHarca(kullanilanPuan, "Siparişte kullanıldı");
         }
-        /* STOK DÜŞÜMÜ — sipariş verildiği anda */
+
+        /* Stok düşümü */
         if (typeof stokDusumSiparis === "function") {
           try { stokDusumSiparis(entry); } catch (e) {}
         }
-        /* PUAN KAZANMA — harcanan tutar kadar */
+
+        /* Puan kazan */
         if (typeof puanKazan === "function") {
           try {
-            const k = puanKazan({ total: toplam, id: Date.now() });
-            if (k > 0) setTimeout(() => {
-              if (typeof showNotif === "function") showNotif("💎 " + k + " puan kazandınız!", "Hesabınızdan takip edebilirsiniz.");
-            }, 600);
+            const kaz = puanKazan({ total: toplam, id: yeniId || Date.now() });
+            if (kaz > 0) setTimeout(() => {
+              if (typeof showNotif === "function") showNotif("💎 " + kaz + " puan kazandınız!", "Hesabınızdan takip edebilirsiniz.");
+            }, 700);
           } catch (e) {}
         }
-        state.kullanPuan = 0;
+
+        /* Temizlik + Siparişlerim'e yönlendir */
+        state.kullanilanPuan = 0;
         state.sepetKupon = null;
         state.cart = {};
-        state.checkoutForm = { name:"", phone:"", address:"" };
+        state.checkoutForm = { name: "", phone: "", address: "" };
+        state.checkoutAdresId = null;
         state.checkoutStatus = "idle";
-        state.screen = "home";
+        state.screen = "account";
+        state.hesapSekme = "siparisler";
+        state.hesapSiparisAcik = yeniId || null;
+
+        try {
+          if (typeof showNotif === "function") showNotif("✅ Siparişiniz alındı", "Siparişlerim bölümünden takip edebilirsiniz.");
+        } catch (e) {}
         render();
-        playSound("success");
-        alert("Siparişiniz alındı! Ödeme ve kargo bilgileri için sizinle iletişime geçilecektir.");
-      } catch (e) { playSound("error"); alert("Sipariş kaydedilemedi, lütfen tekrar dene."); }
+        window.scrollTo(0, 0);
+      } catch (err) {
+        state.checkoutStatus = "idle";
+        alert("Sipariş oluşturulamadı.\n\n" + (err && err.message ? err.message : "Bilinmeyen hata"));
+        render();
+      }
     })();
+    return;
   }
-  if (action === "send-chat") sendChat();
-  if (action === "chat-photo-pick") { document.getElementById("chat-photo-input")?.click(); }
-  /* smile handler'lar kaldırıldı - Dişini Tasarla yeni kod bekleniyor */
-  if (action === "toggle-mute") {
-    state.settings.muted = !state.settings.muted;
-    persist("nurdis_settings", state.settings);
-    render();
-  }
-  if (action === "set-lang") {
-    state.settings.lang = el.dataset.id;
-    persist("nurdis_settings", state.settings);
-    render();
-  }
+
   if (action === "sign-in-google") {
     if (!window.fb) { alert("Giriş sistemi henüz hazır değil, birkaç saniye sonra tekrar dene."); return; }
     state.authBusy = true; render();

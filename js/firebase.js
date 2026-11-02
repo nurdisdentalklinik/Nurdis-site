@@ -382,6 +382,16 @@ function wireFirebase() {
 
   window.fb.onAuthChange((user) => {
     state.user = user;
+    /* Müşteri giriş/çıkış yaptığında kendi sipariş akışını bağla veya kes */
+    try {
+      if (user && user.uid) { if (typeof musteriSiparisAbone === "function") musteriSiparisAbone(); }
+      else {
+        if (typeof _unsubMusteriSiparis !== "undefined" && _unsubMusteriSiparis) {
+          try { _unsubMusteriSiparis(); } catch (e) {}
+          _unsubMusteriSiparis = null;
+        }
+      }
+    } catch (e) {}
     if (user) {
       // Kullanıcı giriş yaptı - profilini yükle
       window.fb.loadUserProfile(user.uid).then(profile => {
@@ -564,6 +574,35 @@ function _hastaVerileriniYukle() {
       state.treatments = items; render();
     }));
   }
+}
+
+
+/* ---------------------------------------------------------------------
+   MÜŞTERİ SİPARİŞ ABONELİĞİ
+   ---------------------------------------------------------------------
+   HATA (düzeltildi): subscribeOrders yalnızca startAdminSubscriptions()
+   içinde çağrılıyordu. Yani sadece YÖNETİCİ siparişleri alıyordu.
+   Normal müşteri sipariş verince kaydı buluta gidiyor ama geri hiç
+   gelmiyordu → "Siparişlerim" hep boş görünüyordu.
+
+   Çözüm: giriş yapan müşteri için YALNIZCA kendi siparişlerini çeken
+   ayrı bir abonelik. Sunucu tarafında uid ile filtreleniyor
+   (güvenlik kuralı da sadece kendi kaydını okumaya izin veriyor).
+   --------------------------------------------------------------------- */
+let _unsubMusteriSiparis = null;
+
+function musteriSiparisAbone() {
+  if (_unsubMusteriSiparis) { try { _unsubMusteriSiparis(); } catch (e) {} _unsubMusteriSiparis = null; }
+
+  const uid = state.user && state.user.uid;
+  if (!uid || (state.user && state.user.isGuest)) return;
+  if (!window.fb || !window.fb.subscribeMine) return;
+
+  _unsubMusteriSiparis = window.fb.subscribeMine("orders", uid, (items) => {
+    state.orders = items || [];
+    try { localStorage.setItem("nurdis_orders_cache", JSON.stringify(state.orders)); } catch (e) {}
+    render();
+  });
 }
 
 function startAdminSubscriptions() {
