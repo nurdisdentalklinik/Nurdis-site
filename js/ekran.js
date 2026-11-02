@@ -302,6 +302,9 @@ document.addEventListener("click", (e) => {
   // Doktorlar
   if (typeof doktorAction === "function" && doktorAction(action, el)) return;
 
+  // Kargo takip (müşteri)
+  if (typeof kargoAction === "function" && kargoAction(el, action)) return;
+
   // Diş sağlığı bilgileri / fırçalama zamanlayıcısı / bilgi testi
   if (typeof bilgiAction === "function" && bilgiAction(el, action)) return;
 

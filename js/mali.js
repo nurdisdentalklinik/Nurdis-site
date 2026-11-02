@@ -2167,11 +2167,13 @@ function accAction(action, el) {
       const aktifEl = document.getElementById("kf-aktif-" + f.id);
       const adEl = document.getElementById("kf-ad-" + f.id);
       const urlEl = document.getElementById("kf-url-" + f.id);
+      const apiEl = document.getElementById("kf-api-" + f.id);
       liste.push({
         id: f.id,
         ad: (adEl?.value || f.ad).trim(),
         ikon: f.ikon,
         url: (urlEl?.value || "").trim(),
+        api: (apiEl?.value || "").trim(),
         aktif: aktifEl ? !!aktifEl.checked : true
       });
     });
@@ -3577,7 +3579,10 @@ function renderSiparisYonetimi() {
       </button>
       ${state.siparisKargoAyar ? `
       <p class="desc" style="margin:8px 0 10px;font-size:10.5px;line-height:1.5;">
-        Takip linki şablonunda <b>{no}</b> yazan yere takip numarası otomatik konur.
+        <b>{no}</b> yazan yere takip numarası otomatik konur.<br/>
+        <b>API alanı opsiyoneldir:</b> kargo firmasıyla sözleşme yapıp size bir takip servisi
+        verirse adresini buraya yazın — durum uygulamanın içinde gösterilir.
+        Boş bırakırsanız müşteri firmanın resmi takip sayfasına yönlendirilir.
       </p>
       ${(state.kargoFirmalari || KARGO_VARSAYILAN).map(f => `
         <div style="border-top:1px solid var(--line);padding:7px 0;">
@@ -3586,8 +3591,10 @@ function renderSiparisYonetimi() {
             <span style="font-size:12px;font-weight:700;">${f.ikon}</span>
             <input class="input" id="kf-ad-${f.id}" value="${escapeAttr(f.ad)}" style="flex:1;font-size:11px;padding:5px 8px;" />
           </div>
-          <input class="input" id="kf-url-${f.id}" value="${escapeAttr(f.url || "")}" placeholder="https://…/takip?code={no}"
+          <input class="input" id="kf-url-${f.id}" value="${escapeAttr(f.url || "")}" placeholder="Takip sayfası: https://…/takip?code={no}"
             style="width:100%;font-size:10px;padding:5px 8px;" />
+          <input class="input" id="kf-api-${f.id}" value="${escapeAttr(f.api || "")}" placeholder="(opsiyonel) API: https://…/api?no={no}"
+            style="width:100%;font-size:10px;padding:5px 8px;margin-top:3px;" />
         </div>`).join("")}
       <button class="btn-primary" style="width:100%;margin-top:10px;font-size:12px;padding:9px;" data-action="kargo-firma-kaydet">💾 Kargo Firmalarını Kaydet</button>
       ` : ""}

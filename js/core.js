@@ -179,6 +179,7 @@ const MORE_ITEMS = [
 
   { id:"reviews", label:"Yorumlar", img:"icon-reviews.png" },
   { id:"store", label:"Mağaza", img:"icon-store.png" },
+  { id:"kargo-takip", label:"Kargo Takip", img:"icon-store.png" },
   { id:"address", label:"Adresimiz", img:"icon-address.png" },
   { id:"contact", label:"İletişim", img:"icon-contact.png" },
   { id:"info", label:"Diş Sağlığı Bilgileri", img:"icon-info.png" },
@@ -428,6 +429,10 @@ let state = {
   settings: { muted: false, lang: "tr" },
   adminLoggedIn: false,
   adminForm: { email:"", pass:"" },
+  kargoNo: "",              // Kargo takip: girilen numara
+  kargoFirma: "",           // Kargo takip: seçilen firma
+  kargoSonuc: null,         // API sonucu (varsa)
+  kargoAraniyor: false,
   kargoFirmalari: null,       // Kargo firması listesi (yönetici düzenleyebilir)
   siparisFiltre: "tumu",     // Sipariş yönetimi: durum filtresi
   siparisArama: "",          // Sipariş yönetimi: arama
@@ -814,23 +819,23 @@ const LANGS = [
 const I18N = {
   tr: { home:"Ana Sayfa", services:"Hizmetler", booking:"Randevu", chatbot:"DİJİ RAMO", more:"Diğer",
     account:"Hesabım", doctors:"Doktorlarımız", devices:"Cihazlarımız",
-    reviews:"Yorumlar", store:"Mağaza", address:"Adresimiz", contact:"İletişim", info:"Diş Sağlığı Bilgileri",
+    reviews:"Yorumlar", store:"Mağaza", address:"Adresimiz", contact:"İletişim", info:"Diş Sağlığı Bilgileri", "kargo-takip":"Kargo Takip",
     "admin-login":"Yönetici Girişi", settings:"Ayarlar", campaigns:"Kampanyalar", save:"Kaydet", send:"Gönder" },
   en: { home:"Home", services:"Services", booking:"Appointment", chatbot:"DİJİ RAMO", more:"More",
     account:"My Account", doctors:"Our Doctors", devices:"Our Devices", smile:"Design Your Smile",
-    reviews:"Reviews", store:"Store", address:"Our Address", contact:"Contact", info:"Dental Health Info",
+    reviews:"Reviews", store:"Store", address:"Our Address", contact:"Contact", info:"Dental Health Info", "kargo-takip":"Cargo Tracking",
     "admin-login":"Admin Login", settings:"Settings", campaigns:"Campaigns", save:"Save", send:"Send" },
   ar: { home:"الرئيسية", services:"الخدمات", booking:"موعد", chatbot:"DİJİ RAMO", more:"المزيد",
     account:"حسابي", doctors:"أطباؤنا", devices:"أجهزتنا", smile:"صمم ابتسامتك",
-    reviews:"التقييمات", store:"المتجر", address:"عنواننا", contact:"تواصل معنا", info:"معلومات صحة الأسنان",
+    reviews:"التقييمات", store:"المتجر", address:"عنواننا", contact:"تواصل معنا", info:"معلومات صحة الأسنان", "kargo-takip":"تتبع الشحنة",
     "admin-login":"دخول المدير", settings:"الإعدادات", campaigns:"العروض", save:"حفظ", send:"إرسال" },
   de: { home:"Start", services:"Leistungen", booking:"Termin", chatbot:"DİJİ RAMO", more:"Mehr",
     account:"Mein Konto", doctors:"Unsere Ärzte", devices:"Unsere Geräte", smile:"Lächeln gestalten",
-    reviews:"Bewertungen", store:"Shop", address:"Unsere Adresse", contact:"Kontakt", info:"Zahngesundheit",
+    reviews:"Bewertungen", store:"Shop", address:"Unsere Adresse", contact:"Kontakt", info:"Zahngesundheit", "kargo-takip":"Sendungsverfolgung",
     "admin-login":"Admin-Login", settings:"Einstellungen", campaigns:"Aktionen", save:"Speichern", send:"Senden" },
   es: { home:"Inicio", services:"Servicios", booking:"Cita", chatbot:"DİJİ RAMO", more:"Más",
     account:"Mi Cuenta", doctors:"Nuestros Doctores", devices:"Nuestros Equipos", smile:"Diseña tu Sonrisa",
-    reviews:"Reseñas", store:"Tienda", address:"Nuestra Dirección", contact:"Contacto", info:"Salud Dental",
+    reviews:"Reseñas", store:"Tienda", address:"Nuestra Dirección", contact:"Contacto", info:"Salud Dental", "kargo-takip":"Seguimiento de Envío",
     "admin-login":"Acceso Admin", settings:"Ajustes", campaigns:"Promociones", save:"Guardar", send:"Enviar" },
 };
 function t(key) {
