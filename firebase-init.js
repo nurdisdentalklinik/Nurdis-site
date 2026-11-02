@@ -47,7 +47,7 @@ async function signInGoogle() {
     return { ok: true, user: sonuc.user };
   } catch (err) {
     console.error("Google giriş hatası:", err);
-    return { ok: false, error: err.message };
+    return { ok: false, error: _googleHataMesaji(err) };
   }
 }
 
@@ -154,8 +154,26 @@ async function adminGoogleSignIn() {
     const ikinciFaktor = (sonuc.user.multiFactor && sonuc.user.multiFactor.enrolledFactors) || [];
     return { ok: true, user: sonuc.user, mfaSayisi: ikinciFaktor.length };
   } catch (err) {
-    return { ok: false, error: "Google girişi başarısız: " + ((err && err.code) || "bilinmeyen hata") };
+    return { ok: false, error: _googleHataMesaji(err) };
   }
+}
+
+/* Teknik hata kodlarını anlaşılır Türkçeye çevir */
+function _googleHataMesaji(err) {
+  const kod = (err && err.code) || "";
+  if (kod.indexOf("unauthorized-domain") !== -1) {
+    return "Bu site adresi Firebase'de yetkili değil. Firebase Konsolu → Authentication → Settings → Authorized domains listesine nurdis.pages.dev eklenmeli.";
+  }
+  if (kod.indexOf("operation-not-allowed") !== -1) {
+    return "Google ile giriş yöntemi Firebase'de kapalı. Authentication → Sign-in method → Google → Enable.";
+  }
+  if (kod.indexOf("popup-blocked") !== -1) {
+    return "Tarayıcı giriş penceresini engelledi. Popup engelleyiciyi kapatıp tekrar deneyin.";
+  }
+  if (kod.indexOf("network") !== -1) {
+    return "İnternet bağlantısı sorunu. Bağlantınızı kontrol edip tekrar deneyin.";
+  }
+  return "Google girişi başarısız: " + (kod || "bilinmeyen hata");
 }
 
 /* Yönlendirmeden dönen kullanıcıyı yakala (sayfa yeniden yüklendiğinde) */
