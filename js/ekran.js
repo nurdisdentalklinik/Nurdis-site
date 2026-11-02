@@ -891,6 +891,23 @@ document.addEventListener("click", (e) => {
     state.infoTab = el.dataset.id;
     render();
   }
+  if (action === "guvenlik-yedek") {
+    if (typeof yedekIndir === "function") {
+      yedekIndir();
+      try { localStorage.setItem("nurdis_son_yedek", new Date().toISOString()); } catch (e) {}
+      if (typeof gvDenetim === "function") gvDenetim("yedek", "Güvenlik panelinden yedek alındı");
+      render();
+    }
+    return;
+  }
+
+  if (action === "guvenlik-log-temizle") {
+    if (!confirm("Güvenlik kayıtları temizlensin mi?\n\n(Buluttaki admin_log kayıtları silinmez, orada durur.)")) return;
+    try { localStorage.removeItem("nurdis_gv_log"); } catch (e) {}
+    render();
+    return;
+  }
+
   if (action === "admin-google-giris") {
     if (!window.fb || !window.fb.adminGoogleSignIn) { state.adminError = "Giriş sistemi hazır değil, birkaç saniye sonra dene."; render(); return; }
     state.authBusy = true; state.adminError = ""; render();
@@ -905,6 +922,8 @@ document.addEventListener("click", (e) => {
         startAdminSubscriptions();
         playSound("login");
         gvDenetim("giris", "Google ile yönetici girişi");
+        state.adminGoogleUsed = true;
+        try { localStorage.setItem("nurdis_gv_google", "1"); } catch (e) {}
       } else {
         gvHataliGiris();
         state.adminError = res.error || "Google girişi başarısız.";
@@ -966,6 +985,8 @@ document.addEventListener("click", (e) => {
         state.adminLoggedIn = true;
         localStorage.setItem("nurdis_admin_logged_in", "true");
         state.adminError = ""; state.screen = "admin-panel";
+        state.adminGoogleUsed = false;
+        try { localStorage.removeItem("nurdis_gv_google"); } catch (e) {}
         gvOturumBaslat();          // zaman aşımı sayacı başlar
         startAdminSubscriptions();
         playSound("login");

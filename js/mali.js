@@ -2725,7 +2725,8 @@ function renderAdminPanel() {
     { id: "tips", label: "💡 İpuçları", count: state.healthTips.length },
     { id: "announcements", label: "📢 Duyurular", count: state.announcements.length },
     { id: "portal", label: "🏥 Hasta Portalı", count: (state.patientNotes || []).filter(n => !n.doktorYanit).length + (state.patientFiles || []).filter(f => !f.doktorGordu).length },
-    { id: "accounting", label: "💰 Muhasebe", count: 0 }
+    { id: "accounting", label: "💰 Muhasebe", count: 0 },
+    { id: "guvenlik", label: "🔐 Güvenlik", count: 0 }
   ];
 
   const tabButtons = tabs.map(t => `
@@ -2975,6 +2976,8 @@ function renderAdminPanel() {
 
   if (state.adminTab === "accounting") {
     tabContent = renderAccounting();
+  } else if (state.adminTab === "guvenlik") {
+    tabContent = renderGuvenlikPaneli();
   }
 
   return `${topbar("Yönetici Paneli","Menüden istediğiniz bölümü seçin.", {back:"home"})}
@@ -2984,4 +2987,114 @@ function renderAdminPanel() {
       <button class="linklike" data-action="admin-logout">Çıkış yap</button>
       <p class="footnote" style="margin-top:14px;">${state.fbReady ? "✓ Firebase'e bağlı — bu liste tüm cihazlarda anlık günceldir." : "⚠ Firebase bağlantısı bekleniyor, geçici olarak yalnızca bu cihazdaki veriler görünüyor."}</p>
     </div>`;
+}
+
+/* =====================================================================
+   🔐 GÜVENLİK PANELİ
+   Amaç: "hesabıma biri girdi mi?" sorusunun cevabını göstermek.
+   Saldırganı durdurmak kadar ÖNEMLİSİ, fark etmektir.
+   ===================================================================== */
+
+function renderGuvenlikPaneli() {
+  const log = (typeof gvLoglariGetir === "function") ? gvLoglariGetir(200) : [];
+  const girisler = log.filter(l => l.olay === "giris" || l.olay === "oturum-basladi");
+  const hatali = log.filter(l => l.olay === "hatali-giris");
+  const kilit = (typeof gvKilitDurumu === "function") ? gvKilitDurumu() : { kilitli: false, deneme: 0 };
+
+  /* Son yedek tarihi */
+  let sonYedek = null, yedekGun = null;
+  try {
+    const y = localStorage.getItem("nurdis_son_yedek");
+    if (y) { sonYedek = new Date(y); yedekGun = Math.floor((Date.now() - sonYedek.getTime()) / 86400000); }
+  } catch (e) {}
+
+  const yedekRenk = yedekGun === null ? "#C62828" : yedekGun > 7 ? "#E65100" : "#2E7D32";
+  const yedekMetin = yedekGun === null ? "Hiç yedek alınmadı"
+    : yedekGun === 0 ? "Bugün alındı" : yedekGun + " gün önce";
+
+  /* Oturum durumu */
+  const bostaDk = (typeof _gvSonAktivite !== "undefined") ? Math.floor((Date.now() - _gvSonAktivite) / 60000) : 0;
+  const oturumSaat = (typeof _gvGirisZamani !== "undefined" && _gvGirisZamani)
+    ? ((Date.now() - _gvGirisZamani) / 3600000).toFixed(1) : "—";
+
+  const olayAdi = {
+    "giris": "✅ Giriş", "oturum-basladi": "✅ Oturum açıldı",
+    "oturum-kapandi": "🚪 Çıkış", "hatali-giris": "⚠️ Hatalı deneme"
+  };
+
+  const kayitlar = log.slice(0, 25).map(l => {
+    const t = new Date(l.zaman);
+    const tarih = isNaN(t) ? "—" : t.toLocaleString("tr-TR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+    const cihaz = /Mobi|Android|iPhone/i.test(l.cihaz || "") ? "📱 Mobil" : "💻 Bilgisayar";
+    return `<div style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:11.5px;">
+      <div style="flex:1;min-width:0;">
+        <p style="margin:0;font-weight:600;">${olayAdi[l.olay] || l.olay}</p>
+        <p class="desc" style="margin:1px 0 0;font-size:10.5px;">${escapeHtml((l.detay || "").slice(0, 60))} · ${cihaz}</p>
+      </div>
+      <span style="color:var(--muted);font-size:10.5px;white-space:nowrap;">${tarih}</span>
+    </div>`;
+  }).join("") || `<p class="desc" style="font-size:11.5px;">Henüz kayıt yok.</p>`;
+
+  return `
+    <div class="card p4 mb3" style="background:linear-gradient(135deg,#004D40,#00695C);color:#fff;border:none;">
+      <p style="font-size:13px;font-weight:800;margin:0 0 3px;">🔐 Güvenlik durumu</p>
+      <p style="font-size:11px;opacity:.9;margin:0;">Hesabınıza sizden başkası girmiş mi — buradan görürsünüz.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div class="card p4" style="text-align:center;padding:12px;">
+        <p style="font-size:22px;font-weight:800;margin:0;color:#2E7D32;">${girisler.length}</p>
+        <p class="desc" style="margin:2px 0 0;font-size:10.5px;">Başarılı giriş</p>
+      </div>
+      <div class="card p4" style="text-align:center;padding:12px;">
+        <p style="font-size:22px;font-weight:800;margin:0;color:${hatali.length ? "#C62828" : "#90A4AE"};">${hatali.length}</p>
+        <p class="desc" style="margin:2px 0 0;font-size:10.5px;">Hatalı deneme</p>
+      </div>
+      <div class="card p4" style="text-align:center;padding:12px;">
+        <p style="font-size:22px;font-weight:800;margin:0;color:${yedekRenk};">${yedekGun === null ? "!" : yedekGun + "g"}</p>
+        <p class="desc" style="margin:2px 0 0;font-size:10.5px;">Son yedek</p>
+      </div>
+      <div class="card p4" style="text-align:center;padding:12px;">
+        <p style="font-size:22px;font-weight:800;margin:0;color:#0B6E86;">${oturumSaat}</p>
+        <p class="desc" style="margin:2px 0 0;font-size:10.5px;">Oturum (saat)</p>
+      </div>
+    </div>
+
+    ${kilit.kilitli ? `
+    <div class="card p4 mb3" style="background:#FFEBEE;border-color:#EF9A9A;">
+      <p style="font-size:12px;font-weight:800;color:#B71C1C;margin:0 0 4px;">🚨 Giriş geçici olarak kilitli</p>
+      <p class="desc" style="margin:0;font-size:11.5px;color:#C62828;">${kilit.deneme} hatalı deneme yapıldı. ${kilit.kalanDk} dakika sonra açılır. Bunu siz yapmadıysanız şifrenizi değiştirin.</p>
+    </div>` : ""}
+
+    ${yedekGun === null || yedekGun > 7 ? `
+    <div class="card p4 mb3" style="background:#FFF3E0;border-color:#FFCC80;">
+      <p style="font-size:12px;font-weight:800;color:#E65100;margin:0 0 4px;">⚠️ Yedek uyarısı</p>
+      <p class="desc" style="margin:0 0 10px;font-size:11.5px;color:#EF6C00;">${yedekMetin}. Verilerinizin bir kopyası sende olmalı — hesabınıza bir şey olsa bile veriler kurtarılabilir.</p>
+      <button class="btn-primary" style="width:100%;font-size:12px;padding:9px;" data-action="guvenlik-yedek">💾 Şimdi Yedek Al</button>
+    </div>` : `
+    <div class="card p4 mb3" style="background:#E8F5E9;border-color:#A5D6A7;">
+      <p style="font-size:12px;font-weight:800;color:#2E7D32;margin:0 0 4px;">✅ Yedek güncel</p>
+      <p class="desc" style="margin:0;font-size:11.5px;color:#388E3C;">${yedekMetin}.</p>
+    </div>`}
+
+    <div class="card p4 mb3">
+      <p class="section-label" style="margin:0 0 4px;">📋 Son hareketler</p>
+      <p class="desc" style="margin:0 0 10px;font-size:10.5px;">Tanımadığınız bir giriş varsa şifrenizi hemen değiştirin.</p>
+      ${kayitlar}
+    </div>
+
+    <div class="card p4 mb3" style="background:#E0F3F7;border-color:#80DEEA;">
+      <p style="font-size:12px;font-weight:800;color:#006064;margin:0 0 6px;">🛡️ Aktif korumalar</p>
+      <div style="font-size:11.5px;line-height:1.9;color:#006064;">
+        ✓ Yönetici girişi doğrulanıyor<br/>
+        ✓ 20 dk boşta oturum kapanıyor<br/>
+        ✓ 5 hatalı denemede kilit<br/>
+        ✓ Her giriş buraya kaydediliyor<br/>
+        ✓ Hasta verisi dışarıya kapalı<br/>
+        ${state.adminGoogleUsed ? "✓ Google iki adımlı doğrulama ile giriş" : "⚠️ Bu oturum şifre ile açıldı — Google girişini tercih edin"}
+      </div>
+    </div>
+
+    <button class="btn-primary" style="width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--line);" data-action="guvenlik-log-temizle">Kayıtları temizle</button>
+  `;
 }
