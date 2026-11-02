@@ -190,15 +190,26 @@ function renderStoreV2() {
       <div class="topbar-inner">
         <button class="backbtn" data-action="goto" data-screen="home" style="position:relative;">←</button>
         <img src="icon-192.png" class="logo-badge-img" alt="" />
-        <div>
+        <div style="flex:1;min-width:0;">
           <p class="eyebrow" style="color:rgba(255,255,255,.85);">Nur Diş Mağaza</p>
           <h1 class="title">Ağız Bakım Ürünleri</h1>
         </div>
+        ${state.user && state.user.uid ? `
+        <button data-action="goto" data-screen="account"
+          style="background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.5);color:#fff;width:36px;height:36px;border-radius:50%;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          ${escapeHtml(((state.userProfile && state.userProfile.firstName) || state.user.name || "M").charAt(0).toUpperCase())}
+        </button>` : `
+        <button data-action="magaza-giris"
+          style="background:#fff;border:none;color:#F27A1A;padding:7px 12px;border-radius:16px;font-size:10.5px;font-weight:800;cursor:pointer;flex-shrink:0;white-space:nowrap;">
+          Giriş Yap
+        </button>`}
       </div>
       ${scallop()}
     </div>
 
     <div class="content" style="padding-bottom:${count > 0 ? "150px" : "30px"};">
+
+      ${magazaProfilSeridi()}
 
       <!-- ARAMA -->
       <div style="position:relative;margin-bottom:10px;">
@@ -503,6 +514,25 @@ function renderAccMagaza() {
 /* ---------------- AKSİYONLAR ---------------- */
 
 function magazaAction(action, el) {
+  /* --- mağaza profil şeridi --- */
+  if (action === "magaza-giris") {
+    state.hesapMod = "giris";
+    state.hesapHata = "";
+    state.screen = "account";
+    render();
+    window.scrollTo(0, 0);
+    return true;
+  }
+
+  if (action === "magaza-son-siparis") {
+    state.hesapSekme = "siparisler";
+    state.hesapSiparisAcik = el.dataset.id;
+    state.screen = "account";
+    render();
+    window.scrollTo(0, 0);
+    return true;
+  }
+
   /* --- müşteri tarafı --- */
   if (action === "magaza-kategori") { state.magazaKategori = el.dataset.k; render(); window.scrollTo(0, 0); return true; }
   if (action === "magaza-sirala") { state.magazaSirala = el.dataset.v; render(); return true; }
@@ -616,4 +646,105 @@ function magazaAction(action, el) {
   }
 
   return false;
+}
+
+/* =====================================================================
+   👤 MAĞAZA PROFİL ŞERİDİ (Trendyol tarzı)
+   ---------------------------------------------------------------------
+   Mağazaya giren müşteri profilini buradan görür: adı, puanı,
+   sipariş sayısı ve hızlı erişim butonları (Siparişlerim, Adreslerim,
+   Kuponlarım, Favorilerim). Giriş yapmamışsa "giriş yap" çağrısı.
+   ===================================================================== */
+
+function magazaProfilSeridi() {
+  const girisVar = !!(state.user && state.user.uid && !state.user.isGuest);
+
+  /* --- Giriş yapmamış --- */
+  if (!girisVar) {
+    return `<div class="card p4 mb3" style="background:linear-gradient(135deg,#FFF3E0,#FFE0B2);border:1px solid #FFCC80;padding:13px;">
+      <div style="display:flex;align-items:center;gap:11px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;">👤</div>
+        <div style="flex:1;min-width:0;">
+          <p style="margin:0;font-size:12.5px;font-weight:800;color:#B25E00;">Hoş geldiniz!</p>
+          <p style="margin:2px 0 0;font-size:10.5px;color:#C77700;line-height:1.4;">
+            Sipariş takibi ve kuponlar için giriş yapın
+          </p>
+        </div>
+        <button data-action="magaza-giris"
+          style="background:#F27A1A;border:none;color:#fff;padding:8px 13px;border-radius:9px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+          Giriş
+        </button>
+      </div>
+    </div>`;
+  }
+
+  /* --- Giriş yapmış --- */
+  const p = state.userProfile || {};
+  const u = state.user || {};
+  const adSoyad = (p.firstName && p.lastName) ? (p.firstName + " " + p.lastName)
+                 : (u.name || (u.email ? u.email.split("@")[0] : "Müşteri"));
+  const siparisAdet = (typeof benimSiparislerim === "function") ? benimSiparislerim().length : 0;
+  const adresAdet = (typeof adreslerim === "function") ? adreslerim().length : 0;
+  const kuponAdet = (typeof kuponlarim === "function") ? kuponlarim().filter(k => !k.kullanildi).length : 0;
+  const favoriAdet = (state.products || []).filter(x => x.favori).length;
+  const puan = (typeof puanlarim === "function") ? (puanlarim().bakiye || 0) : 0;
+
+  /* Son sipariş durumu */
+  const siparisler = (typeof benimSiparislerim === "function") ? benimSiparislerim() : [];
+  const sonSiparis = siparisler[0];
+  let sonSiparisHTML = "";
+  if (sonSiparis) {
+    const d = (typeof siparisDurum === "function") ? siparisDurum(sonSiparis.durum || "yeni") : { ad: "", ikon: "", renk: "#666", arka: "#eee" };
+    sonSiparisHTML = `
+      <button data-action="magaza-son-siparis" data-id="${sonSiparis.id}"
+        style="width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-top:9px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div style="min-width:0;">
+          <p style="margin:0;font-size:9.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Son siparişim</p>
+          <p style="margin:3px 0 0;font-size:11.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            ${escapeHtml((typeof siparisUrunleri === "function" ? siparisUrunleri(sonSiparis) : "").slice(0, 34))}
+          </p>
+        </div>
+        <span style="font-size:9.5px;font-weight:800;background:${d.arka};color:${d.renk};padding:3px 8px;border-radius:5px;white-space:nowrap;flex-shrink:0;">
+          ${d.ikon} ${d.ad}
+        </span>
+      </button>`;
+  }
+
+  const hizliBtn = (ekran, ikon, ad, sayi) => `
+    <button data-action="goto" data-screen="${ekran}"
+      style="flex:1;min-width:0;background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px 4px;cursor:pointer;text-align:center;position:relative;">
+      <p style="margin:0;font-size:17px;line-height:1;">${ikon}</p>
+      <p style="margin:4px 0 0;font-size:9px;font-weight:700;color:var(--ink);line-height:1.2;">${ad}</p>
+      ${sayi > 0 ? `<span style="position:absolute;top:3px;right:3px;background:#F27A1A;color:#fff;font-size:8px;font-weight:800;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px;">${sayi}</span>` : ""}
+    </button>`;
+
+  return `<div class="card p4 mb3" style="background:linear-gradient(135deg,#F27A1A,#FF9F43);border:none;color:#fff;padding:13px;">
+    <!-- Üst: avatar + ad -->
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button data-action="goto" data-screen="account"
+        style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.28);border:1.5px solid rgba(255,255,255,.5);color:#fff;font-size:17px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        ${escapeHtml((adSoyad || "M").charAt(0).toUpperCase())}
+      </button>
+      <div style="flex:1;min-width:0;">
+        <p style="margin:0;font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(adSoyad)}</p>
+        <p style="margin:2px 0 0;font-size:10px;opacity:.9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          ${puan > 0 ? "💎 " + accNum(puan).toLocaleString("tr-TR") + " puan" : escapeHtml(u.email || "")}
+        </p>
+      </div>
+      <button data-action="goto" data-screen="account"
+        style="background:rgba(255,255,255,.22);border:none;color:#fff;padding:6px 11px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+        Hesabım →
+      </button>
+    </div>
+
+    ${sonSiparisHTML}
+
+    <!-- Hızlı erişim -->
+    <div style="display:flex;gap:6px;margin-top:9px;">
+      ${hizliBtn("account", "📦", "Siparişler", siparisAdet)}
+      ${hizliBtn("account", "📍", "Adresler", adresAdet)}
+      ${hizliBtn("account", "🎟️", "Kuponlar", kuponAdet)}
+      ${hizliBtn("account", "❤️", "Favoriler", favoriAdet)}
+    </div>
+  </div>`;
 }
