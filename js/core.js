@@ -428,6 +428,7 @@ let state = {
   settings: { muted: false, lang: "tr" },
   adminLoggedIn: false,
   adminForm: { email:"", pass:"" },
+  kargoFirmalari: null,       // Kargo firması listesi (yönetici düzenleyebilir)
   siparisFiltre: "tumu",     // Sipariş yönetimi: durum filtresi
   siparisArama: "",          // Sipariş yönetimi: arama
   siparisSirala: "yeni",      // Sipariş yönetimi: sıralama

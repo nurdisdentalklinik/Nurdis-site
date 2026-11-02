@@ -2090,6 +2090,106 @@ function accAction(action, el) {
   }
 
   /* ================= SİPARİŞ YÖNETİMİ ================= */
+  /* Kargo hızlı işlem: detayı açar, kargo alanına odaklanır */
+  if (A("sip-kargo-hizli")) {
+    state.siparisAcik = el.dataset.id;
+    render();
+    setTimeout(() => {
+      const f = document.getElementById("sip-firma-" + el.dataset.id);
+      if (f) { f.focus(); try { f.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {} }
+    }, 180);
+    return true;
+  }
+
+  /* Kargoya ver: firmayı + takip no'yu kaydet, durumu Kargoda yap, WhatsApp aç */
+  if (A("sip-kargola")) {
+    const id = el.dataset.id;
+    const o = (state.orders || []).find(x => x.id === id);
+    if (!o) return true;
+    const firma = document.getElementById("sip-firma-" + id)?.value || "";
+    const no = (document.getElementById("sip-kargo-" + id)?.value || "").trim();
+    if (!firma) { alert("Önce kargo firmasını seçin."); return true; }
+    if (!no && firma !== "diger") { alert("Takip numarasını girin."); return true; }
+
+    o.kargoFirma = firma;
+    o.kargoNo = no;
+    o.durum = "kargoda";
+    o.kargoTarihi = new Date().toISOString();
+    render();
+
+    if (window.fb && state.fbReady && window.fb.updateOrder) {
+      window.fb.updateOrder(id, { kargoFirma: firma, kargoNo: no, durum: "kargoda", kargoTarihi: o.kargoTarihi }).catch((e) => {
+        alert("Kargo bilgisi kaydedilemedi: " + (e && e.message ? e.message : ""));
+      });
+    }
+    if (typeof gvDenetim === "function") gvDenetim("kargo", (o.name || "") + " · " + kargoFirmaAdi(firma) + " · " + no);
+
+    /* Müşteriye takip linkli mesaj */
+    setTimeout(() => {
+      const link = kargoTakipLinki(o);
+      const mesaj = siparisMesaji(o, "kargoda") + (link ? "\n\nTakip: " + link : "");
+      if (o.phone) {
+        if (typeof guvenliWhatsApp === "function") guvenliWhatsApp(o.phone, mesaj, "Kargo — " + (o.name || ""));
+        else if (typeof waLink === "function") window.open(waLink(o.phone, mesaj), "_blank");
+      }
+    }, 260);
+    return true;
+  }
+
+  /* Kargo etiketi metni */
+  if (A("sip-etiket")) {
+    const o = (state.orders || []).find(x => x.id === el.dataset.id);
+    if (!o) return true;
+    const metin =
+      "NUR DİŞ & DENTAL KLİNİK\n" +
+      "Kızıltepe / Mardin · 0505 105 03 02\n" +
+      "--------------------------------\n" +
+      "ALICI: " + (o.name || "") + "\n" +
+      "TEL  : " + (o.phone || "") + "\n" +
+      "ADRES: " + (o.address || "") + "\n" +
+      "--------------------------------\n" +
+      "KARGO: " + (kargoFirmaAdi(o.kargoFirma) || "—") + "\n" +
+      "TAKİP: " + (o.kargoNo || "—") + "\n" +
+      "SİPARİŞ: #" + String(o.id).slice(-6) + "\n" +
+      "TUTAR: " + accTL(o.total || 0) + "\n" +
+      "--------------------------------\n" +
+      "ÜRÜNLER:\n" + (o.items || []).map(i => " - " + (i.name || i.ad || "Ürün") + " x" + (i.qty || i.adet || 1)).join("\n");
+    if (typeof accCopy === "function") accCopy(metin);
+    else { try { navigator.clipboard.writeText(metin); } catch (e) {} }
+    alert("🏷️ Kargo etiketi kopyalandı.\n\nBir metin dosyasına yapıştırıp yazdırabilirsiniz.");
+    return true;
+  }
+
+  /* Kargo firması ayarları */
+  if (A("kargo-firma-kaydet")) {
+    const liste = [];
+    KARGO_VARSAYILAN.forEach(f => {
+      const aktifEl = document.getElementById("kf-aktif-" + f.id);
+      const adEl = document.getElementById("kf-ad-" + f.id);
+      const urlEl = document.getElementById("kf-url-" + f.id);
+      liste.push({
+        id: f.id,
+        ad: (adEl?.value || f.ad).trim(),
+        ikon: f.ikon,
+        url: (urlEl?.value || "").trim(),
+        aktif: aktifEl ? !!aktifEl.checked : true
+      });
+    });
+    state.kargoFirmalari = liste;
+    try { localStorage.setItem("nurdis_kargo_firmalari", JSON.stringify(liste)); } catch (e) {}
+    if (typeof saveAccountingToFirebase === "function") saveAccountingToFirebase();
+    alert("✅ Kargo firmaları kaydedildi.");
+    render();
+    return true;
+  }
+
+  if (A("kargo-ayarlar")) {
+    state.siparisKargoAyar = !state.siparisKargoAyar;
+    render();
+    return true;
+  }
+
+
 
   if (A("sip-filtre")) { state.siparisFiltre = el.dataset.id; render(); return true; }
   if (A("sip-sirala")) { state.siparisSirala = el.dataset.id; render(); return true; }
@@ -3278,7 +3378,8 @@ function renderSiparisYonetimi() {
 
   let liste = hepsi.filter(o => {
     const durum = o.durum || "yeni";
-    if (filtre !== "tumu" && durum !== filtre) return false;
+    if (filtre === "gecmis") { if (durum !== "teslim" && durum !== "iptal") return false; }
+    else if (filtre !== "tumu" && durum !== filtre) return false;
     if (arama) {
       /* Türkçe karakter duyarsız arama: "pinar" → "Pınar" bulur */
       const norm = (x) => (x || "").toLocaleLowerCase("tr")
@@ -3303,8 +3404,10 @@ function renderSiparisYonetimi() {
   const bekleyen = say.yeni + say.hazirlaniyor;
 
   /* Filtre butonları */
+  const gecmisSayi = say.teslim + say.iptal;
   const filtreBtn = [{ id:"tumu", ad:"Tümü", ikon:"📋", sayi:hepsi.length }]
     .concat(SIPARIS_DURUM.map(d => ({ id:d.id, ad:d.ad, ikon:d.ikon, sayi:say[d.id] })))
+    .concat([{ id:"gecmis", ad:"Geçmiş", ikon:"📁", sayi:gecmisSayi }])
     .map(f => {
       const aktif = filtre === f.id;
       return `<button data-action="sip-filtre" data-id="${f.id}"
@@ -3353,6 +3456,28 @@ function renderSiparisYonetimi() {
 
       <div style="padding:0 14px 12px;display:flex;gap:5px;">${durumButonlari}</div>
 
+      <!-- Hızlı işlemler — kart açık olmasa da görünür -->
+      <div style="padding:0 14px 12px;display:flex;gap:6px;align-items:center;">
+        <button data-action="sip-ac" data-id="${id}"
+          style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:11px;font-weight:700;cursor:pointer;color:var(--ink);">
+          ${acik ? "▲ Kapat" : "▼ Detay / Düzenle"}
+        </button>
+        <button data-action="sip-kargo-hizli" data-id="${id}"
+          style="flex:1;padding:7px;border-radius:8px;border:1px solid #90CAF9;background:#E3F2FD;font-size:11px;font-weight:700;cursor:pointer;color:#1565C0;">
+          🚚 Kargo
+        </button>
+        <button data-action="sip-sil" data-id="${id}"
+          style="padding:7px 11px;border-radius:8px;border:1px solid #EF9A9A;background:#FFEBEE;font-size:11px;font-weight:700;cursor:pointer;color:#C62828;">
+          🗑️
+        </button>
+      </div>
+      ${(o.kargoNo || o.kargoFirma) ? `
+      <div style="padding:0 14px 12px;">
+        <p style="margin:0;font-size:10.5px;color:#1565C0;background:#E3F2FD;border-radius:7px;padding:6px 9px;">
+          🚚 ${escapeHtml(kargoFirmaAdi(o.kargoFirma) || "Kargo")}${o.kargoNo ? " · " + escapeHtml(o.kargoNo) : ""}
+        </p>
+      </div>` : ""}
+
       ${acik ? `
       <div style="padding:0 14px 14px;border-top:1px solid var(--line);padding-top:12px;">
 
@@ -3373,10 +3498,30 @@ function renderSiparisYonetimi() {
           </div>
         </div>
 
-        <p style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px;">Kargo takip no</p>
-        <div style="display:flex;gap:6px;margin-bottom:10px;">
-          <input class="input" id="sip-kargo-${id}" value="${escapeAttr(o.kargoNo || "")}" placeholder="Takip numarası" style="flex:1;font-size:12px;" />
-          <button class="qty-btn" style="width:auto;padding:0 12px;font-size:11.5px;" data-action="sip-kargo" data-id="${id}">Kaydet</button>
+        <p style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px;">🚚 Kargo</p>
+        <div style="background:var(--bg);border-radius:10px;padding:10px;margin-bottom:10px;">
+          <select class="input" id="sip-firma-${id}" style="font-size:12px;margin-bottom:6px;">
+            <option value="">Kargo firması seçin…</option>
+            ${kargoFirmalari().map(f => `<option value="${f.id}" ${o.kargoFirma === f.id ? "selected" : ""}>${f.ikon} ${escapeHtml(f.ad)}</option>`).join("")}
+          </select>
+          <div style="display:flex;gap:6px;">
+            <input class="input" id="sip-kargo-${id}" value="${escapeAttr(o.kargoNo || "")}" placeholder="Takip numarası" style="flex:1;font-size:12px;" />
+          </div>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <button style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:11px;font-weight:700;cursor:pointer;color:var(--ink);"
+              data-action="sip-kargo" data-id="${id}">💾 Kaydet</button>
+            <button style="flex:1;padding:8px;border-radius:8px;border:none;background:#1565C0;color:#fff;font-size:11px;font-weight:700;cursor:pointer;"
+              data-action="sip-kargola" data-id="${id}">📦 Kargoya Ver + WhatsApp</button>
+          </div>
+          ${o.kargoNo && kargoTakipLinki(o) ? `
+          <a href="${escapeAttr(kargoTakipLinki(o))}" target="_blank" rel="noopener"
+            style="display:block;text-align:center;margin-top:6px;font-size:10.5px;color:#1565C0;text-decoration:underline;">
+            🔗 Takip linkini aç
+          </a>` : ""}
+          <button data-action="sip-etiket" data-id="${id}"
+            style="width:100%;margin-top:6px;padding:7px;border-radius:8px;border:1px dashed var(--line);background:transparent;font-size:10.5px;cursor:pointer;color:var(--muted);">
+            🏷️ Kargo etiketi metnini kopyala
+          </button>
         </div>
 
         <p style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px;">Yönetici notu</p>
@@ -3423,6 +3568,31 @@ function renderSiparisYonetimi() {
 
     <div class="chip-row mb3" style="flex-wrap:nowrap;overflow-x:auto;gap:6px;padding-bottom:4px;">${filtreBtn}</div>
 
+    <!-- Kargo firması ayarları (açılır) -->
+    <div class="card p4 mb3" style="padding:10px 12px;">
+      <button data-action="kargo-ayarlar"
+        style="width:100%;background:none;border:none;display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:0;">
+        <span style="font-size:12px;font-weight:800;color:var(--ink);">🚚 Kargo Firmaları</span>
+        <span style="font-size:11px;color:var(--muted);">${state.siparisKargoAyar ? "kapat ▲" : "düzenle ▼"}</span>
+      </button>
+      ${state.siparisKargoAyar ? `
+      <p class="desc" style="margin:8px 0 10px;font-size:10.5px;line-height:1.5;">
+        Takip linki şablonunda <b>{no}</b> yazan yere takip numarası otomatik konur.
+      </p>
+      ${(state.kargoFirmalari || KARGO_VARSAYILAN).map(f => `
+        <div style="border-top:1px solid var(--line);padding:7px 0;">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;">
+            <input type="checkbox" id="kf-aktif-${f.id}" ${f.aktif !== false ? "checked" : ""} style="width:15px;height:15px;" />
+            <span style="font-size:12px;font-weight:700;">${f.ikon}</span>
+            <input class="input" id="kf-ad-${f.id}" value="${escapeAttr(f.ad)}" style="flex:1;font-size:11px;padding:5px 8px;" />
+          </div>
+          <input class="input" id="kf-url-${f.id}" value="${escapeAttr(f.url || "")}" placeholder="https://…/takip?code={no}"
+            style="width:100%;font-size:10px;padding:5px 8px;" />
+        </div>`).join("")}
+      <button class="btn-primary" style="width:100%;margin-top:10px;font-size:12px;padding:9px;" data-action="kargo-firma-kaydet">💾 Kargo Firmalarını Kaydet</button>
+      ` : ""}
+    </div>
+
     <div style="display:flex;gap:6px;margin-bottom:12px;">
       ${[["yeni","En yeni"],["eski","En eski"],["tutar","Tutar"]].map(([v,l]) => `
         <button data-action="sip-sirala" data-id="${v}"
@@ -3462,3 +3632,58 @@ function siparisMesaji(o, durumId) {
   };
   return mesajlar[durumId] || mesajlar.yeni;
 }
+
+/* =====================================================================
+   🚚 KARGO FİRMASI YÖNETİMİ (Trendyol mantığı)
+   ---------------------------------------------------------------------
+   Her firma için takip linki şablonu tutulur. {no} yerine takip
+   numarası konur; müşteriye gönderilen mesaja otomatik eklenir.
+   ===================================================================== */
+
+const KARGO_VARSAYILAN = [
+  { id:"aras",    ad:"Aras Kargo",       ikon:"🔴", url:"https://www.araskargo.com.tr/tr/cargo-tracking?code={no}", aktif:true },
+  { id:"yurtici", ad:"Yurtiçi Kargo",    ikon:"🟠", url:"https://www.yurticikargo.com/tr/online-islemler/gonderi-sorgula?code={no}", aktif:true },
+  { id:"mng",     ad:"MNG Kargo",        ikon:"🔵", url:"https://www.mngkargo.com.tr/gonderitakip?code={no}", aktif:true },
+  { id:"ptt",     ad:"PTT Kargo",        ikon:"🟡", url:"https://gonderitakip.ptt.gov.tr/Track/Verify?code={no}", aktif:true },
+  { id:"surat",   ad:"Sürat Kargo",      ikon:"🟢", url:"https://www.suratkargo.com.tr/gonderitakip?code={no}", aktif:true },
+  { id:"tyexpress", ad:"Trendyol Express", ikon:"🟣", url:"https://www.trendyolexpress.com/gonderi-takibi?code={no}", aktif:true },
+  { id:"hepsijet",ad:"HepsiJet",         ikon:"🟤", url:"https://www.hepsijet.com/gonderi-takibi?code={no}", aktif:true },
+  { id:"sendeo",  ad:"Sendeo",           ikon:"⚪", url:"https://www.sendeo.com.tr/gonderi-takibi?code={no}", aktif:true },
+  { id:"ups",     ad:"UPS",              ikon:"🟫", url:"https://www.ups.com/track?loc=tr_TR&tracknum={no}", aktif:true },
+  { id:"diger",   ad:"Diğer / Elden",    ikon:"✋", url:"", aktif:true }
+];
+
+function kargoFirmalari() {
+  const kayitli = state.kargoFirmalari;
+  if (!kayitli || !kayitli.length) return KARGO_VARSAYILAN.slice().filter(k => k.aktif !== false);
+  return kayitli.filter(k => k.aktif !== false);
+}
+
+function kargoFirmaBul(id) {
+  if (!id) return null;
+  return (state.kargoFirmalari || KARGO_VARSAYILAN).find(k => k.id === id) || null;
+}
+
+function kargoFirmaAdi(id) {
+  const f = kargoFirmaBul(id);
+  return f ? f.ad : "";
+}
+
+/* Takip linkini üret */
+function kargoTakipLinki(o) {
+  if (!o) return "";
+  if (o.kargoLink) return o.kargoLink;                     // elle girilmişse onu kullan
+  const f = kargoFirmaBul(o.kargoFirma);
+  if (!f || !f.url || !o.kargoNo) return "";
+  return f.url.replace("{no}", encodeURIComponent(o.kargoNo));
+}
+
+/* Kargo durumu seçenekleri (Trendyol'daki gibi) */
+const KARGO_ASAMA = [
+  { id:"", ad:"—" },
+  { id:"bilgi_alindi",  ad:"Bilgi alındı" },
+  { id:"tasimada",      ad:"Taşımada" },
+  { id:"dagitimda",     ad:"Dağıtımda" },
+  { id:"teslim",        ad:"Teslim edildi" },
+  { id:"iade",          ad:"İade" }
+];

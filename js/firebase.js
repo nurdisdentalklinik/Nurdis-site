@@ -315,6 +315,7 @@ function saveAccountingToFirebase() {
       demirbaslar: state.demirbaslar || [],
       accTamamlanan: state.accTamamlanan || {},
       firmaBilgi: state.firmaBilgi || null,
+      kargoFirmalari: state.kargoFirmalari || null,
       stok: state.stok || [],
       stokHareket: (state.stokHareket || []).slice(0, 800),
       tedaviMalzeme: state.tedaviMalzeme || {},
@@ -621,6 +622,7 @@ function startAdminSubscriptions() {
         if (data.demirbaslar) { state.demirbaslar = data.demirbaslar; localStorage.setItem("nurdis_demirbaslar", JSON.stringify(state.demirbaslar)); }
         if (data.accTamamlanan) { state.accTamamlanan = data.accTamamlanan; localStorage.setItem("nurdis_beyan_tamam", JSON.stringify(state.accTamamlanan)); }
         if (data.firmaBilgi) { state.firmaBilgi = data.firmaBilgi; localStorage.setItem("nurdis_firma_bilgi", JSON.stringify(state.firmaBilgi)); }
+        if (data.kargoFirmalari) { state.kargoFirmalari = data.kargoFirmalari; localStorage.setItem("nurdis_kargo_firmalari", JSON.stringify(state.kargoFirmalari)); }
         if (data.stok) { state.stok = data.stok; localStorage.setItem("nurdis_stok", JSON.stringify(state.stok)); }
         if (data.stokHareket) { state.stokHareket = data.stokHareket; localStorage.setItem("nurdis_stok_hareket", JSON.stringify(state.stokHareket)); }
         if (data.tedaviMalzeme) { state.tedaviMalzeme = data.tedaviMalzeme; localStorage.setItem("nurdis_tedavi_malzeme", JSON.stringify(state.tedaviMalzeme)); }
