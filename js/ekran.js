@@ -34,6 +34,11 @@ function renderMoreSheet() {
 }
 
 function render() {
+  /* İlk çizimde URL hash'ini uygula (#hesap-sil gibi doğrudan bağlantılar) */
+  if (!window.__hashIlkYukleme) {
+    window.__hashIlkYukleme = 1;
+    try { if (typeof hashUygula === "function") hashUygula(); } catch (e) {}
+  }
   stopCameraHardware();
   const screenEl = document.getElementById("screen");
   let target = state.screen;
@@ -58,6 +63,24 @@ function render() {
   if (state.screen === "smile") initSmile();
   if (state.screen === "chatbot") { const log = document.getElementById("chat-log"); if (log) log.scrollTop = log.scrollHeight; }
 }
+
+
+/* ---------------- HASH ROUTING ----------------
+   Mağazalar (Google Play / App Store) "veri silme URL'si" ister.
+   https://nurdis.pages.dev/#hesap-sil gibi doğrudan bağlantı çalışmalı. */
+function hashUygula() {
+  const h = (location.hash || "").replace(/^#/, "").trim();
+  if (!h) return false;
+  const hedef = h.split("?")[0];
+  if (!SCREEN_MAP[hedef]) return false;
+  state.screen = hedef;
+  state.moreOpen = false;
+  return true;
+}
+
+window.addEventListener("hashchange", () => {
+  if (hashUygula()) { render(); window.scrollTo(0, 0); }
+});
 
 function refreshDisabled() {
   const map = {
@@ -260,6 +283,22 @@ document.addEventListener("input", (e) => {
   }, 240);
 }, true);
 
+
+/* Hesap silme onayı — "SİL" yazılınca buton aktifleşir (yeniden çizim yok) */
+document.addEventListener("input", (e) => {
+  const t = e.target;
+  if (!t || t.id !== "silme-onay") return;
+  state.silmeOnay = t.value || "";
+  const btn = document.querySelector('[data-action="silme-uygula"]');
+  if (btn) {
+    const gecerli = (typeof silmeOnayGecerliMi === "function")
+      ? silmeOnayGecerliMi(t.value)
+      : /^(sil|s[iı]l)$/i.test((t.value || "").trim());
+    btn.disabled = !gecerli;
+    btn.style.background = gecerli ? "#C62828" : "var(--muted)";
+  }
+}, true);
+
 /* ---------------- DEĞİŞİM (change) OLAYLARI ----------------
    Satır içi onchange="" CSP tarafından engellendiği için
    data-change özniteliği ile merkezi olarak yönetilir. */
@@ -301,6 +340,9 @@ document.addEventListener("click", (e) => {
 
   // Doktorlar
   if (typeof doktorAction === "function" && doktorAction(action, el)) return;
+
+  // Hesap ve veri silme (KVKK / mağaza zorunluluğu)
+  if (typeof hesapSilAction === "function" && hesapSilAction(el, action)) return;
 
   // İade/değişim + ürün yorumları + harita
   if (typeof iadeAction === "function" && iadeAction(el, action)) return;

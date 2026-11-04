@@ -558,6 +558,8 @@ function hesapBilgilerHTML() {
       data-action="goto" data-screen="kvkk">📄 KVKK & Gizlilik</button>
     <button class="btn-primary" style="width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--line);font-size:12.5px;margin-bottom:8px;"
       data-action="goto" data-screen="kargo-takip">🚚 Kargo Takip</button>
+    <button class="btn-primary" style="width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--line);font-size:12.5px;margin-bottom:8px;"
+      data-action="goto" data-screen="hesap-sil">🗑️ Hesabımı Sil</button>
     <button class="btn-primary" style="width:100%;background:#FFEBEE;color:#C62828;border:1px solid #EF9A9A;font-size:12.5px;"
       data-action="hesap-cikis">Çıkış Yap</button>
   </div>`;

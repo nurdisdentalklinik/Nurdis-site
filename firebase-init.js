@@ -10,7 +10,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   getAuth, GoogleAuthProvider, signInWithPopup, signOut,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile,
-  sendPasswordResetEmail, onAuthStateChanged,
+  sendPasswordResetEmail, onAuthStateChanged, deleteUser,
   signInWithRedirect, getRedirectResult,
   getMultiFactorResolver, TotpMultiFactorGenerator,
   PhoneAuthProvider, PhoneMultiFactorGenerator
@@ -233,6 +233,110 @@ async function sifreSifirla(email) {
     return { ok: true };
   } catch (err) {
     return { ok: false, error: "Sıfırlama e-postası gönderilemedi." };
+  }
+}
+
+
+/* =====================================================================
+   HESAP VE VERİ SİLME  (KVKK m.7 · Google Play & App Store zorunluluğu)
+   ---------------------------------------------------------------------
+   Kullanıcının kendi verisini silmesi. Firestore kuralları kullanıcının
+   yalnızca KENDİ kaydını silmesine izin veriyor.
+   ===================================================================== */
+
+/* Kullanıcıya ait koleksiyonlardaki kayıtları sil */
+async function silKullaniciVerileri(uid) {
+  const silinen = [];
+  const hatalar = [];
+
+  const koleksiyonlar = [
+    ["patient_notes", "Hasta notları"],
+    ["patient_files", "Hasta dosyaları"]
+  ];
+
+  for (const [col, ad] of koleksiyonlar) {
+    try {
+      const q = query(collection(db, col), where("uid", "==", uid));
+      const snap = await getDocs(q);
+      for (const d of snap.docs) {
+        await deleteDoc(doc(db, col, d.id));
+        silinen.push(ad + " (" + d.id + ")");
+      }
+    } catch (e) {
+      hatalar.push(ad + ": " + (e && e.code ? e.code : String(e)));
+    }
+  }
+
+  /* Ürün yorumları: kişisel bilgi çıkarılır, yorum kalır (kamuya açık içerik) */
+  try {
+    const q = query(collection(db, "product_reviews"), where("uid", "==", uid));
+    const snap = await getDocs(q);
+    for (const d of snap.docs) {
+      await updateDoc(doc(db, "product_reviews", d.id), {
+        ad: "Silinmiş kullanıcı", uid: "silinmis", anonim: true
+      });
+      silinen.push("Ürün yorumu anonimleştirildi (" + d.id + ")");
+    }
+  } catch (e) {
+    hatalar.push("Ürün yorumları: " + (e && e.code ? e.code : String(e)));
+  }
+
+  /* İade talepleri: kişisel bilgi çıkarılır, kayıt kalır (mali kayıt) */
+  try {
+    const q = query(collection(db, "returns"), where("uid", "==", uid));
+    const snap = await getDocs(q);
+    for (const d of snap.docs) {
+      await updateDoc(doc(db, "returns", d.id), {
+        musteri: "Silinmiş kullanıcı", telefon: "", uid: "silinmis", anonim: true
+      });
+      silinen.push("İade talebi anonimleştirildi (" + d.id + ")");
+    }
+  } catch (e) {
+    hatalar.push("İade talepleri: " + (e && e.code ? e.code : String(e)));
+  }
+
+  /* Profil ve fırçalama serisi dokümanları */
+  try { await deleteDoc(doc(db, "user_profiles", uid)); silinen.push("Profil"); }
+  catch (e) {
+    if (e && e.code !== "not-found") hatalar.push("Profil: " + (e && e.code));
+  }
+  try { await deleteDoc(doc(db, "brush_streaks", uid)); silinen.push("Fırçalama serisi"); }
+  catch (e) {
+    if (e && e.code !== "not-found") hatalar.push("Fırçalama serisi: " + (e && e.code));
+  }
+
+  return { silinen, hatalar };
+}
+
+/* Sipariş kaydını anonimleştir — tutar/tarih kalır (yasal), kişisel veri gider */
+async function anonimlestirSiparis(id) {
+  if (!id) return;
+  return updateDoc(doc(db, "orders", id), {
+    name: "Silinmiş kullanıcı",
+    phone: "",
+    address: "—",
+    uid: "silinmis",
+    musteriEmail: "",
+    anonim: true,
+    anonimTarih: new Date().toISOString()
+  });
+}
+
+/* Firebase Auth hesabını sil
+   NOT: Firebase son girişten uzun süre geçtiyse "requires-recent-login"
+   hatası verir. O durumda kullanıcıya yeniden giriş yapması söylenir. */
+async function hesapSilAuth() {
+  try {
+    const u = auth.currentUser;
+    if (!u) return { ok: false, error: "Aktif oturum yok" };
+    await deleteUser(u);
+    return { ok: true };
+  } catch (e) {
+    const kod = e && e.code ? e.code : "";
+    if (kod.indexOf("requires-recent-login") !== -1) {
+      return { ok: false, error: "Güvenlik nedeniyle yeniden giriş yapmanız gerekiyor. Çıkış yapıp tekrar giriş yapın, sonra silmeyi tekrarlayın.", recentLogin: true };
+    }
+    return { ok: false, error: kod || String(e) };
   }
 }
 
@@ -459,6 +563,7 @@ function deleteTreatment(id) {
 window.fb = {
   ready: true,
   musteriKayit, musteriGiris, sifreSifirla,
+  silKullaniciVerileri, anonimlestirSiparis, hesapSilAuth,
   signInGoogle, adminSignIn, adminMfaDogrula, adminGoogleSignIn, signOutUser, onAuthChange,
   getRedirectResultSafe: () => _redirectHazir.then(() => _redirectSonucu),
   subscribeReviews: (cb) => subscribe("reviews", cb),
