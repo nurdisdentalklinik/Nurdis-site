@@ -19,22 +19,104 @@
 {
   "@context": "https://schema.org",
   "@type": "Dentist",
+  "@id": "https://nurdis.pages.dev/#klinik",
   "name": "Nur Diş & Dental Klinik",
+  "alternateName": "Nur Diş Dental",
+  "url": "https://nurdis.pages.dev/",
   "image": "https://nurdis.pages.dev/icon-512.png",
+  "logo": "https://nurdis.pages.dev/icon-512.png",
   "telephone": "+905051050302",
+  "priceRange": "₺₺",
+  "currenciesAccepted": "TRY",
+  "paymentAccepted": "Nakit, Kredi Kartı, Havale/EFT",
+  "description": "Mardin Kızıltepe TOKİ'de hizmet veren diş kliniği. İmplant, kanal tedavisi, zirkonyum kaplama, diş beyazlatma, ortodonti ve çocuk diş hekimliği. Online randevu imkanı.",
   "address": {
     "@type": "PostalAddress",
     "streetAddress": "TOKİ Mahallesi",
     "addressLocality": "Kızıltepe",
     "addressRegion": "Mardin",
+    "postalCode": "47400",
     "addressCountry": "TR"
   },
-  "openingHours": ["Mo-Fr 09:00-18:00", "Sa 10:00-14:00"],
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": 37.1919,
+    "longitude": 40.5869
+  },
+  "hasMap": "https://www.google.com/maps/search/?api=1&query=Nur+Di%C5%9F+Dental+Klinik+K%C4%B1z%C4%B1ltepe+Mardin",
+  "areaServed": [
+    { "@type": "City", "name": "Kızıltepe" },
+    { "@type": "City", "name": "Mardin" },
+    { "@type": "City", "name": "Midyat" },
+    { "@type": "City", "name": "Nusaybin" }
+  ],
+  "openingHoursSpecification": [
+    { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"], "opens": "09:00", "closes": "18:00" },
+    { "@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "10:00", "closes": "14:00" }
+  ],
   "medicalSpecialty": "Dentistry",
+  "availableService": [
+    { "@type": "MedicalProcedure", "name": "Diş İmplantı", "description": "Eksik diş yerine titanyum vida yerleştirilerek kalıcı diş yapılması." },
+    { "@type": "MedicalProcedure", "name": "Kanal Tedavisi", "description": "İltihaplı diş sinirinin temizlenip kanalların doldurulması." },
+    { "@type": "MedicalProcedure", "name": "Zirkonyum Kaplama", "description": "Doğal diş görünümüne yakın, dayanıklı porselen kaplama." },
+    { "@type": "MedicalProcedure", "name": "Diş Beyazlatma", "description": "Hekim kontrolünde profesyonel diş beyazlatma uygulaması." },
+    { "@type": "MedicalProcedure", "name": "Ortodonti (Tel Tedavisi)", "description": "Diş sıralama ve kapanış bozukluklarının tedavisi." },
+    { "@type": "MedicalProcedure", "name": "Şeffaf Plak (Clear Aligner)", "description": "Şeffaf, çıkarılabilir plaklarla diş düzeltme." },
+    { "@type": "MedicalProcedure", "name": "Diş Taşı Temizliği", "description": "Ultrasonik cihazla diş taşı ve plak temizliği." },
+    { "@type": "MedicalProcedure", "name": "Çocuk Diş Hekimliği", "description": "Çocuklara özel koruyucu ve tedavi edici diş hekimliği." },
+    { "@type": "MedicalProcedure", "name": "Lamina (Yaprak Porselen)", "description": "Ön dişlere uygulanan ince porselen kaplama." },
+    { "@type": "MedicalProcedure", "name": "Köprü Protezi", "description": "Eksik dişin iki yanındaki dişlerden destek alan sabit protez." },
+    { "@type": "MedicalProcedure", "name": "Diş Çekimi", "description": "Kurtarılamayan dişlerin çekimi ve gömülü diş cerrahisi." }
+  ],
   "physician": {
     "@type": "Physician",
-    "name": "Dt. Ramazan DAĞ"
+    "name": "Dt. Ramazan DAĞ",
+    "jobTitle": "Diş Hekimi — Klinik Sorumlusu",
+    "medicalSpecialty": "Dentistry",
+    "alumniOf": "Çukurova Üniversitesi Diş Hekimliği Fakültesi"
+  },
+  "potentialAction": {
+    "@type": "ReserveAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "https://nurdis.pages.dev/#booking",
+      "actionPlatform": ["http://schema.org/DesktopWebPlatform","http://schema.org/MobileWebPlatform"]
+    },
+    "result": { "@type": "Reservation", "name": "Diş hekimi randevusu" }
   }
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "Kızıltepe'de diş hekimi randevusu nasıl alınır?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Nur Diş & Dental Klinik'ten randevu almak için uygulamanın Randevu bölümünü kullanabilir veya 0505 105 03 02 numarasını arayabilirsiniz. Randevu oluşturma 7 gün 24 saat açıktır, gece saatlerinde de randevu alınabilir. Hesap açmadan misafir olarak da randevu oluşturulabilir." } },
+    { "@type": "Question", "name": "Klinik hangi gün ve saatlerde açık?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Hafta içi Pazartesi-Cuma 09:00-18:00, Cumartesi 10:00-14:00 saatleri arasında hizmet veriyoruz. Pazar günü kapalıyız. Acil durumlar için telefonla ulaşabilirsiniz." } },
+    { "@type": "Question", "name": "Hangi diş tedavilerini yapıyorsunuz?",
+      "acceptedAnswer": { "@type": "Answer", "text": "İmplant, kanal tedavisi, zirkonyum kaplama, lamina, diş beyazlatma, ortodonti (tel tedavisi), şeffaf plak, diş taşı temizliği, dolgu, diş çekimi, köprü protezi ve çocuk diş hekimliği hizmetleri sunuyoruz." } },
+    { "@type": "Question", "name": "Muayene ücretli mi?",
+      "acceptedAnswer": { "@type": "Answer", "text": "İlk muayene ve tedavi planlaması için kliniğimizi arayarak güncel bilgi alabilirsiniz. Muayenede ağız içi kontrol yapılır, gerekiyorsa röntgen çekilir ve size özel tedavi planı çıkarılır." } },
+    { "@type": "Question", "name": "İmplant tedavisi ne kadar sürer?",
+      "acceptedAnswer": { "@type": "Answer", "text": "İmplant tedavisi 2-3 seansta tamamlanır. Titanyum vidanın çene kemiğiyle kaynaşması ortalama 3-6 ay sürer, bu dönemde geçici diş kullanılır." } },
+    { "@type": "Question", "name": "Kanal tedavisi ağrılı mıdır?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Kanal tedavisi lokal anestezi altında yapılır ve işlem sırasında ağrı hissedilmez. İşlem sonrası 1-2 gün hafif hassasiyet olabilir, bu normaldir ve kendiliğinden geçer." } },
+    { "@type": "Question", "name": "Diş ağrım var, aynı gün gelebilir miyim?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Gece artan, zonklayan veya yüzde şişlikle birlikte olan diş ağrılarında mümkün olan en kısa sürede muayene gerekir. Bizi 0505 105 03 02 numarasından arayarak aynı gün randevu talep edebilirsiniz." } },
+    { "@type": "Question", "name": "Çocuğumu ilk kez kaç yaşında diş hekimine getirmeliyim?",
+      "acceptedAnswer": { "@type": "Answer", "text": "İlk diş çıktığında ve en geç 1 yaşında ilk diş hekimi muayenesi önerilir. Amaç tedavi değil, çürük riskini değerlendirmek ve doğru alışkanlıkları kazandırmaktır." } },
+    { "@type": "Question", "name": "Diş beyazlatma dişe zarar verir mi?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Diş hekimi kontrolünde yapılan profesyonel beyazlatma mineye kalıcı hasar vermez. Hamilelikte, emzirme döneminde ve aşırı hassasiyet durumunda ertelenmesi önerilir." } },
+    { "@type": "Question", "name": "Klinikte ağız bakım ürünleri satılıyor mu?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Evet. Uygulamamızın Mağaza bölümünden klinik onaylı diş fırçası, diş macunu, ağız duşu, diş ipi, ev tipi beyazlatma kiti ve ortodontik bakım ürünleri sipariş edebilirsiniz. Kargo ile gönderim yapılır." } },
+    { "@type": "Question", "name": "Nur Diş nerede? Nasıl ulaşabilirim?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Mardin ili Kızıltepe ilçesi TOKİ Mahallesi'nde bulunuyoruz. Uygulamanın Adresimiz bölümünden harita konumumuza ulaşabilir, QR kod ile doğrudan yol tarifi alabilirsiniz." } },
+    { "@type": "Question", "name": "Hesabımı ve verilerimi nasıl silerim?",
+      "acceptedAnswer": { "@type": "Answer", "text": "KVKK kapsamında dilediğiniz zaman hesabınızı silebilirsiniz. Hesabım > Bilgilerim > Hesabımı Sil yolunu izleyin veya doğrudan nurdis.pages.dev/#hesap-sil adresini kullanın. Profil, adres, sağlık notları ve puanlarınız silinir; sipariş kayıtları yasal zorunluluk nedeniyle anonimleştirilir." } }
+  ]
 }
 </script>
 <meta name="theme-color" content="#0B6E86" />
