@@ -19,6 +19,9 @@ import {
   getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp,
   doc, setDoc, updateDoc, deleteDoc, getDocs, getDoc, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  initializeAppCheck, ReCaptchaV3Provider
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDbLNDyGs-9TQkdEwd85SeR464gIjNipog",
@@ -35,6 +38,51 @@ const firebaseConfig = {
 const ADMIN_EMAIL = "nurdisdentalklinik@gmail.com";
 
 const app = initializeApp(firebaseConfig);
+
+/* =====================================================================
+   APP CHECK — uygulama doğrulaması
+   ---------------------------------------------------------------------
+   AMAÇ: Firebase API'lerine yalnızca GERÇEK uygulamamızdan gelen
+   isteklerin erişmesini sağlar. Botlar, kopya siteler ve curl gibi
+   araçlarla yapılan toplu istekler engellenir.
+
+   NASIL ÇALIŞIR:
+   reCAPTCHA v3 sessizce bir puan üretir → Firebase bu puanı doğrular →
+   her isteğe bir "token" eklenir. Kullanıcı hiçbir şey görmez.
+
+   ⚠️ KRİTİK KURULUM SIRASI (yanlış sıra siteyi kilitler):
+     1. reCAPTCHA v3 site key alınır          ← SEN
+     2. Firebase Console → App Check → Kaydet ← SEN
+     3. Site key buraya yazılır               ← BEN
+     4. Kod yayınlanır, metrikler izlenir     ← BEN
+     5. "Enforce" AÇILIR (ancak o zaman!)     ← SEN
+   Enforce'u erken açarsan TÜM istekler reddedilir ve site çalışmaz.
+   ===================================================================== */
+
+const RECAPTCHA_SITE_KEY = "";   // ← reCAPTCHA konsolundan alınacak ANAHTAR buraya
+
+let appCheck = null;
+if (RECAPTCHA_SITE_KEY && RECAPTCHA_SITE_KEY.length > 10) {
+  try {
+    /* Yerel geliştirme için hata ayıklama token'ı.
+       Üretimde (pages.dev / github.io) bu blok çalışmaz. */
+    const yerelMi = /localhost|127\.0\.0\.1/.test(location.hostname);
+    if (yerelMi) self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+
+    appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
+      isTokenAutoRefreshEnabled: true   // token otomatik yenilenir
+    });
+    console.log("App Check: aktif");
+  } catch (e) {
+    /* App Check başlatılamazsa site ÇALIŞMAYA DEVAM EDER.
+       Asla uygulamayı kilitlemeyiz. */
+    console.warn("App Check başlatılamadı:", e && e.message);
+  }
+} else {
+  console.log("App Check: site key tanımlı değil, devre dışı");
+}
+
 const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
@@ -631,6 +679,11 @@ window.fb = {
   subscribeAccountingIncomes: (cb) => subscribeAccounting("income", cb),
   subscribeAccountingExpenses: (cb) => subscribeAccounting("expense", cb),
   /* Anlık oturum — yönetici kapısı bunu sunucudan doğrular */
+  /* App Check durumu — teşhis için */
+  appCheckDurum: () => ({
+    siteKeyVar: !!RECAPTCHA_SITE_KEY,
+    baslatildi: !!appCheck
+  }),
   getCurrentUser: () => {
     const u = auth.currentUser;
     return u ? { uid: u.uid, email: u.email, isAdmin: u.email === ADMIN_EMAIL } : null;
