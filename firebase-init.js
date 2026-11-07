@@ -59,7 +59,7 @@ const app = initializeApp(firebaseConfig);
    Enforce'u erken açarsan TÜM istekler reddedilir ve site çalışmaz.
    ===================================================================== */
 
-const RECAPTCHA_SITE_KEY = "";   // ← reCAPTCHA konsolundan alınacak ANAHTAR buraya
+const RECAPTCHA_SITE_KEY = "6LeNbxUuAAAAAHjDVvqxfb1aTGiHg059426TF0xd";   // reCAPTCHA v3 site key (herkese açık)
 
 let appCheck = null;
 if (RECAPTCHA_SITE_KEY && RECAPTCHA_SITE_KEY.length > 10) {
