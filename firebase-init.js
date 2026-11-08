@@ -20,7 +20,7 @@ import {
   doc, setDoc, updateDoc, deleteDoc, getDocs, getDoc, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
-  initializeAppCheck, ReCaptchaV3Provider
+  initializeAppCheck, ReCaptchaV3Provider, ReCaptchaEnterpriseProvider
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-check.js";
 
 const firebaseConfig = {
@@ -61,6 +61,13 @@ const app = initializeApp(firebaseConfig);
 
 const RECAPTCHA_SITE_KEY = "6LeNbxUuAAAAAHjDVvqxfb1aTGiHg059426TF0xd";   // reCAPTCHA v3 site key (herkese açık)
 
+/* App Check sağlayıcı seçimi
+   "v3"         → reCAPTCHA Classic (Firebase'de "reCAPTCHA" seçeneği)
+   "enterprise" → Fraud Defense / reCAPTCHA Enterprise (Firebase'de "Fraud Defense")
+   Google Classic'i kullanımdan kaldırınca bu satırı "enterprise" yapıp
+   Enterprise anahtarını yukarıya yazmak yeterli olacak. */
+const APPCHECK_PROVIDER = "v3";
+
 let appCheck = null;
 if (RECAPTCHA_SITE_KEY && RECAPTCHA_SITE_KEY.length > 10) {
   try {
@@ -69,11 +76,15 @@ if (RECAPTCHA_SITE_KEY && RECAPTCHA_SITE_KEY.length > 10) {
     const yerelMi = /localhost|127\.0\.0\.1/.test(location.hostname);
     if (yerelMi) self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 
+    const saglayici = (APPCHECK_PROVIDER === "enterprise")
+      ? new ReCaptchaEnterpriseProvider(RECAPTCHA_SITE_KEY)
+      : new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY);
+
     appCheck = initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider(RECAPTCHA_SITE_KEY),
+      provider: saglayici,
       isTokenAutoRefreshEnabled: true   // token otomatik yenilenir
     });
-    console.log("App Check: aktif");
+    console.log("App Check: aktif (" + APPCHECK_PROVIDER + ")");
   } catch (e) {
     /* App Check başlatılamazsa site ÇALIŞMAYA DEVAM EDER.
        Asla uygulamayı kilitlemeyiz. */
@@ -682,7 +693,8 @@ window.fb = {
   /* App Check durumu — teşhis için */
   appCheckDurum: () => ({
     siteKeyVar: !!RECAPTCHA_SITE_KEY,
-    baslatildi: !!appCheck
+    baslatildi: !!appCheck,
+    saglayici: APPCHECK_PROVIDER
   }),
   getCurrentUser: () => {
     const u = auth.currentUser;
