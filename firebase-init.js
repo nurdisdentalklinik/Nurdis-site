@@ -89,6 +89,7 @@ if (RECAPTCHA_SITE_KEY && RECAPTCHA_SITE_KEY.length > 10) {
       isTokenAutoRefreshEnabled: true   // token otomatik yenilenir
     });
     console.log("App Check: aktif (" + APPCHECK_PROVIDER + ")");
+    window.__acDeneme = appCheck;   // teşhis için (zararsız)
   } catch (e) {
     /* App Check başlatılamazsa site ÇALIŞMAYA DEVAM EDER.
        Asla uygulamayı kilitlemeyiz. */
