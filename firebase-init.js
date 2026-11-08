@@ -66,7 +66,11 @@ const RECAPTCHA_SITE_KEY = "6LeNbxUuAAAAAHjDVvqxfb1aTGiHg059426TF0xd";   // reCA
    "enterprise" → Fraud Defense / reCAPTCHA Enterprise (Firebase'de "Fraud Defense")
    Google Classic'i kullanımdan kaldırınca bu satırı "enterprise" yapıp
    Enterprise anahtarını yukarıya yazmak yeterli olacak. */
-const APPCHECK_PROVIDER = "v3";
+/* Google, 3 Kasım 2026 itibarıyla reCAPTCHA Classic (v3) ile YENİ KAYIT
+   kabul etmiyor. Firebase Konsolu artık yalnızca "Fraud Defense"
+   (reCAPTCHA Enterprise) seçeneğini kaydediyor.
+   Bu yüzden provider "enterprise" olarak ayarlandı. */
+const APPCHECK_PROVIDER = "enterprise";
 
 let appCheck = null;
 if (RECAPTCHA_SITE_KEY && RECAPTCHA_SITE_KEY.length > 10) {
