@@ -1173,6 +1173,17 @@ document.addEventListener("click", (e) => {
     return;
   }
 
+  if (action === "admin-mail-ac") {
+    state.mailGirisAcik = !state.mailGirisAcik;
+    state.adminError = "";
+    render();
+    setTimeout(() => {
+      const el = document.getElementById("ad-email");
+      if (el) el.focus();
+    }, 120);
+    return;
+  }
+
   if (action === "admin-google-giris") {
     if (!window.fb || !window.fb.adminGoogleSignIn) { state.adminError = "Giriş sistemi hazır değil, birkaç saniye sonra dene."; render(); return; }
     state.authBusy = true; state.adminError = ""; render();
@@ -1192,6 +1203,8 @@ document.addEventListener("click", (e) => {
       } else {
         gvHataliGiris();
         state.adminError = res.error || "Google girişi başarısız.";
+        /* Google başarısız olursa e-posta seçeneğini otomatik aç */
+        state.mailGirisAcik = true;
         playSound("error");
       }
       render();

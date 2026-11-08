@@ -448,6 +448,7 @@ let state = {
   siparisArama: "",          // Sipariş yönetimi: arama
   siparisSirala: "yeni",      // Sipariş yönetimi: sıralama
   siparisAcik: null,          // Açık sipariş kartı
+  mailGirisAcik: false,      // Yönetici girişinde e-posta formu açık mı
   adminMfa: false,          // İki adımlı doğrulama adımı
   adminMfaYontem: null,     // 'totp' veya 'sms'
   adminGoogleErr: false,
@@ -1526,38 +1527,53 @@ function renderAdminLogin() {
       </div>`;
   }
 
+  const mailAcik = !!state.mailGirisAcik;
+
   return `${topbar("Yönetici Girişi","Sadece klinik yönetimi içindir.", {back:"home"})}
     <div class="content">
 
-      <div class="card p4 mb3" style="background:linear-gradient(135deg,#0B6E86,#0E8FA8);color:#fff;">
-        <p style="font-size:12.5px;font-weight:700;margin:0 0 4px;">🔐 Güvenli giriş önerilir</p>
-        <p style="font-size:11px;opacity:.92;margin:0;line-height:1.5;">
-          Google hesabınızda 2 adımlı doğrulama açıksa, aşağıdaki Google butonu şifreniz çalınsa bile hesabınızı korur.
+      <!-- GOOGLE GİRİŞİ (birincil yöntem) -->
+      <div class="card p5 mb3" style="text-align:center;">
+        <div style="font-size:38px;margin-bottom:10px;">🔐</div>
+        <p class="name" style="font-size:15px;margin:0 0 5px;">Güvenli Giriş</p>
+        <p class="desc" style="margin:0 0 18px;font-size:11.5px;line-height:1.55;">
+          Google hesabınızın iki adımlı doğrulaması ile korunur.
         </p>
-      </div>
 
-      <div class="card p5 mb3">
-        <button class="btn-primary" data-action="admin-google-giris"
-          style="width:100%;background:#fff;color:#3c4043;border:1px solid #dadce0;display:flex;align-items:center;justify-content:center;gap:10px;font-weight:600;">
-          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        <button data-action="admin-google-giris"
+          style="width:100%;padding:14px;border-radius:12px;background:#fff;color:#3c4043;border:1.5px solid #dadce0;display:flex;align-items:center;justify-content:center;gap:11px;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.08);">
+          <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
           Google ile Giriş Yap
         </button>
-        ${state.adminError ? `<p class="status-err" style="margin-top:12px;">${state.adminError}</p>` : ""}
-        <p class="footnote" style="margin:10px 0 0;text-align:center;">Google hesabınızda 2 adımlı doğrulama açıksa bu yöntem en güvenlisidir.</p>
+
+        ${state.adminError && !mailAcik ? `<p class="status-err" style="margin-top:12px;text-align:left;">${escapeHtml(state.adminError)}</p>` : ""}
+
+        <button data-action="admin-mail-ac"
+          style="width:100%;margin-top:16px;background:none;border:none;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;text-decoration:underline;padding:6px;">
+          ${mailAcik ? "▲ E-posta ile girişi kapat" : "E-posta ile giriş yap"}
+        </button>
       </div>
 
-      <div style="display:flex;align-items:center;gap:10px;margin:4px 0 14px;">
-        <div style="flex:1;height:1px;background:var(--line);"></div>
-        <span style="font-size:11px;color:var(--muted);font-weight:600;">veya e-posta ile</span>
-        <div style="flex:1;height:1px;background:var(--line);"></div>
-      </div>
+      <!-- E-POSTA GİRİŞİ (ikincil, varsayılan kapalı) -->
+      ${mailAcik ? `
+      <div class="card p4 mb3">
+        <p class="section-label" style="margin:0 0 12px;">E-posta ile giriş</p>
+        <div class="field"><label>E-posta</label>
+          <input class="input" id="ad-email" value="${escapeAttr(f.email)}" autocomplete="username" inputmode="email" placeholder="ornek@eposta.com" /></div>
+        <div class="field"><label>Şifre</label>
+          <input class="input" type="password" id="ad-pass" value="${escapeAttr(f.pass)}" autocomplete="current-password" placeholder="Şifreniz" /></div>
+        ${state.adminError ? `<p class="status-err">${escapeHtml(state.adminError)}</p>` : ""}
+        <button class="btn-primary" style="width:100%;" data-action="admin-login" ${state.authBusy ? "disabled" : ""}>
+          ${state.authBusy ? "Giriş yapılıyor…" : "Giriş Yap"}
+        </button>
+        <p class="footnote" style="margin:9px 0 0;text-align:center;">İki adımlı doğrulama açıksa girişten sonra kod istenir.</p>
+      </div>` : ""}
 
-      <div class="card p5">
-        <div class="field"><label>Yönetici e-postası</label><input class="input" id="ad-email" value="${escapeAttr(f.email)}" autocomplete="username" /></div>
-        <div class="field"><label>Şifre</label><input class="input" type="password" id="ad-pass" value="${escapeAttr(f.pass)}" autocomplete="current-password" /></div>
-        ${state.adminError && !state.adminGoogleErr ? `<p class="status-err">${state.adminError}</p>` : ""}
-        <button class="btn-primary" data-action="admin-login" ${state.authBusy?"disabled":""}>${state.authBusy?"Giriş yapılıyor…":"Giriş Yap"}</button>
-        <p class="footnote">İki adımlı doğrulama açıksa girişten sonra kod istenir.</p>
-      </div>
+      <p class="footnote" style="text-align:center;margin-top:14px;line-height:1.6;">
+        Bu alan yalnızca klinik yöneticisine açıktır.<br/>
+        Yetkisiz erişim denemeleri kayıt altına alınır.
+      </p>
     </div>`;
 }
+
+
