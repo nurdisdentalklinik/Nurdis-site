@@ -170,25 +170,54 @@ const NAV_TABS = [
   { id:"more", label:"Diğer", icon:"dots", img:"tab-more.png" },
 ];
 
-const MORE_ITEMS = [
-  { id:"account", label:"Hesabım", img:"icon-account.png" },
-  { id:"doctors", label:"Doktorlarımız", img:"icon-doctors.png" },
-  { id:"devices", label:"Cihazlarımız", img:"icon-devices.png" },
-  { id:"smile", label:"Gülüşünü Tasarla", img:"icon-smile.png" },
-  { id:"dentist-game", label:"Dentist Oyunu", img:"dentist-game-logo.png" },
-
-  { id:"reviews", label:"Yorumlar", img:"icon-reviews.png" },
-  { id:"store", label:"Mağaza", img:"icon-store.png" },
-  { id:"kampanya", label:"Kampanyalar", img:"icon-store.png" },
-  { id:"kargo-takip", label:"Kargo Takip", img:"icon-store.png" },
-  { id:"address", label:"Adresimiz", img:"icon-address.png" },
-  { id:"contact", label:"İletişim", img:"icon-contact.png" },
-  { id:"info", label:"Diş Sağlığı Bilgileri", img:"icon-info.png" },
-  { id:"admin-login", label:"Yönetici Girişi", img:"icon-admin.png" },
-  { id:"portal", label:"Hasta Portalı", img:"icon-account.png" },
-  { id:"kvkk", label:"Gizlilik & KVKK", img:"icon-admin.png" },
-  { id:"settings", label:"Ayarlar", img:"icon-settings.png" },
+/* =====================================================================
+   HIZLI ERİŞİM — gruplandırılmış menü
+   ---------------------------------------------------------------------
+   Her grup ayrı başlıkla gösterilir. İkonların hiçbiri tekrar etmez.
+   Etiketler doğrudan `label` alanından okunur (çeviri kaynaklı
+   "smile", "portal", "kvkk" gibi İngilizce görünüm sorunu bitti).
+   ===================================================================== */
+const MORE_GROUPS = [
+  {
+    baslik: "🏥 Klinik",
+    items: [
+      { id: "doctors",  label: "Doktorlarımız", img: "icon-doctors.png" },
+      { id: "devices",  label: "Cihazlarımız",  img: "icon-devices.png" },
+      { id: "address",  label: "Adresimiz",     img: "icon-address.png" },
+      { id: "contact",  label: "İletişim",      img: "icon-contact.png" }
+    ]
+  },
+  {
+    baslik: "🦷 Diş Sağlığı",
+    items: [
+      { id: "info",         label: "Diş Sağlığı Bilgileri", img: "icon-info.png" },
+      { id: "smile",        label: "Gülüşünü Tasarla",      img: "icon-smile.png" },
+      { id: "fircalama",    label: "Fırçalama Takibi",      img: "icon-temizlik.png" },
+      { id: "dentist-game", label: "Dentist Oyunu",         img: "dentist-game-logo.png" }
+    ]
+  },
+  {
+    baslik: "🛍️ Mağaza",
+    items: [
+      { id: "store",       label: "Mağaza",       img: "icon-store.png" },
+      { id: "kampanya",    label: "Kampanyalar",  img: "icon-kampanya.png" },
+      { id: "kargo-takip", label: "Kargo Takip",  img: "icon-kargo.png" },
+      { id: "reviews",     label: "Yorumlar",     img: "icon-reviews.png" }
+    ]
+  },
+  {
+    baslik: "👤 Hesabım",
+    items: [
+      { id: "account",    label: "Hesabım",        img: "icon-account.png" },
+      { id: "portal",     label: "Hasta Portalı",  img: "icon-portal.png" },
+      { id: "kvkk",       label: "Gizlilik & KVKK", img: "icon-kvkk.png" },
+      { id: "settings",   label: "Ayarlar",        img: "icon-settings.png" }
+    ]
+  }
 ];
+
+/* Geriye dönük uyumluluk: bazı yerler MORE_ITEMS'i düz liste olarak kullanıyor */
+const MORE_ITEMS = MORE_GROUPS.reduce((acc, g) => acc.concat(g.items), []);
 
 /* Basit chatbot bilgi tabanı (kural bazlı, gerçek LLM değil — bkz. yorum en altta) */
 /* ---------------- ÖZEL ÇİZİLMİŞ İKON KÜTÜPHANESİ ----------------

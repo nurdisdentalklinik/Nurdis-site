@@ -20,18 +20,39 @@ function renderNav() {
 
 function renderMoreSheet() {
   if (!state.moreOpen) return "";
-  const items = MORE_ITEMS.map(i => `
-    <button class="grid-item" data-action="goto" data-screen="${i.id}">
-      ${i.img ? `<img src="${i.img}" class="grid-icon" style="width:52px;height:52px;border-radius:12px;object-fit:cover;" />` : `<span class="grid-icon">${icon(i.icon,22)}</span>`}<span class="grid-label">${t(i.id)}</span>
-    </button>`).join("");
+
+  /* Gruplandırılmış menü — her grup kendi başlığıyla */
+  const gruplar = (typeof MORE_GROUPS !== "undefined" ? MORE_GROUPS : []).map(g => `
+    <p style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px;">${g.baslik}</p>
+    <div class="menu-grid" style="grid-template-columns:repeat(4,1fr);gap:8px;">
+      ${g.items.map(i => `
+        <button class="grid-item" data-action="goto" data-screen="${i.id}">
+          ${i.img
+            ? `<img src="${i.img}" class="grid-icon" style="width:46px;height:46px;border-radius:12px;object-fit:cover;display:block;" alt="" loading="lazy" />`
+            : `<span class="grid-icon">${icon(i.icon, 22)}</span>`}
+          <span class="grid-label" style="font-size:9.5px;line-height:1.25;">${i.label}</span>
+        </button>`).join("")}
+    </div>`).join("");
+
+  /* Yönetici girişi en altta, ayrı ve sade */
+  const yonetici = `
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line);">
+      <button data-action="goto" data-screen="admin-login"
+        style="width:100%;background:none;border:none;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;padding:10px;display:flex;align-items:center;justify-content:center;gap:7px;">
+        🔒 Yönetici Girişi
+      </button>
+    </div>`;
+
   return `<div class="sheet-overlay" data-action="toggle-more">
-    <div class="sheet">
+    <div class="sheet" style="max-height:88vh;overflow-y:auto;">
       <div class="sheet-handle"></div>
-      <p class="section-label" style="margin-top:4px;">${t("more")}</p>
-      <div class="menu-grid">${items}</div>
+      <p class="section-label" style="margin-top:2px;">Hızlı Erişim</p>
+      ${gruplar}
+      ${yonetici}
     </div>
   </div>`;
 }
+
 
 function render() {
   /* İlk çizimde URL hash'ini uygula (#hesap-sil gibi doğrudan bağlantılar) */
