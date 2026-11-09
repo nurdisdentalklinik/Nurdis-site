@@ -1173,14 +1173,76 @@ document.addEventListener("click", (e) => {
     return;
   }
 
-  if (action === "admin-mail-ac") {
-    state.mailGirisAcik = !state.mailGirisAcik;
-    state.adminError = "";
+  if (action === "admin-google-giris") {
+    if (!window.fb || !window.fb.adminGoogleSignIn) { state.adminError = "Giriş sistemi hazır değil, birkaç saniye sonra dene."; render(); return; }
+    state.authBusy = true; state.adminError = ""; render();
+    window.fb.adminGoogleSignIn().then((res) => {
+      state.authBusy = false;
+      if (res.ok) {
+        gvBasariliGiris();
+        state.adminLoggedIn = true;
+        localStorage.setItem("nurdis_admin_logged_in", "true");
+        state.adminError = ""; state.screen = "admin-panel";
+        gvOturumBaslat();
+        startAdminSubscriptions();
+        playSound("login");
+        gvDenetim("giris", "Google ile yönetici girişi");
+        state.adminGoogleUsed = true;
+        try { localStorage.setItem("nurdis_gv_google", "1"); } catch (e) {}
+      } else {
+        gvHataliGiris();
+        state.adminError = res.error || "Google girişi başarısız.";
+        /* Google başarısız olursa e-posta seçeneğini otomatik aç */
+        state.mailGirisAcik = true;
+        playSound("error");
+      }
+      render();
+    }).catch(() => { state.authBusy = false; render(); });
+    return;
+  }
+
+  if (action === "admin-mfa-dogrula") {
+    if (!window.fb || !window.fb.adminMfaDogrula) return;
+    const kod = (document.getElementById("ad-mfa-kod") || {}).value || "";
+    state.authBusy = true; state.adminError = ""; render();
+    window.fb.adminMfaDogrula(kod).then((res) => {
+      state.authBusy = false;
+      if (res.ok) {
+        state.adminMfa = false; state.adminMfaYontem = null;
+        gvBasariliGiris();
+        state.adminLoggedIn = true;
+        localStorage.setItem("nurdis_admin_logged_in", "true");
+        state.adminError = ""; state.screen = "admin-panel";
+        gvOturumBaslat();
+        startAdminSubscriptions();
+        playSound("login");
+        gvDenetim("giris", "İki adımlı doğrulama ile giriş");
+      } else {
+        state.adminError = res.error || "Kod doğrulanamadı.";
+        playSound("error");
+      }
+      render();
+    }).catch(() => { state.authBusy = false; render(); });
+    return;
+  }
+
+  if (action === "admin-mfa-iptal") {
+    state.adminMfa = false; state.adminMfaYontem = null; state.adminError = "";
+    if (window.fb && window.fb.signOutNow) { try { window.fb.signOutNow(); } catch (e) {} }
     render();
-    setTimeout(() => {
-      const el = document.getElementById("ad-email");
-      if (el) el.focus();
-    }, 120);
+    return;
+  }
+
+  if (action === "admin-login") {
+    /* =================================================================
+       E-POSTA/ŞİFRE GİRİŞİ KALDIRILDI
+       Sebep: Google 2FA'yı atlıyordu. Şifre ele geçirilirse ikinci
+       faktör devreye girmeden panele girilebiliyordu.
+       Artık yalnızca Google ile giriş mümkün.
+       Bu blok güvenlik için korunuyor — doğrudan çağrılsa bile reddeder.
+       ================================================================= */
+    state.adminError = "E-posta ile giriş kapatıldı. Lütfen Google ile giriş yapın.";
+    render();
     return;
   }
 
