@@ -1529,10 +1529,41 @@ function renderAdminLogin() {
 
   const mailAcik = !!state.mailGirisAcik;
 
+  /* TEK EKRAN KURALI: aynı anda SADECE bir giriş yöntemi görünür.
+     E-posta modu açıksa Google kartı tamamen gizlenir. */
+  if (mailAcik) {
+    return `${topbar("Yönetici Girişi","E-posta ile giriş", {back:"home"})}
+      <div class="content">
+        <div class="card p5">
+          <div style="text-align:center;margin-bottom:16px;">
+            <div style="font-size:34px;margin-bottom:8px;">✉️</div>
+            <p class="name" style="font-size:15px;margin:0;">E-posta ile Giriş</p>
+          </div>
+
+          <div class="field"><label>E-posta</label>
+            <input class="input" id="ad-email" value="${escapeAttr(f.email)}" autocomplete="username" inputmode="email" placeholder="ornek@eposta.com" /></div>
+          <div class="field"><label>Şifre</label>
+            <input class="input" type="password" id="ad-pass" value="${escapeAttr(f.pass)}" autocomplete="current-password" placeholder="Şifreniz" /></div>
+
+          ${state.adminError ? `<p class="status-err">${escapeHtml(state.adminError)}</p>` : ""}
+
+          <button class="btn-primary" style="width:100%;" data-action="admin-login" ${state.authBusy ? "disabled" : ""}>
+            ${state.authBusy ? "Giriş yapılıyor…" : "Giriş Yap"}
+          </button>
+          <p class="footnote" style="margin:9px 0 0;text-align:center;">İki adımlı doğrulama açıksa girişten sonra kod istenir.</p>
+
+          <button data-action="admin-mail-ac"
+            style="width:100%;margin-top:14px;background:none;border:none;color:var(--teal);font-size:11.5px;font-weight:700;cursor:pointer;padding:8px;">
+            ← Google girişine dön
+          </button>
+        </div>
+      </div>`;
+  }
+
+  /* GOOGLE MODU (varsayılan) */
   return `${topbar("Yönetici Girişi","Sadece klinik yönetimi içindir.", {back:"home"})}
     <div class="content">
 
-      <!-- GOOGLE GİRİŞİ (birincil yöntem) -->
       <div class="card p5 mb3" style="text-align:center;">
         <div style="font-size:38px;margin-bottom:10px;">🔐</div>
         <p class="name" style="font-size:15px;margin:0 0 5px;">Güvenli Giriş</p>
@@ -1546,28 +1577,13 @@ function renderAdminLogin() {
           Google ile Giriş Yap
         </button>
 
-        ${state.adminError && !mailAcik ? `<p class="status-err" style="margin-top:12px;text-align:left;">${escapeHtml(state.adminError)}</p>` : ""}
+        ${state.adminError ? `<p class="status-err" style="margin-top:12px;text-align:left;">${escapeHtml(state.adminError)}</p>` : ""}
 
         <button data-action="admin-mail-ac"
           style="width:100%;margin-top:16px;background:none;border:none;color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;text-decoration:underline;padding:6px;">
-          ${mailAcik ? "▲ E-posta ile girişi kapat" : "E-posta ile giriş yap"}
+          E-posta ile giriş yap
         </button>
       </div>
-
-      <!-- E-POSTA GİRİŞİ (ikincil, varsayılan kapalı) -->
-      ${mailAcik ? `
-      <div class="card p4 mb3">
-        <p class="section-label" style="margin:0 0 12px;">E-posta ile giriş</p>
-        <div class="field"><label>E-posta</label>
-          <input class="input" id="ad-email" value="${escapeAttr(f.email)}" autocomplete="username" inputmode="email" placeholder="ornek@eposta.com" /></div>
-        <div class="field"><label>Şifre</label>
-          <input class="input" type="password" id="ad-pass" value="${escapeAttr(f.pass)}" autocomplete="current-password" placeholder="Şifreniz" /></div>
-        ${state.adminError ? `<p class="status-err">${escapeHtml(state.adminError)}</p>` : ""}
-        <button class="btn-primary" style="width:100%;" data-action="admin-login" ${state.authBusy ? "disabled" : ""}>
-          ${state.authBusy ? "Giriş yapılıyor…" : "Giriş Yap"}
-        </button>
-        <p class="footnote" style="margin:9px 0 0;text-align:center;">İki adımlı doğrulama açıksa girişten sonra kod istenir.</p>
-      </div>` : ""}
 
       <p class="footnote" style="text-align:center;margin-top:14px;line-height:1.6;">
         Bu alan yalnızca klinik yöneticisine açıktır.<br/>
@@ -1575,5 +1591,7 @@ function renderAdminLogin() {
       </p>
     </div>`;
 }
+
+
 
 
