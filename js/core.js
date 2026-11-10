@@ -645,7 +645,7 @@ function renderHome() {
   const grid = ANA_ERISIM.map(i => `
     <button class="grid-item" data-action="goto" data-screen="${i.id}" style="padding:12px 4px;min-height:104px;justify-content:flex-start;">
       <img src="${i.img}" class="grid-icon" style="width:44px;height:44px;border-radius:12px;object-fit:cover;display:block;flex-shrink:0;" alt="" loading="lazy" />
-      <span class="grid-label" style="font-size:8.5px;font-weight:800;letter-spacing:.03em;line-height:1.3;word-break:break-word;hyphens:auto;">${i.label}</span>
+      <span class="grid-label" style="font-size:8.5px;font-weight:800;letter-spacing:.02em;line-height:1.28;word-break:break-word;hyphens:auto;">${i.label}</span>
     </button>`).join("");
 
   const stats = [

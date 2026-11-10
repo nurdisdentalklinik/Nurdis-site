@@ -1215,11 +1215,11 @@ function renderDentistGame() {
    hiçbir yerde kullanılmıyordu. Herkese açık sitede anahtar bulunmaz. */
 
 function renderSmile() {
-  return `${topbar("Gülüşünü Tasarla","Yapay zeka ile Hollywood gülüşünü tasarla!", {back:"home"})}
+  return `${topbar("GÜLÜŞÜNÜ TASARLA","Yapay zeka ile yeni gülüşünü gör.", {back:"home"})}
     <div class="content">
       <div class="card p4" style="text-align:center;">
         <div style="font-size:60px;margin-bottom:12px;">✨</div>
-        <p class="name" style="font-size:18px;margin-bottom:8px;">Hollywood Gülüş Tasarımı</p>
+        <p class="name" style="font-size:17px;margin-bottom:8px;letter-spacing:.02em;">GÜLÜŞÜNÜ TASARLA</p>
         <p class="desc" style="margin-bottom:16px;">Fotoğrafını yükle, AI ile yeni gülüşünü gör!</p>
         
         <div style="background:#f0f9ff;border:2px solid #38bdf8;border-radius:12px;padding:16px;margin-bottom:16px;">
