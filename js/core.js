@@ -185,46 +185,43 @@ const NAV_TABS = [
    • İkon tekrarı yok
    • Mantıksal gruplama: her şey ait olduğu yerde
    ===================================================================== */
+/* =====================================================================
+   DİĞER MENÜ — TEKRARSIZ
+   ---------------------------------------------------------------------
+   KURAL: Ana sayfadaki hızlı erişimde olan hiçbir öğe burada TEKRAR
+   EDİLMEZ. Böylece aynı ekrana iki farklı yerden gidilmez.
+
+   Ana sayfada olanlar (8): booking, smile, info, doctors, store,
+                            kampanya, kargo-takip, account
+   Burada olanlar (9)     : aşağıdaki grup
+   ===================================================================== */
 const MORE_GROUPS = [
   {
-    baslik: "🏥 Klinik",
+    baslik: "🏥 Klinik & İletişim",
     items: [
-      { id: "doctors",  label: "Doktorlarımız", img: "icon-doctors.png" },
-      { id: "devices",  label: "Cihazlarımız",  img: "icon-devices.png" },
-      { id: "address",  label: "Adresimiz",     img: "icon-address.png" },
-      { id: "contact",  label: "İletişim",      img: "icon-contact.png" }
+      { id: "devices",  label: "CİHAZLAR",  img: "icon-devices.png" },
+      { id: "address",  label: "ADRES",     img: "icon-address.png" },
+      { id: "contact",  label: "İLETİŞİM",  img: "icon-contact.png" },
+      { id: "reviews",  label: "YORUMLAR",  img: "icon-reviews.png" }
     ]
   },
   {
-    baslik: "🦷 Diş Sağlığı",
+    baslik: "🦷 Sağlık Araçları",
     items: [
-      { id: "info",      label: "Diş Sağlığı",    img: "icon-info.png" },
-      { id: "smile",     label: "Gülüş",          img: "icon-smile.png" },
-      { id: "fircalama", label: "Fırçalama",      img: "icon-temizlik.png" },
-      { id: "reviews",   label: "Yorumlar",       img: "icon-reviews.png" }
-    ]
-  },
-  {
-    baslik: "🛍️ Mağaza",
-    items: [
-      { id: "store",       label: "Mağaza",      img: "icon-store.png" },
-      { id: "kampanya",    label: "Kampanyalar", img: "icon-kampanya.png" },
-      { id: "kargo-takip", label: "Kargo Takip", img: "icon-kargo.png" },
-      { id: "dentist-game", label: "Oyun",        img: "dentist-game-logo.png" }
+      { id: "fircalama",    label: "FIRÇALAMA", img: "icon-temizlik.png" },
+      { id: "dentist-game", label: "OYUN",      img: "dentist-game-logo.png" }
     ]
   },
   {
     baslik: "👤 Hesabım",
     items: [
-      { id: "account",  label: "Hesabım",       img: "icon-account.png" },
-      { id: "portal",   label: "Hasta Portalı", img: "icon-portal.png" },
-      { id: "kvkk",     label: "Gizlilik",      img: "icon-kvkk.png" },
-      { id: "settings", label: "Ayarlar",       img: "icon-settings.png" }
+      { id: "portal",   label: "HASTA PORTALI", img: "icon-portal.png" },
+      { id: "kvkk",     label: "GİZLİLİK",      img: "icon-kvkk.png" },
+      { id: "settings", label: "AYARLAR",       img: "icon-settings.png" }
     ]
   }
 ];
 
-/* Geriye dönük uyumluluk: düz liste gerektiğinde */
 const MORE_ITEMS = MORE_GROUPS.reduce((acc, g) => acc.concat(g.items), []);
 
 /* Geriye dönük uyumluluk: bazı yerler MORE_ITEMS'i düz liste olarak kullanıyor */
@@ -636,7 +633,7 @@ function renderHome() {
      Etiketler i.label'dan okunuyor (t() çeviri kaynaklı "smile" sorunu bitti) */
   const ANA_ERISIM = [
     { id: "booking",     label: "RANDEVU AL",   img: "tab-booking.png" },
-    { id: "smile",       label: "GÜLÜŞ TASARLA", img: "icon-smile.png" },
+    { id: "smile",       label: "GÜLÜŞÜNÜ TASARLA", img: "icon-smile.png" },
     { id: "info",        label: "DİŞ SAĞLIĞI",  img: "icon-info.png" },
     { id: "doctors",     label: "DOKTORLAR",    img: "icon-doctors.png" },
     { id: "store",       label: "MAĞAZA",       img: "icon-store.png" },
@@ -646,9 +643,9 @@ function renderHome() {
   ];
 
   const grid = ANA_ERISIM.map(i => `
-    <button class="grid-item" data-action="goto" data-screen="${i.id}" style="padding:12px 5px;">
-      <img src="${i.img}" class="grid-icon" style="width:46px;height:46px;border-radius:12px;object-fit:cover;display:block;" alt="" loading="lazy" />
-      <span class="grid-label" style="font-size:9px;font-weight:800;letter-spacing:.04em;line-height:1.25;">${i.label}</span>
+    <button class="grid-item" data-action="goto" data-screen="${i.id}" style="padding:12px 4px;min-height:104px;justify-content:flex-start;">
+      <img src="${i.img}" class="grid-icon" style="width:44px;height:44px;border-radius:12px;object-fit:cover;display:block;flex-shrink:0;" alt="" loading="lazy" />
+      <span class="grid-label" style="font-size:8.5px;font-weight:800;letter-spacing:.03em;line-height:1.3;word-break:break-word;hyphens:auto;">${i.label}</span>
     </button>`).join("");
 
   const stats = [
@@ -658,11 +655,6 @@ function renderHome() {
     { n:"%100", tr:"Steril Ortam", en:"Sterile Care" },
   ];
 
-  const quickLinks = [
-    { id:"services", label:"Hizmetler" }, { id:"devices", label:"Cihazlarımız" },
-    { id:"info", label:"Bilgiler" }, { id:"reviews", label:"Yorumlar" },
-    { id:"store", label:"Mağaza" }, { id:"contact", label:"İletişim" },
-  ];
 
   return `
     <div class="topbar" style="background:none;padding:0;">
@@ -733,9 +725,10 @@ function renderHome() {
 
       <div class="footer-band">
         <p class="footer-tagline">Modern teknoloji ve uzman kadromuzla sağlıklı gülüşler tasarlıyoruz.</p>
-        <div class="footer-links">
-          ${quickLinks.map(l => `<button class="footer-link" data-action="goto" data-screen="${l.id}">${l.label}</button>`).join("")}
-        </div>
+        <button data-action="toggle-more" class="btn-primary"
+          style="margin-top:12px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:12px;padding:10px 20px;font-weight:700;letter-spacing:.04em;">
+          TÜM MENÜ →
+        </button>
         <p class="footer-phone">${icon("mail",14)} 0505 105 03 02</p>
       </div>
     </div>`;

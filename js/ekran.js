@@ -46,7 +46,10 @@ function renderMoreSheet() {
   return `<div class="sheet-overlay" data-action="toggle-more">
     <div class="sheet" style="max-height:88vh;overflow-y:auto;">
       <div class="sheet-handle"></div>
-      <p class="section-label" style="margin-top:2px;">Hızlı Erişim</p>
+      <p class="section-label" style="margin-top:2px;">TÜM MENÜ</p>
+      <p style="font-size:10px;color:var(--muted);margin:0 0 4px;line-height:1.5;">
+        Sık kullanılanlar ana sayfada — burada tekrar edilmez.
+      </p>
       ${gruplar}
       ${yonetici}
     </div>
