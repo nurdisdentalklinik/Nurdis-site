@@ -177,6 +177,14 @@ const NAV_TABS = [
    Etiketler doğrudan `label` alanından okunur (çeviri kaynaklı
    "smile", "portal", "kvkk" gibi İngilizce görünüm sorunu bitti).
    ===================================================================== */
+/* =====================================================================
+   HIZLI ERİŞİM — gruplandırılmış menü (v2)
+   ---------------------------------------------------------------------
+   • Her grup 4 öğe = tek satır
+   • Etiketler kısa (2 satıra sarkmaz)
+   • İkon tekrarı yok
+   • Mantıksal gruplama: her şey ait olduğu yerde
+   ===================================================================== */
 const MORE_GROUPS = [
   {
     baslik: "🏥 Klinik",
@@ -190,34 +198,36 @@ const MORE_GROUPS = [
   {
     baslik: "🦷 Diş Sağlığı",
     items: [
-      { id: "info",         label: "Diş Sağlığı Bilgileri", img: "icon-info.png" },
-      { id: "smile",        label: "Gülüşünü Tasarla",      img: "icon-smile.png" },
-      { id: "fircalama",    label: "Fırçalama Takibi",      img: "icon-temizlik.png" },
-      { id: "dentist-game", label: "Dentist Oyunu",         img: "dentist-game-logo.png" }
+      { id: "info",      label: "Diş Sağlığı",    img: "icon-info.png" },
+      { id: "smile",     label: "Gülüş",          img: "icon-smile.png" },
+      { id: "fircalama", label: "Fırçalama",      img: "icon-temizlik.png" },
+      { id: "reviews",   label: "Yorumlar",       img: "icon-reviews.png" }
     ]
   },
   {
     baslik: "🛍️ Mağaza",
     items: [
-      { id: "store",       label: "Mağaza",       img: "icon-store.png" },
-      { id: "kampanya",    label: "Kampanyalar",  img: "icon-kampanya.png" },
-      { id: "kargo-takip", label: "Kargo Takip",  img: "icon-kargo.png" },
-      { id: "reviews",     label: "Yorumlar",     img: "icon-reviews.png" }
+      { id: "store",       label: "Mağaza",      img: "icon-store.png" },
+      { id: "kampanya",    label: "Kampanyalar", img: "icon-kampanya.png" },
+      { id: "kargo-takip", label: "Kargo Takip", img: "icon-kargo.png" },
+      { id: "dentist-game", label: "Oyun",        img: "dentist-game-logo.png" }
     ]
   },
   {
     baslik: "👤 Hesabım",
     items: [
-      { id: "account",    label: "Hesabım",        img: "icon-account.png" },
-      { id: "portal",     label: "Hasta Portalı",  img: "icon-portal.png" },
-      { id: "kvkk",       label: "Gizlilik & KVKK", img: "icon-kvkk.png" },
-      { id: "settings",   label: "Ayarlar",        img: "icon-settings.png" }
+      { id: "account",  label: "Hesabım",       img: "icon-account.png" },
+      { id: "portal",   label: "Hasta Portalı", img: "icon-portal.png" },
+      { id: "kvkk",     label: "Gizlilik",      img: "icon-kvkk.png" },
+      { id: "settings", label: "Ayarlar",       img: "icon-settings.png" }
     ]
   }
 ];
 
-/* Geriye dönük uyumluluk: bazı yerler MORE_ITEMS'i düz liste olarak kullanıyor */
+/* Geriye dönük uyumluluk: düz liste gerektiğinde */
 const MORE_ITEMS = MORE_GROUPS.reduce((acc, g) => acc.concat(g.items), []);
+
+/* Geriye dönük uyumluluk: bazı yerler MORE_ITEMS'i düz liste olarak kullanıyor */
 
 /* Basit chatbot bilgi tabanı (kural bazlı, gerçek LLM değil — bkz. yorum en altta) */
 /* ---------------- ÖZEL ÇİZİLMİŞ İKON KÜTÜPHANESİ ----------------
@@ -622,9 +632,23 @@ function stars(n) {
 /* ---------------- HOME ---------------- */
 
 function renderHome() {
-  const grid = MORE_ITEMS.map(i => `
-    <button class="grid-item" data-action="goto" data-screen="${i.id}">
-      ${i.img ? `<img src="${i.img}" class="grid-icon" style="width:52px;height:52px;border-radius:12px;object-fit:cover;" />` : `<span class="grid-icon">${icon(i.icon,22)}</span>`}<span class="grid-label">${t(i.id)}</span>
+  /* ANA SAYFA HIZLI ERİŞİM — 8 öğe (16 değil, kalabalık olmasın)
+     Etiketler i.label'dan okunuyor (t() çeviri kaynaklı "smile" sorunu bitti) */
+  const ANA_ERISIM = [
+    { id: "booking",     label: "RANDEVU AL",   img: "tab-booking.png" },
+    { id: "smile",       label: "GÜLÜŞ TASARLA", img: "icon-smile.png" },
+    { id: "info",        label: "DİŞ SAĞLIĞI",  img: "icon-info.png" },
+    { id: "doctors",     label: "DOKTORLAR",    img: "icon-doctors.png" },
+    { id: "store",       label: "MAĞAZA",       img: "icon-store.png" },
+    { id: "kampanya",    label: "KAMPANYA",     img: "icon-kampanya.png" },
+    { id: "kargo-takip", label: "KARGO",        img: "icon-kargo.png" },
+    { id: "account",     label: "HESABIM",      img: "icon-account.png" }
+  ];
+
+  const grid = ANA_ERISIM.map(i => `
+    <button class="grid-item" data-action="goto" data-screen="${i.id}" style="padding:12px 5px;">
+      <img src="${i.img}" class="grid-icon" style="width:46px;height:46px;border-radius:12px;object-fit:cover;display:block;" alt="" loading="lazy" />
+      <span class="grid-label" style="font-size:9px;font-weight:800;letter-spacing:.04em;line-height:1.25;">${i.label}</span>
     </button>`).join("");
 
   const stats = [
@@ -648,6 +672,10 @@ function renderHome() {
           <p class="eyebrow">Nur Diş &amp; Dental Klinik</p>
           <h1 class="title" style="font-size:26px;">Gülümsemenin adresi</h1>
           <p class="subtitle">Mardin, Kızıltepe TOKİ'de güven veren bakım.</p>
+          <button data-action="goto" data-screen="smile"
+            style="margin-top:14px;background:rgba(255,255,255,.95);border:none;border-radius:22px;padding:9px 18px;display:inline-flex;align-items:center;gap:8px;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:.05em;color:#0B6E86;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.18);">
+            ✨ GÜLÜŞÜNÜ TASARLA →
+          </button>
         </div>
         ${scallop()}
       </div>
@@ -691,7 +719,7 @@ function renderHome() {
       </div>
       ` : ''}
 
-      <p class="section-label">Hızlı erişim</p>
+      <p class="section-label" style="letter-spacing:.1em;">HIZLI ERİŞİM</p>
       <div class="menu-grid mb5">${grid}</div>
 
       <p class="section-label">Öne çıkan hizmetler</p>

@@ -30,7 +30,7 @@ function renderMoreSheet() {
           ${i.img
             ? `<img src="${i.img}" class="grid-icon" style="width:46px;height:46px;border-radius:12px;object-fit:cover;display:block;" alt="" loading="lazy" />`
             : `<span class="grid-icon">${icon(i.icon, 22)}</span>`}
-          <span class="grid-label" style="font-size:9.5px;line-height:1.25;">${i.label}</span>
+          <span class="grid-label" style="font-size:9px;font-weight:800;letter-spacing:.04em;line-height:1.25;">${i.label.toUpperCase()}</span>
         </button>`).join("")}
     </div>`).join("");
 
