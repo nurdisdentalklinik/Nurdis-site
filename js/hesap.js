@@ -180,6 +180,9 @@ function renderHesapGiris() {
         Hesabınız yoksa önce <b>Kayıt Ol</b> sekmesinden oluşturun.<br/>
         Sipariş vermek için hesap gereklidir.
       </p>
+
+      <!-- Kargo takip: giriş yapmadan da takip numarasıyla sorgulanabilir -->
+      ${(typeof kargoSorguPaneliHTML === "function") ? kargoSorguPaneliHTML() : ""}
     </div>`;
 }
 
@@ -251,12 +254,16 @@ function renderHesapMerkezi() {
     </div>`;
 }
 
-/* -------------------- 📦 SİPARİŞLERİM -------------------- */
+/* -------------------- 📦 SİPARİŞLERİM --------------------
+   KARGO TAKİP artık burada: ayrı bir sekme değil, siparişlerin
+   hemen üstünde açılır-kapanır panel (js/kargo.js → kargoSorguPaneliHTML). */
 function hesapSiparislerHTML() {
   const liste = benimSiparislerim();
+  const kargoPanel = (typeof kargoSorguPaneliHTML === "function") ? kargoSorguPaneliHTML() : "";
 
   if (!liste.length) {
-    return `<div class="card p4" style="text-align:center;padding:30px 20px;">
+    return `${kargoPanel}
+    <div class="card p4" style="text-align:center;padding:30px 20px;">
       <p style="font-size:38px;margin:0 0 10px;">📦</p>
       <p class="name" style="font-size:14px;margin:0 0 4px;">Henüz siparişiniz yok</p>
       <p class="desc" style="margin:0 0 16px;font-size:11.5px;">Mağazamızdan ilk siparişinizi verebilirsiniz.</p>
@@ -264,7 +271,9 @@ function hesapSiparislerHTML() {
     </div>`;
   }
 
-  return liste.map(o => {
+  return `${kargoPanel}
+  <p class="section-label" style="margin:4px 0 8px;">📦 Siparişlerim (${liste.length})</p>
+  ` + liste.map(o => {
     const d = siparisDurum(o.durum || "yeni");
     const link = (typeof kargoTakipLinki === "function") ? kargoTakipLinki(o) : "";
     const firma = (typeof kargoFirmaAdi === "function") ? kargoFirmaAdi(o.kargoFirma) : "";
@@ -556,8 +565,6 @@ function hesapBilgilerHTML() {
     <p class="section-label" style="margin:0 0 10px;">Diğer</p>
     <button class="btn-primary" style="width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--line);font-size:12.5px;margin-bottom:8px;"
       data-action="goto" data-screen="kvkk">📄 KVKK & Gizlilik</button>
-    <button class="btn-primary" style="width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--line);font-size:12.5px;margin-bottom:8px;"
-      data-action="goto" data-screen="kargo-takip">🚚 Kargo Takip</button>
     <button class="btn-primary" style="width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--line);font-size:12.5px;margin-bottom:8px;"
       data-action="goto" data-screen="hesap-sil">🗑️ Hesabımı Sil</button>
     <button class="btn-primary" style="width:100%;background:#FFEBEE;color:#C62828;border:1px solid #EF9A9A;font-size:12.5px;"

@@ -127,10 +127,21 @@ function kargoGecmiseEkle(no, firmaId) {
 }
 
 /* ---------------------------------------------------------------------
-   EKRAN
+   🚚 KARGO SORGU PANELİ (v59)
+   ---------------------------------------------------------------------
+   Kargo takip artık AYRI BİR EKRAN DEĞİL.
+   Hesabım → Siparişlerim bölümünün İÇİNDE, açılır-kapanır panel olarak
+   yaşıyor. Böylece menülerde "ortalıkta" dolaşan ayrı bir kargo sekmesi
+   kalmadı; kargo, siparişin olduğu yerde.
+
+   Panel şunları içerir:
+     • Takip numarası + firma sorgu kutusu (firma otomatik tahmin)
+     • Sözleşmeli API varsa uygulama içinde durum gösterimi
+     • Son sorgulamalar (cihazda saklanır)
+     • "Takip numaram yok" WhatsApp desteği
    --------------------------------------------------------------------- */
 
-function renderKargoTakip() {
+function kargoSorguPaneliHTML() {
   const no = state.kargoNo || "";
   const firmaId = state.kargoFirma || "";
   const tahmin = kargoFirmaTahmin(no);
@@ -138,36 +149,12 @@ function renderKargoTakip() {
   const seciliFirma = kargoFirmaBul(secili);
   const gecmis = kargoGecmisAl();
   const sonuc = state.kargoSonuc || null;
-  const aranıyor = !!state.kargoAraniyor;
-
-  /* Giriş yapmış müşterinin kendi siparişleri */
-  const benimSiparisler = (state.user && state.user.uid)
-    ? (state.orders || []).filter(o => o.uid === state.user.uid)
-    : [];
-
-  const siparisKartlari = benimSiparisler.slice(0, 8).map(o => {
-    const d = siparisDurum(o.durum || "yeni");
-    const link = kargoTakipLinki(o);
-    const firma = kargoFirmaAdi(o.kargoFirma);
-    return `<div class="card p4 mb2">
-      <div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:6px;">
-        <div style="flex:1;min-width:0;">
-          <span style="font-size:9.5px;font-weight:800;background:${d.arka};color:${d.renk};padding:2px 7px;border-radius:5px;">${d.ikon} ${d.ad.toUpperCase()}</span>
-          <p class="name" style="font-size:13px;margin:6px 0 0;">${escapeHtml(siparisUrunleri(o))}</p>
-        </div>
-        <p style="font-size:13px;font-weight:800;margin:0;white-space:nowrap;">${accTL(o.total || 0)}</p>
-      </div>
-      ${o.kargoNo ? `<p class="desc" style="margin:0 0 4px;font-size:11.5px;">🚚 ${escapeHtml(firma || "Kargo")} · ${escapeHtml(o.kargoNo)}</p>` : ""}
-      <div style="display:flex;gap:6px;margin-top:8px;">
-        ${link ? `<a href="${escapeAttr(link)}" target="_blank" rel="noopener" class="btn-primary"
-          style="flex:1;text-align:center;text-decoration:none;font-size:11.5px;padding:8px;">🔗 Kargomu Takip Et</a>` : ""}
-        <button data-action="kargo-siparis-ara" data-no="${escapeAttr(o.kargoNo || "")}" data-firma="${escapeAttr(o.kargoFirma || "")}"
-          style="flex:1;padding:8px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-size:11.5px;font-weight:700;cursor:pointer;color:var(--ink);">
-          🔍 Uygulamada Sorgula
-        </button>
-      </div>
-    </div>`;
-  }).join("");
+  const araniyor = !!state.kargoAraniyor;
+  /* Panel durumu: kullanıcı aç/kapat dediyse ona uyulur, demediyse
+     numara veya sonuç varsa açık başlar. */
+  const acik = (typeof state.kargoPanelAcik === "boolean")
+    ? state.kargoPanelAcik
+    : (!!sonuc || !!no);
 
   const gecmisKartlar = gecmis.length ? gecmis.map(g => {
     const f = kargoFirmaBul(g.firma);
@@ -183,91 +170,104 @@ function renderKargoTakip() {
     </button>`;
   }).join("") : "";
 
-  return `${topbar("Kargo Takip", "Takip numaranızla kargonuzun nerede olduğunu görün.", { back: "more" })}
-    <div class="content">
-
-      <div class="card p4 mb3" style="background:linear-gradient(135deg,#1565C0,#1976D2);color:#fff;border:none;">
-        <p style="font-size:13px;font-weight:800;margin:0 0 3px;">🚚 Kargonuz nerede?</p>
-        <p style="font-size:11px;opacity:.92;margin:0;line-height:1.5;">
-          Takip numaranızı girin; kargo firmasının canlı takip sayfası açılır.
-        </p>
-      </div>
+  const govde = acik ? `
+    <div style="padding:0 14px 14px;">
 
       <!-- Sorgu kutusu -->
-      <div class="card p4 mb3">
-        <div class="field">
-          <label>Takip numarası</label>
-          <input class="input" id="kargo-no" value="${escapeAttr(no)}"
-            placeholder="örn. 12345678901" inputmode="text" autocomplete="off"
-            style="font-size:15px;letter-spacing:1px;font-weight:600;" />
-        </div>
-
-        <div class="field">
-          <label>Kargo firması ${tahmin ? `<span style="color:var(--teal);font-weight:700;">· tahmin: ${escapeHtml((kargoFirmaBul(tahmin.id) || {}).ad || "")}</span>` : ""}</label>
-          <select class="input" id="kargo-firma">
-            <option value="">Firma seçin…</option>
-            ${kargoFirmalari().map(f => `<option value="${f.id}" ${secili === f.id ? "selected" : ""}>${f.ikon} ${escapeHtml(f.ad)}</option>`).join("")}
-          </select>
-        </div>
-
-        <button class="btn-primary" style="width:100%;margin-top:4px;" data-action="kargo-sorgula" ${aranıyor ? "disabled" : ""}>
-          ${aranıyor ? "Sorgulanıyor…" : "🔍 Kargomu Sorgula"}
-        </button>
-
-        ${seciliFirma && seciliFirma.url ? `
-        <p class="desc" style="margin:9px 0 0;font-size:10.5px;text-align:center;line-height:1.5;">
-          ${escapeHtml(seciliFirma.ad)}'nın resmi takip sayfası açılacak.
-        </p>` : ""}
+      <div class="field">
+        <label>Takip numarası</label>
+        <input class="input" id="kargo-no" value="${escapeAttr(no)}"
+          placeholder="örn. 12345678901" inputmode="text" autocomplete="off"
+          style="font-size:15px;letter-spacing:1px;font-weight:600;" />
       </div>
+
+      <div class="field">
+        <label>Kargo firması ${tahmin ? `<span style="color:var(--teal);font-weight:700;">· tahmin: ${escapeHtml((kargoFirmaBul(tahmin.id) || {}).ad || "")}</span>` : ""}</label>
+        <select class="input" id="kargo-firma">
+          <option value="">Firma seçin…</option>
+          ${kargoFirmalari().map(f => `<option value="${f.id}" ${secili === f.id ? "selected" : ""}>${f.ikon} ${escapeHtml(f.ad)}</option>`).join("")}
+        </select>
+      </div>
+
+      <button class="btn-primary" style="width:100%;margin-top:4px;" data-action="kargo-sorgula" ${araniyor ? "disabled" : ""}>
+        ${araniyor ? "Sorgulanıyor…" : "🔍 Kargomu Sorgula"}
+      </button>
+
+      ${seciliFirma && seciliFirma.url ? `
+      <p class="desc" style="margin:9px 0 0;font-size:10.5px;text-align:center;line-height:1.5;">
+        ${escapeHtml(seciliFirma.ad)}'nın resmi takip sayfası açılacak.
+      </p>` : ""}
 
       <!-- Sonuç -->
       ${sonuc ? `
-      <div class="card p4 mb3" style="border-left:3px solid var(--teal);">
-        <p style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px;">Son durum</p>
-        ${sonuc.durum ? `<p class="name" style="font-size:14px;margin:0 0 4px;">${escapeHtml(sonuc.durum)}</p>` : ""}
-        ${sonuc.sonHareket ? `<p class="desc" style="margin:0 0 8px;font-size:12px;line-height:1.5;">${escapeHtml(sonuc.sonHareket)}</p>` : ""}
+      <div style="margin-top:12px;border-left:3px solid var(--teal);background:var(--bg);border-radius:9px;padding:10px 12px;">
+        <p style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px;">Son durum</p>
+        ${sonuc.durum ? `<p class="name" style="font-size:13.5px;margin:0 0 4px;">${escapeHtml(sonuc.durum)}</p>` : ""}
+        ${sonuc.sonHareket ? `<p class="desc" style="margin:0 0 8px;font-size:11.5px;line-height:1.5;">${escapeHtml(sonuc.sonHareket)}</p>` : ""}
         ${(sonuc.asama || []).length ? `
-        <div style="margin-top:8px;">
+        <div style="margin-top:6px;">
           ${sonuc.asama.map((a, i) => `
             <div style="display:flex;gap:9px;padding:6px 0;border-top:1px solid var(--line);">
               <span style="width:6px;height:6px;border-radius:50%;background:${i === 0 ? "var(--teal)" : "#B0BEC5"};margin-top:6px;flex-shrink:0;"></span>
               <div style="min-width:0;">
-                <p style="margin:0;font-size:12px;line-height:1.4;">${escapeHtml(a.metin)}</p>
+                <p style="margin:0;font-size:11.5px;line-height:1.4;">${escapeHtml(a.metin)}</p>
                 ${a.tarih ? `<p class="desc" style="margin:1px 0 0;font-size:10px;">${escapeHtml(a.tarih)}</p>` : ""}
               </div>
             </div>`).join("")}
         </div>` : ""}
       </div>` : ""}
 
-      <!-- API bilgilendirme -->
+      <!-- Bilgilendirme -->
       ${!sonuc ? `
-      <div class="card p4 mb3" style="background:#FFF8E8;border-color:#F0DFAF;">
-        <p class="desc" style="margin:0;font-size:10.5px;color:#8A6D1D;line-height:1.55;">
+      <div style="margin-top:12px;background:#FFF8E8;border:1px solid #F0DFAF;border-radius:9px;padding:9px 11px;">
+        <p class="desc" style="margin:0;font-size:10px;color:#8A6D1D;line-height:1.55;">
           ℹ️ Canlı durum bilgisi kargo firmasının kendi sisteminde tutulur ve orada gösterilir.
           Kargo firmalarının ücretsiz takip servisi olmadığı için durum, firmanın resmi sayfasında açılır.
         </p>
       </div>` : ""}
 
-      <!-- Siparişlerim -->
-      ${benimSiparisler.length ? `
-      <p class="section-label" style="margin:18px 0 8px;">📦 Siparişlerim</p>
-      ${siparisKartlari}` : ""}
-
-      <!-- Geçmiş -->
+      <!-- Son sorgulamalar -->
       ${gecmisKartlar ? `
-      <p class="section-label" style="margin:18px 0 8px;">🕘 Son sorgulamalar</p>
+      <p class="section-label" style="margin:14px 0 8px;">🕘 Son sorgulamalar</p>
       ${gecmisKartlar}` : ""}
 
-      <div class="card p4 mb3" style="margin-top:16px;">
-        <p class="section-label" style="margin:0 0 8px;">❓ Takip numaram yok</p>
-        <p class="desc" style="margin:0 0 10px;font-size:11.5px;line-height:1.55;">
+      <!-- Takip numaram yok -->
+      <div style="margin-top:12px;background:var(--bg);border-radius:9px;padding:10px 12px;">
+        <p class="section-label" style="margin:0 0 6px;">❓ Takip numaram yok</p>
+        <p class="desc" style="margin:0 0 9px;font-size:10.5px;line-height:1.55;">
           Sipariş verdikten sonra kargo takip numarası WhatsApp üzerinden gönderilir.
           Numarayı bulamıyorsanız bize yazın.
         </p>
         <a href="https://wa.me/905051050302" target="_blank" rel="noopener" class="btn-primary"
-          style="display:block;text-align:center;text-decoration:none;font-size:12.5px;padding:10px;">💬 WhatsApp'tan Sor</a>
+          style="display:block;text-align:center;text-decoration:none;font-size:12px;padding:9px;">💬 WhatsApp'tan Sor</a>
       </div>
-    </div>`;
+    </div>` : "";
+
+  return `<div class="card mb3" style="padding:0;overflow:hidden;border-left:3px solid #1565C0;">
+    <button data-action="kargo-panel-toggle"
+      style="width:100%;background:none;border:none;text-align:left;padding:13px 14px;cursor:pointer;display:flex;align-items:center;gap:11px;">
+      <span style="width:38px;height:38px;border-radius:11px;background:#E3F2FD;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🚚</span>
+      <span style="flex:1;min-width:0;">
+        <span style="display:block;font-size:12.5px;font-weight:800;letter-spacing:.03em;color:var(--ink);">KARGO TAKİP</span>
+        <span style="display:block;font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.4;">Takip numaranızla kargonuzun nerede olduğunu görün.</span>
+      </span>
+      <span style="font-size:11px;color:var(--muted);flex-shrink:0;">${acik ? "▲" : "▼"}</span>
+    </button>
+    ${govde}
+  </div>`;
+}
+
+/* Eski "kargo-takip" ekranı: menüden kaldırıldı.
+   Eski bağlantılar (hash, APK kısayolu, kaydedilmiş link) kırılmasın diye
+   burada Hesabım → Siparişlerim içine yönlendiriyoruz. */
+function renderKargoTakip() {
+  state.hesapSekme = "siparisler";
+  state.kargoPanelAcik = true;
+  if (typeof hesapEkrani === "function") return hesapEkrani();
+  return `${topbar("Kargo Takip", "Siparişlerinizle birlikte takip edin.", { back: "home" })}
+    <div class="content"><div class="card p4">
+      <p class="desc" style="margin:0;">Kargo takibi için <b>Hesabım → Siparişlerim</b> bölümünü açın.</p>
+    </div></div>`;
 }
 
 /* ---------------------------------------------------------------------
@@ -310,10 +310,21 @@ function kargoAction(el, action) {
     return true;
   }
 
+  /* Panel aç/kapat (Siparişlerim içindeki kargo bölümü) */
+  if (action === "kargo-panel-toggle") {
+    const suan = (typeof state.kargoPanelAcik === "boolean")
+      ? state.kargoPanelAcik
+      : (!!state.kargoSonuc || !!state.kargoNo);
+    state.kargoPanelAcik = !suan;
+    render();
+    return true;
+  }
+
   if (action === "kargo-gecmis") {
     state.kargoNo = el.dataset.no || "";
     state.kargoFirma = el.dataset.firma || "";
     state.kargoSonuc = null;
+    state.kargoPanelAcik = true;
     render();
     setTimeout(() => {
       const b = document.querySelector('[data-action="kargo-sorgula"]');

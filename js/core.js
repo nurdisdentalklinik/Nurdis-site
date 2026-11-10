@@ -191,8 +191,9 @@ const NAV_TABS = [
    KURAL: Ana sayfadaki hızlı erişimde olan hiçbir öğe burada TEKRAR
    EDİLMEZ. Böylece aynı ekrana iki farklı yerden gidilmez.
 
-   Ana sayfada olanlar (8): booking, smile, info, doctors, store,
-                            kampanya, kargo-takip, account
+   Ana sayfada olanlar (7): booking, smile, info, doctors, store,
+                            kampanya, account
+   Kargo takip: menüde YOK — Hesabım → Siparişlerim içinde.
    Burada olanlar (9)     : aşağıdaki grup
    ===================================================================== */
 const MORE_GROUPS = [
@@ -629,8 +630,9 @@ function stars(n) {
 /* ---------------- HOME ---------------- */
 
 function renderHome() {
-  /* ANA SAYFA HIZLI ERİŞİM — 8 öğe (16 değil, kalabalık olmasın)
-     Etiketler i.label'dan okunuyor (t() çeviri kaynaklı "smile" sorunu bitti) */
+  /* ANA SAYFA HIZLI ERİŞİM — 7 öğe (kalabalık olmasın)
+     Etiketler i.label'dan okunuyor (t() çeviri kaynaklı "smile" sorunu bitti)
+     v59: KARGO buradan KALDIRILDI → Hesabım → Siparişlerim içinde panel. */
   const ANA_ERISIM = [
     { id: "booking",     label: "RANDEVU AL",   img: "tab-booking.png" },
     { id: "smile",       label: "GÜLÜŞÜNÜ TASARLA", img: "icon-smile.png" },
@@ -638,7 +640,6 @@ function renderHome() {
     { id: "doctors",     label: "DOKTORLAR",    img: "icon-doctors.png" },
     { id: "store",       label: "MAĞAZA",       img: "icon-store.png" },
     { id: "kampanya",    label: "KAMPANYA",     img: "icon-kampanya.png" },
-    { id: "kargo-takip", label: "KARGO",        img: "icon-kargo.png" },
     { id: "account",     label: "HESABIM",      img: "icon-account.png" }
   ];
 
@@ -712,7 +713,7 @@ function renderHome() {
       ` : ''}
 
       <p class="section-label" style="letter-spacing:.1em;">HIZLI ERİŞİM</p>
-      <div class="menu-grid mb5">${grid}</div>
+      <div class="menu-grid home-grid mb5">${grid}</div>
 
       <p class="section-label">Öne çıkan hizmetler</p>
       <div class="hscroll mb5">
