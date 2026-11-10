@@ -38,6 +38,7 @@
   if (bar) bar.style.width = (1/totalSlides*100) + '%';
 
   var slideInterval = setInterval(function() {
+    setTimeout(function(){ if (typeof ceviriUygula === 'function') { try { ceviriUygula(document.body); } catch(e){} } }, 60);
     if (splashClosed) { clearInterval(slideInterval); return; }
     if (currentSlide < totalSlides - 1) {
       slides[currentSlide].classList.remove('active');

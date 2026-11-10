@@ -524,6 +524,20 @@
   display: none;
 }
 
+  /* ===== ÇOK DİLLİ ARAYÜZ (i18n) — Arapça RTL desteği ===== */
+  html.dil-ar body{font-family:'Noto Naskh Arabic','Segoe UI','Tahoma','Arial',sans-serif;letter-spacing:0 !important;}
+  html.dil-ar .grid-label,html.dil-ar .name,html.dil-ar .title{letter-spacing:0 !important;}
+  html[dir="rtl"] .topbar-inner{flex-direction:row;}
+  html[dir="rtl"] .backbtn{transform:scaleX(-1);}
+  html[dir="rtl"] .linklike,html[dir="rtl"] .hero .subtitle{text-align:right;}
+  /* Arapça metinlerde İngilizce harf aralığı estetiği bozuyor */
+  html.dil-ar [style*="letter-spacing"]{letter-spacing:0 !important;}
+  /* Ayar ekranındaki dil kartları */
+  .dil-kutu{display:flex;flex-direction:column;gap:8px;}
+  .dil-sec{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);width:100%;text-align:left;}
+  .dil-sec.aktif{border-color:var(--teal);background:rgba(11,110,134,.08);color:var(--teal);}
+  .dil-sec .bayrak{font-size:19px;line-height:1;}
+  .dil-sec .tik{margin-inline-start:auto;font-size:15px;font-weight:900;color:var(--teal);}
 </style>
 </head>
 <body>
@@ -557,6 +571,7 @@
 </div>
 <script type="module" src="firebase-init.js"></script>
 <script src="js/core.js"></script>
+  <script src="js/i18n.js"></script>
   <script src="js/guvenlik.js"></script>
   <script src="js/bilgi.js"></script>
 <script src="js/muhasebe.js"></script>

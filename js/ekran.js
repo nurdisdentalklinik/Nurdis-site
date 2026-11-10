@@ -84,6 +84,12 @@ function render() {
       : "";
   }
   bindFieldEvents();
+
+  /* 🌍 DİL: çizim biter bitmez ekrandaki tüm metinleri seçili dile çevir.
+     Tüm <body> taranır: splash, güncelleme çubuğu, lightbox, alt menü ve
+     "Tüm menü" sayfası da dahil. Türkçe seçiliyse sıfır maliyet. */
+  if (typeof ceviriUygula === "function") { try { ceviriUygula(document.body); } catch (e) {} }
+
   if (state.screen === "smile") initSmile();
   if (state.screen === "chatbot") { const log = document.getElementById("chat-log"); if (log) log.scrollTop = log.scrollHeight; }
 }
@@ -416,6 +422,21 @@ document.addEventListener("click", (e) => {
   if (action === "toggle-more") {
     state.moreOpen = !state.moreOpen;
     render();
+  }
+
+  /* 🌍 DİL SEÇİMİ — önceden hiçbir işleyicisi YOKTU (butonlar ölüydü) */
+  if (action === "set-lang") {
+    if (typeof dilDegistir === "function") dilDegistir(el.dataset.id || "tr");
+    return;
+  }
+
+  /* Uygulama sesleri aç/kapat — o da ölüydü */
+  if (action === "toggle-mute") {
+    if (!state.settings) state.settings = { muted: false, lang: "tr" };
+    state.settings.muted = !state.settings.muted;
+    try { localStorage.setItem("nurdis_settings", JSON.stringify(state.settings)); } catch (e) {}
+    render();
+    return;
   }
   if (action === "pick-time") {
     state.bookingForm.time = el.dataset.time;

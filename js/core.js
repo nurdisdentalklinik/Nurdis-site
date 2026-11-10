@@ -902,21 +902,51 @@ const I18N = {
 };
 function t(key) {
   const lang = (state.settings && state.settings.lang) || "tr";
+  /* Önce yeni i18n sözlüğü (js/i18n.js) — 483 kayıt, 5 dil */
+  if (typeof ceviriAnahtar === "function") {
+    const yeni = ceviriAnahtar(key, lang);
+    if (yeni) return yeni;
+  }
   return (I18N[lang] && I18N[lang][key]) || I18N.tr[key] || key;
 }
 
 function renderSettings() {
-  const s = state.settings;
+  const s = state.settings || { muted: false, lang: "tr" };
+  const aktifDil = s.lang || "tr";
+
+  /* Dil kartları — bayrak + yerel ad + tik. Her biri data-action="set-lang" */
+  const BAYRAK = { tr: "🇹🇷", en: "🇬🇧", ar: "🇸🇦", de: "🇩🇪", es: "🇪🇸" };
+  const ALT_AD = { tr: "Türkçe", en: "English", ar: "العربية", de: "Deutsch", es: "Español" };
+  const dilKartlari = (typeof NURDIS_DILLER !== "undefined" ? NURDIS_DILLER : ["tr","en","ar","de","es"])
+    .map((id) => `
+      <button class="dil-sec ${aktifDil === id ? "aktif" : ""}" data-action="set-lang" data-id="${id}">
+        <span class="bayrak">${BAYRAK[id] || "🌐"}</span>
+        <span>${ALT_AD[id]}</span>
+        ${aktifDil === id ? '<span class="tik">✓</span>' : ""}
+      </button>`).join("");
+
   return `${topbar("Ayarlar","Uygulama tercihlerini buradan yönetebilirsin.", {back:"home"})}
     <div class="content">
       <div class="card p4 mb4 row" style="justify-content:space-between;">
-        <div><p class="name" style="font-size:14px;">Uygulama sesleri</p><p class="desc">Tıklama, giriş ve bildirim sesleri</p></div>
+        <div style="flex:1;min-width:0;">
+          <p class="name" style="font-size:14px;">Uygulama sesleri</p>
+          <p class="desc">Tıklama, giriş ve bildirim sesleri</p>
+        </div>
         <button class="chip ${s.muted?'':'chip-active'}" data-action="toggle-mute">${s.muted ? "Kapalı" : "Açık"}</button>
       </div>
+
       <p class="section-label">Uygulama dili</p>
-      <p class="footnote" style="margin-top:-6px;">Menü ve başlıklar seçtiğin dile döner. (Not: makale/asistan içerikleri şimdilik yalnızca Türkçedir.)</p>
-      <div class="chip-row mb4" style="flex-wrap:wrap;">
-        ${LANGS.map(l => `<button class="chip ${s.lang===l.id?'chip-active':''}" data-action="set-lang" data-id="${l.id}">${l.label}</button>`).join("")}
+      <p class="footnote" style="margin-top:-6px;margin-bottom:10px;line-height:1.6;">
+        Menüler, başlıklar, butonlar ve form alanları seçtiğin dile döner.
+        Sağlık makaleleri ile KVKK metni Türkçe aslıyla gösterilir.
+      </p>
+      <div class="dil-kutu mb4">${dilKartlari}</div>
+
+      <div class="card p4 mb4" style="background:var(--bg);border-color:var(--line);">
+        <p class="desc" style="margin:0;font-size:11px;line-height:1.65;">
+          ℹ️ Arapça seçildiğinde ekran yönü sağdan sola (RTL) olur ve Arapça font kullanılır.
+          Çeviri anında uygulanır; uygulamayı yeniden başlatman gerekmez.
+        </p>
       </div>
     </div>`;
 }
