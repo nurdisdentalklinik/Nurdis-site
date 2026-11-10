@@ -539,6 +539,30 @@
   .dil-sec .bayrak{font-size:19px;line-height:1;}
   .dil-sec .tik{margin-inline-start:auto;font-size:15px;font-weight:900;color:var(--teal);}
 </style>
+<script>
+/* ===== ÖNBELLEK KIRICI (v61) =====
+   Eski service worker yüzünden kullanıcı eski index.html/js görüyorsa
+   bu blok devreye girer: SW'yi günceller, gerekirse önbelleği atlayarak
+   sayfayı bir kez tazeler. Çeviri/dil butonunun "ölü" kalmasını engeller. */
+(function () {
+  try {
+    if (!("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.getRegistrations().then(function (kayitlar) {
+      kayitlar.forEach(function (k) { try { k.update(); } catch (e) {} });
+    });
+    /* i18n.js gerçekten yüklendi mi? 2.5 sn içinde yüklenmediyse
+       (eski önbellekteki HTML) önbelleği atlayan adresle tazele. */
+    setTimeout(function () {
+      if (typeof window.dilDegistir === "function") return;
+      var zaten = sessionStorage.getItem("nurdis_kirici");
+      if (zaten) return;                       /* sonsuz döngü koruması */
+      sessionStorage.setItem("nurdis_kirici", "1");
+      var u = location.origin + location.pathname + "?v=" + Date.now() + (location.hash || "#home");
+      location.replace(u);
+    }, 2500);
+  } catch (e) {}
+})();
+</script>
 </head>
 <body>
 
@@ -560,7 +584,7 @@
   <div class="splash-loader"><div class="splash-loader-bar" id="splash-bar"></div></div>
   <button class="splash-skip-btn" id="splash-skip">Geç →</button>
 </div>
-<script src="js/splash.js"></script>
+<script src="js/splash.js?v=61"></script>
 
 <div id="shell">
   <div id="update-bar" style="position:sticky;top:0;z-index:50;"></div>
@@ -569,32 +593,32 @@
   <div id="lightbox"></div>
   <div class="navbar" id="navbar"></div>
 </div>
-<script type="module" src="firebase-init.js"></script>
-<script src="js/core.js"></script>
-  <script src="js/i18n.js"></script>
-  <script src="js/guvenlik.js"></script>
-  <script src="js/bilgi.js"></script>
-<script src="js/muhasebe.js"></script>
-<script src="js/stok.js"></script>
-<script src="js/crm.js"></script>
-<script src="js/randevu.js"></script>
-<script src="js/anket.js"></script>
-<script src="js/prim.js"></script>
-<script src="js/mali.js"></script>
-<script src="js/ekran.js"></script>
-  <script src="js/kargo.js"></script>
-  <script src="js/hesap.js"></script>
-  <script src="js/iade.js"></script>
-  <script src="js/magaza-ek.js"></script>
-  <script src="js/hesap-sil.js"></script>
-<script src="js/medya.js"></script>
-<script src="js/doktorlar.js"></script>
-<script src="js/magaza.js"></script>
-<script src="js/senkron.js"></script>
-<script src="js/portal.js"></script>
-<script src="js/otomasyon.js"></script>
-<script src="js/kvkk.js"></script>
-<script src="js/yedek.js"></script>
-<script src="js/firebase.js"></script>
+<script type="module" src="firebase-init.js?v=61"></script>
+<script src="js/core.js?v=61"></script>
+  <script src="js/i18n.js?v=61"></script>
+  <script src="js/guvenlik.js?v=61"></script>
+  <script src="js/bilgi.js?v=61"></script>
+<script src="js/muhasebe.js?v=61"></script>
+<script src="js/stok.js?v=61"></script>
+<script src="js/crm.js?v=61"></script>
+<script src="js/randevu.js?v=61"></script>
+<script src="js/anket.js?v=61"></script>
+<script src="js/prim.js?v=61"></script>
+<script src="js/mali.js?v=61"></script>
+<script src="js/ekran.js?v=61"></script>
+  <script src="js/kargo.js?v=61"></script>
+  <script src="js/hesap.js?v=61"></script>
+  <script src="js/iade.js?v=61"></script>
+  <script src="js/magaza-ek.js?v=61"></script>
+  <script src="js/hesap-sil.js?v=61"></script>
+<script src="js/medya.js?v=61"></script>
+<script src="js/doktorlar.js?v=61"></script>
+<script src="js/magaza.js?v=61"></script>
+<script src="js/senkron.js?v=61"></script>
+<script src="js/portal.js?v=61"></script>
+<script src="js/otomasyon.js?v=61"></script>
+<script src="js/kvkk.js?v=61"></script>
+<script src="js/yedek.js?v=61"></script>
+<script src="js/firebase.js?v=61"></script>
 </body>
 </html>

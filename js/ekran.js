@@ -426,7 +426,20 @@ document.addEventListener("click", (e) => {
 
   /* 🌍 DİL SEÇİMİ — önceden hiçbir işleyicisi YOKTU (butonlar ölüydü) */
   if (action === "set-lang") {
-    if (typeof dilDegistir === "function") dilDegistir(el.dataset.id || "tr");
+    const hedefDil = el.dataset.id || "tr";
+
+    if (typeof dilDegistir === "function") { dilDegistir(hedefDil); return; }
+
+    /* YEDEK PLAN: i18n.js yüklenmemişse (eski önbellek / eski service worker)
+       dili kaydet ve önbelleği atlayan bir adresle sayfayı tazele.
+       Böylece buton ASLA "ölü" kalmaz. */
+    try {
+      const ayar = JSON.parse(localStorage.getItem("nurdis_settings") || "{}") || {};
+      ayar.lang = hedefDil;
+      localStorage.setItem("nurdis_settings", JSON.stringify(ayar));
+      localStorage.setItem("nurdis_dil_bekliyor", hedefDil);
+    } catch (e) {}
+    location.href = location.pathname + "?v=" + Date.now() + "#settings";
     return;
   }
 

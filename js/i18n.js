@@ -759,13 +759,13 @@ function ceviriUygula(kok) {
   /* Türkçe seçiliyse hiç dokunma (sıfır maliyet) */
   if (lang === "tr") return;
 
-  /* 🏥 YÖNETİCİ / MUHASEBE / PERSONEL EKRANLARI HER ZAMAN TÜRKÇE KALIR.
-     Sebep: mali kayıtlar, SGK/vergi terimleri ve mevzuat dili çeviri
-     kaldırmaz; yanlış çeviri muhasebede hataya yol açar. */
+  /* 🏥 SADECE YÖNETİCİ EKRANLARI Türkçe kalır (mali kayıt, SGK/vergi dili
+     çeviri kaldırmaz). ÖNEMLİ: "adminLoggedIn" ile KİLİTLEME YOK — klinik
+     sahibi sürekli yönetici olarak girişli olduğu için o kilit tüm
+     uygulamanın çevirisini kapatıyordu (v60b hatası). */
   try {
-    const adminEkranlar = ["admin-panel", "admin-login"];
-    if (adminEkranlar.indexOf(state.screen) !== -1) return;
-    if (state.adminLoggedIn) return;
+    const cevrilmezEkranlar = ["admin-panel", "admin-login"];
+    if (cevrilmezEkranlar.indexOf(state.screen) !== -1) return;
   } catch (e) {}
 
   /* --- 1) Metin düğümleri --- */
@@ -894,5 +894,24 @@ document.addEventListener("DOMContentLoaded", function () {
   dilYonuUygula(lang);
 });
 
+/* Yedek plandan gelen "dil bekliyor" isteği varsa uygula */
+try {
+  const bekleyen = localStorage.getItem("nurdis_dil_bekliyor");
+  if (bekleyen) {
+    localStorage.removeItem("nurdis_dil_bekliyor");
+    if (!state.settings) state.settings = { muted: false, lang: "tr" };
+    if (["tr","en","ar","de","es"].indexOf(bekleyen) !== -1) state.settings.lang = bekleyen;
+    try { localStorage.setItem("nurdis_settings", JSON.stringify(state.settings)); } catch (e) {}
+  }
+} catch (e) {}
+
 /* Sayfa ilk açıldığında da (DOMContentLoaded kaçırılırsa) */
 try { dilYonuUygula(dilGetir()); } catch (e) {}
+
+/* İlk çizimden sonra kayıtlı dil hemen uygulanır (kullanıcı Ayarlar'a
+   girmeden de arayüz seçili dilde açılır) */
+document.addEventListener("DOMContentLoaded", function () {
+  setTimeout(function () {
+    try { if (typeof ceviriUygula === "function") ceviriUygula(document.body); } catch (e) {}
+  }, 120);
+});
