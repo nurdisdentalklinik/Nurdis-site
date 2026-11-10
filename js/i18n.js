@@ -759,6 +759,15 @@ function ceviriUygula(kok) {
   /* Türkçe seçiliyse hiç dokunma (sıfır maliyet) */
   if (lang === "tr") return;
 
+  /* 🏥 YÖNETİCİ / MUHASEBE / PERSONEL EKRANLARI HER ZAMAN TÜRKÇE KALIR.
+     Sebep: mali kayıtlar, SGK/vergi terimleri ve mevzuat dili çeviri
+     kaldırmaz; yanlış çeviri muhasebede hataya yol açar. */
+  try {
+    const adminEkranlar = ["admin-panel", "admin-login"];
+    if (adminEkranlar.indexOf(state.screen) !== -1) return;
+    if (state.adminLoggedIn) return;
+  } catch (e) {}
+
   /* --- 1) Metin düğümleri --- */
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
