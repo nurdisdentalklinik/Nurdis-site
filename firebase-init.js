@@ -590,6 +590,11 @@ function deleteAnnouncement(id) {
   return deleteDoc(doc(db, "announcements", id));
 }
 
+/* Duyuru düzenleme / yayından alma (v62) */
+function updateAnnouncement(id, data) {
+  return updateDoc(doc(db, "announcements", id), { ...data, updatedAt: new Date().toISOString() });
+}
+
 /* ---------------- MUHASEBE ---------------- */
 function addAccountingEntry(data) {
   const col = data.type === "income" ? "accounting_incomes" : "accounting_expenses";
@@ -691,6 +696,7 @@ window.fb = {
   subscribeAnnouncements: (cb) => subscribeAnnouncements(cb),
   addAnnouncement: (data) => addAnnouncement(data),
   deleteAnnouncement: (id) => deleteAnnouncement(id),
+  updateAnnouncement: (id, data) => updateAnnouncement(id, data),
   addAccountingEntry: (data) => addAccountingEntry(data),
   subscribeAccountingIncomes: (cb) => subscribeAccounting("income", cb),
   subscribeAccountingExpenses: (cb) => subscribeAccounting("expense", cb),

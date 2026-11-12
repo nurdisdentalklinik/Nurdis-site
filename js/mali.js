@@ -3231,30 +3231,9 @@ function renderAdminPanel() {
   }
 
   if (state.adminTab === "announcements") {
-    const annRows = (state.announcements || []).slice().reverse().map(a => `
-      <div class="card p3 mb2">
-        <p class="name" style="font-size:14px;margin:0;">📢 ${escapeHtml(a.title || "")}</p>
-        <p class="desc" style="margin:4px 0;">${escapeHtml((a.text || "").substring(0,100))}${(a.text||"").length > 100 ? '...' : ''}</p>
-        ${a.imageUrl ? `<img src="${a.imageUrl}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;margin-top:4px;" />` : ''}
-        ${a.videoUrl ? `<p class="footnote" style="margin:4px 0;">🎥 Video: ${escapeHtml(a.videoUrl.substring(0,40))}...</p>` : ''}
-        <p class="footnote" style="margin:4px 0;">${a.createdAt ? new Date(a.createdAt).toLocaleString("tr-TR") : ''}</p>
-        <button class="qty-btn" style="margin-top:6px;width:auto;padding:4px 12px;background:var(--bad);color:#fff;" data-action="delete-announcement" data-id="${a.id}">🗑️ Sil</button>
-      </div>
-    `).join("") || `<p class="footnote">Henüz duyuru yok.</p>`;
-
-    tabContent = `
-      <p class="section-label">Yeni Duyuru Oluştur</p>
-      <p class="footnote" style="margin-top:-4px;">Duyuru yayınlandığında tüm kullanıcılara bildirim gönderilir.</p>
-      <div class="card p5 mb4">
-        <div class="field"><label>Duyuru Başlığı</label><input class="input" id="ann-title" placeholder="Örn: Klinik bayramda kapalı" /></div>
-        <div class="field"><label>Duyuru Metni</label><textarea id="ann-text" placeholder="Detaylı açıklama..." style="min-height:80px;"></textarea></div>
-        <div class="field"><label>Görsel (isteğe bağlı)</label><input type="file" id="ann-image" accept="image/*" style="font-size:12px;" /></div>
-        <div class="field"><label>Video Linki (isteğe bağlı - YouTube)</label><input class="input" id="ann-video" placeholder="https://youtube.com/watch?v=..." /></div>
-        <button class="btn-primary" data-action="add-announcement">📢 Duyuru Yayınla</button>
-      </div>
-      <p class="section-label">Mevcut Duyurular (${(state.announcements || []).length})</p>
-      <div class="mb4">${annRows}</div>
-    `;
+    tabContent = (typeof yoneticiDuyurularHTML === "function")
+      ? yoneticiDuyurularHTML()
+      : `<p class="footnote">Duyuru modülü yüklenemedi.</p>`;
   }
 
   if (state.adminTab === "portal") {

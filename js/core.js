@@ -697,20 +697,7 @@ function renderHome() {
         ${stats.map(s => `<div class="stat-cell"><p class="stat-num">${s.n}</p><p class="stat-tr">${s.tr}</p><p class="stat-en">${s.en}</p></div>`).join("")}
       </div>
 
-      ${(state.announcements || []).length > 0 ? `
-      <p class="section-label">📢 Duyurular</p>
-      <div class="mb5">
-        ${(state.announcements || []).slice(0,3).map(a => `
-          <div class="card p4 mb3" style="border-left:3px solid var(--cta);">
-            <p class="name" style="font-size:14px;margin:0;">📢 ${escapeHtml(a.title || "")}</p>
-            <p class="desc" style="margin:6px 0;line-height:1.5;">${escapeHtml(a.text || "")}</p>
-            ${a.imageUrl ? `<img src="${a.imageUrl}" style="width:100%;border-radius:12px;margin-top:8px;display:block;" />` : ''}
-            ${a.videoUrl ? `<div style="margin-top:8px;"><a href="${escapeAttr(a.videoUrl)}" target="_blank" class="btn-primary" style="text-decoration:none;display:flex;padding:10px;font-size:13px;">🎥 Videoyu İzle</a></div>` : ''}
-            <p class="footnote" style="margin-top:6px;">${a.createdAt ? new Date(a.createdAt).toLocaleDateString("tr-TR", {day:'numeric',month:'long',year:'numeric'}) : ''}</p>
-          </div>
-        `).join("")}
-      </div>
-      ` : ''}
+      ${(typeof duyurularBolumuHTML === "function") ? duyurularBolumuHTML() : ""}
 
       <p class="section-label" style="letter-spacing:.1em;">HIZLI ERİŞİM</p>
       <div class="menu-grid home-grid mb5">${grid}</div>

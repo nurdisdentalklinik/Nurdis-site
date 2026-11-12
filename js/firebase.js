@@ -835,7 +835,7 @@ const SCREEN_MAP = {
   address: renderAddress, contact: renderContact, info: renderInfo, chatbot: renderChatbot,
   "admin-login": renderAdminLogin, "admin-panel": renderAdminPanel, account: renderAccount,
   "profile-edit": renderProfileEdit, "brushing-video": renderBrushingVideo, "family-add": renderFamilyAdd,
-  settings: renderSettings, kvkk: renderKvkk, portal: renderPortal, "magaza-urun": renderMagazaUrun, "doktor-detay": renderDoktorDetay, fircalama: renderFircalama, "kargo-takip": renderKargoTakip, account: hesapEkrani, "iade-talebi": renderIadeTalebi, "yorum-yaz": renderYorumYaz, kampanya: renderKampanya, "hesap-sil": renderHesapSil,
+  settings: renderSettings, kvkk: renderKvkk, portal: renderPortal, "magaza-urun": renderMagazaUrun, "doktor-detay": renderDoktorDetay, fircalama: renderFircalama, "kargo-takip": renderKargoTakip, account: hesapEkrani, "iade-talebi": renderIadeTalebi, "yorum-yaz": renderYorumYaz, kampanya: renderKampanya, "hesap-sil": renderHesapSil, "duyuru-detay": duyuruDetayHTML,
 };
 
 const validScreens = Object.keys(SCREEN_MAP);

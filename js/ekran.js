@@ -424,6 +424,21 @@ document.addEventListener("click", (e) => {
     render();
   }
 
+  /* 🤖 Mağaza yapay zeka asistanı (yorum özeti + ürün soruları) */
+  if (typeof magazaAIAction === "function" && magazaAIAction(el, action)) return;
+
+  /* 📢 Duyurular (yeni sistem) */
+  if (typeof duyuruAction === "function" && duyuruAction(el, action)) return;
+
+  /* 💬 DİJİ RAMO GÖNDER — bu butonun HİÇ işleyicisi yoktu (ölü buton).
+     Enter tuşu çalışıyordu ama "Gönder" tıklaması hiçbir şey yapmıyordu. */
+  if (action === "send-chat") {
+    const alan = document.getElementById("chat-input");
+    if (alan) state.chatInput = alan.value;          /* güncel değeri garantile */
+    if (typeof sendChat === "function") sendChat();
+    return;
+  }
+
   /* 🌍 DİL SEÇİMİ — önceden hiçbir işleyicisi YOKTU (butonlar ölüydü) */
   if (action === "set-lang") {
     const hedefDil = el.dataset.id || "tr";
@@ -1159,31 +1174,67 @@ document.addEventListener("click", (e) => {
   }
 
   if (action === "add-announcement") {
-    const title = document.getElementById("ann-title")?.value?.trim();
-    const text = document.getElementById("ann-text")?.value?.trim();
-    const videoUrl = document.getElementById("ann-video")?.value?.trim() || "";
+    const title = (document.getElementById("ann-title")?.value || "").trim();
+    const text = (document.getElementById("ann-text")?.value || "").trim();
+    const videoUrl = (document.getElementById("ann-video")?.value || "").trim();
+    const baslangic = (document.getElementById("ann-baslangic")?.value || "").trim();
+    const bitis = (document.getElementById("ann-bitis")?.value || "").trim();
+    const sabit = !!document.getElementById("ann-sabit")?.checked;
+    const aktif = document.getElementById("ann-aktif") ? !!document.getElementById("ann-aktif").checked : true;
+    const kategori = state.duyuruFormKat || "bilgi";
     const imageFile = document.getElementById("ann-image")?.files?.[0];
+    const duzenlenenId = el.dataset.id || state.duyuruDuzenle || "";
+
     if (!title || !text) { alert("Başlık ve metin gerekli!"); return; }
 
-    const addAnnouncement = (imageUrl) => {
-      if (window.fb && state.fbReady) {
-        window.fb.addAnnouncement({ title, text, imageUrl: imageUrl || "", videoUrl, createdAt: new Date().toISOString() })
+    const veri = {
+      title, text, videoUrl,
+      kategori, sabit, aktif,
+      baslangic: baslangic || "",
+      bitis: bitis || "",
+    };
+
+    const kaydet = (imageUrl) => {
+      if (imageUrl !== undefined) veri.imageUrl = imageUrl;
+
+      /* --- DÜZENLEME --- */
+      if (duzenlenenId) {
+        const yerel = (state.announcements || []).find(a => a.id === duzenlenenId);
+        if (yerel) Object.assign(yerel, veri);
+        if (window.fb && state.fbReady && window.fb.updateAnnouncement) {
+          window.fb.updateAnnouncement(duzenlenenId, veri)
+            .then(() => { state.duyuruDuzenle = null; state.duyuruFormKat = null; alert("✅ Duyuru güncellendi."); render(); })
+            .catch(e => { alert("Güncellenemedi: " + (e.message || "")); render(); });
+        } else {
+          state.duyuruDuzenle = null; state.duyuruFormKat = null; render();
+        }
+        return;
+      }
+
+      /* --- YENİ DUYURU --- */
+      if (window.fb && state.fbReady && window.fb.addAnnouncement) {
+        window.fb.addAnnouncement(Object.assign({ createdAt: new Date().toISOString() }, veri))
           .then(() => {
-            alert("Duyuru yayınlandı! 📢");
+            state.duyuruFormKat = null;
+            alert("📢 Duyuru yayınlandı!");
             render();
-          }).catch(e => alert("Yayınlanamadı: " + e.message));
+          })
+          .catch(e => alert("Yayınlanamadı: " + (e.message || "")));
       } else {
-        alert("Firebase bağlantısı hazır değil.");
+        alert("Firebase bağlantısı hazır değil. Duyuru kaydedilemedi.");
       }
     };
 
-    if (imageFile) {
+    if (imageFile && typeof dosyaHazirla === "function") {
+      dosyaHazirla(imageFile, 1000, 80).then(r => kaydet(r.dataUrl)).catch(() => kaydet());
+    } else if (imageFile) {
       const reader = new FileReader();
-      reader.onload = (e) => addAnnouncement(e.target.result);
+      reader.onload = (e) => kaydet(e.target.result);
       reader.readAsDataURL(imageFile);
     } else {
-      addAnnouncement("");
+      kaydet();
     }
+    return;
   }
 
   if (action === "delete-announcement") {

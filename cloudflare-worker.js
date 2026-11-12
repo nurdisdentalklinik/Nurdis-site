@@ -46,9 +46,10 @@ const IZINLI_ORIGINLER = [
 const LIMITLER = {
   chat:  { dakika: 8,  gun: 100 },   // normal kullanıcı bunu asla aşmaz
   smile: { dakika: 1,  gun: 5   },   // gülüş tasarımı ÜCRETLİ servis → çok sıkı
+  "magaza-ai": { dakika: 10, gun: 150 },   // mağaza ürün asistanı (yorum özeti + soru)
 };
 /* Tüm sistem için günlük tavan — dağıtık (binlerce IP) saldırıya karşı */
-const GLOBAL_TAVAN = { chat: 4000, smile: 100 };
+const GLOBAL_TAVAN = { chat: 4000, smile: 100, "magaza-ai": 1500 };
 
 /* ─── GÖVDE LİMİTLERİ ─── */
 const MAX_GOVDE_BAYT   = 8 * 1024 * 1024;   // 8 MB
@@ -221,7 +222,9 @@ async function handleRequest(request, env) {
     return json({ error: "Geçersiz istek gövdesi." }, 400, origin);
   }
 
-  const action = body.action === "smile" ? "smile" : "chat";
+  let action = "chat";
+  if (body.action === "smile") action = "smile";
+  else if (body.action === "magaza-ai") action = "magaza-ai";
 
   /* Hız limiti */
   const limit = await hizLimiti(request, action);
@@ -231,6 +234,7 @@ async function handleRequest(request, env) {
 
   try {
     if (action === "smile") return await handleSmileDesign(body, origin, env);
+    if (action === "magaza-ai") return await handleMagazaAI(body, origin, env);
     return await handleChat(body, origin, env);
   } catch (err) {
     /* Ham hata metni istemciye DÖNMEZ — sunucu logunda kalır. */
@@ -461,4 +465,64 @@ async function handleSmileDesign(body, origin, env) {
   }
 
   return json({ error: "İşlem zaman aşımına uğradı. Lütfen tekrar deneyin." }, 504, origin);
+}
+
+
+/* =====================================================================
+   🤖 MAĞAZA YAPAY ZEKA ASİSTANI (v3)
+   ---------------------------------------------------------------------
+   Ürün yorumu özeti ve ürün soruları. Sistem promptu istemciden gelir
+   (ürün bilgisi orada) ama güvenlik için:
+     • prompt uzunluğu sınırlı
+     • sadece system + user rolleri kabul edilir
+     • sıcaklık düşük (0.4) → tutarlı, uydurmayan cevap
+   ===================================================================== */
+
+const MAGAZA_AI_MAX_PROMPT = 4000;
+
+async function handleMagazaAI(body, origin, env) {
+  const anahtar = (env && env.GROQ_API_KEY) || "";
+  if (!anahtar) {
+    return json({ error: "Yapay zeka asistanı şu anda bakımda." }, 503, origin);
+  }
+
+  let messages = Array.isArray(body.messages) ? body.messages : [];
+  messages = messages
+    .filter((m) => m && typeof m.content === "string" && (m.role === "system" || m.role === "user"))
+    .slice(0, 2)
+    .map((m) => ({
+      role: m.role,
+      content: m.content.slice(0, m.role === "system" ? MAGAZA_AI_MAX_PROMPT : 600),
+    }));
+
+  if (messages.length < 2) {
+    return json({ error: "Eksik istek." }, 400, origin);
+  }
+
+  const z = zamanAsimi(30000);
+  let res;
+  try {
+    res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${anahtar}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages,
+        max_tokens: 400,
+        temperature: 0.4,
+      }),
+      signal: z.signal,
+    });
+  } finally { z.temizle(); }
+
+  const data = await res.json().catch(() => null);
+  if (!data || data.error || !data.choices || !data.choices[0]) {
+    console.error("[MAĞAZA AI] hata:", JSON.stringify(data && data.error || {}));
+    if (res.status === 429) {
+      return json({ error: "Asistan şu anda çok yoğun." }, 429, origin, { "Retry-After": "20" });
+    }
+    return json({ error: "Asistan şu anda yanıt veremiyor." }, 502, origin);
+  }
+
+  return json({ reply: data.choices[0].message.content }, 200, origin);
 }

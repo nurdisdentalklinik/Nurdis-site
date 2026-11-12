@@ -1,3 +1,83 @@
+
+/* =====================================================================
+   🖼️ ÇOKLU ÜRÜN FOTOĞRAFI (v62)
+   ---------------------------------------------------------------------
+   ESKİ DURUM: ürün başına TEK görsel vardı (`p.gorsel`). Müşteri ürünün
+   sadece bir açısını görebiliyordu. Hepsiburada/Trendyol'da 5-6 foto var.
+
+   YENİ: `p.gorseller = [url1, url2, ...]` (en fazla 6).
+   • p.gorsel (kapak) korunuyor → eski ürünler bozulmuyor
+   • Kapak = gorseller[0]
+   • Detay ekranında: büyük görsel + küçük resim şeridi + ok butonları
+   • Kaydırma (swipe) ile de geçiş
+   ===================================================================== */
+
+const URUN_MAX_FOTO = 6;
+
+/* Ürünün tüm fotoğrafları (kapak dahil, tekilleştirilmiş) */
+function urunFotolari(p) {
+  if (!p) return [];
+  const liste = [];
+  const ekle = (u) => {
+    if (!u || typeof u !== "string") return;
+    const t = u.trim();
+    if (!t) return;
+    if (liste.indexOf(t) === -1) liste.push(t);
+  };
+  /* Önce gorseller dizisi, sonra eski tek gorsel */
+  if (Array.isArray(p.gorseller)) p.gorseller.forEach(ekle);
+  ekle(p.gorsel);
+  return liste.slice(0, URUN_MAX_FOTO);
+}
+
+/* Kapak fotoğrafı */
+function urunKapak(p) {
+  const f = urunFotolari(p);
+  return f.length ? f[0] : "";
+}
+
+function urunGaleriHTML(p) {
+  const fotolar = urunFotolari(p);
+  const aktifIdx = Math.min(Math.max(0, state.urunFotoIdx || 0), Math.max(0, fotolar.length - 1));
+
+  /* Fotoğraf yoksa emoji */
+  if (!fotolar.length) {
+    return `<div style="background:#fff;border-radius:13px;overflow:hidden;border:1px solid #EDEDED;margin-bottom:12px;">
+      <div style="width:100%;aspect-ratio:1;background:linear-gradient(135deg,#F1FBF6,#E3F2F7);display:flex;align-items:center;justify-content:center;font-size:80px;">${urunEmoji(p.kategori)}</div>
+    </div>`;
+  }
+
+  const aktif = fotolar[aktifIdx];
+
+  const oklar = fotolar.length > 1 ? `
+    <button data-action="urun-foto" data-yon="-1" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);
+      width:34px;height:34px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;font-size:17px;
+      cursor:pointer;display:flex;align-items:center;justify-content:center;">‹</button>
+    <button data-action="urun-foto" data-yon="1" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);
+      width:34px;height:34px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;font-size:17px;
+      cursor:pointer;display:flex;align-items:center;justify-content:center;">›</button>
+    <span style="position:absolute;right:10px;bottom:10px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;
+      font-weight:700;padding:3px 9px;border-radius:99px;">${aktifIdx + 1}/${fotolar.length}</span>` : "";
+
+  const kucukler = fotolar.length > 1 ? `
+    <div style="display:flex;gap:6px;overflow-x:auto;padding:8px 2px 2px;-webkit-overflow-scrolling:touch;">
+      ${fotolar.map((u, i) => `
+        <button data-action="urun-foto-sec" data-i="${i}" style="flex-shrink:0;padding:0;border-radius:8px;cursor:pointer;
+          border:2px solid ${i === aktifIdx ? "#F27A1A" : "transparent"};background:none;overflow:hidden;">
+          <img src="${escapeAttr(u)}" alt="" style="width:52px;height:52px;object-fit:cover;display:block;border-radius:6px;" />
+        </button>`).join("")}
+    </div>` : "";
+
+  return `<div style="background:#fff;border-radius:13px;overflow:hidden;border:1px solid #EDEDED;margin-bottom:12px;">
+    <div style="position:relative;background:#F7F7F7;">
+      <img src="${escapeAttr(aktif)}" alt="" class="urun-ana-foto" data-idx="${aktifIdx}"
+        style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" />
+      ${oklar}
+    </div>
+    ${kucukler ? `<div style="padding:0 10px 8px;">${kucukler}</div>` : ""}
+  </div>`;
+}
+
 /* =========================================================
    NUR DİŞ — MAĞAZA v18 (Trendyol tarzı)
    • Ürün kartları, kategori filtresi, arama
@@ -149,8 +229,8 @@ function renderStoreV2() {
       <button data-action="magaza-favori" data-id="${p.id}" style="position:absolute;top:6px;right:6px;background:rgba(255,255,255,.95);border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;z-index:2;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.1);">${p.favori ? "❤️" : "🤍"}</button>
 
       <div data-action="magaza-urun" data-id="${p.id}" style="cursor:pointer;">
-        ${p.gorsel
-          ? `<img src="${p.gorsel}" alt="" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#F7F7F7;" />`
+        ${urunKapak(p)
+          ? `<img src="${urunKapak(p)}" alt="" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#F7F7F7;" />`
           : `<div style="width:100%;aspect-ratio:1;background:linear-gradient(135deg,#F1FBF6,#E3F2F7);display:flex;align-items:center;justify-content:center;font-size:38px;">${urunEmoji(p.kategori)}</div>`}
       </div>
 
@@ -291,15 +371,13 @@ function renderMagazaUrun() {
     </div>
 
     <div class="content" style="padding-bottom:${adet > 0 ? "150px" : "30px"};">
-      <div style="background:#fff;border-radius:13px;overflow:hidden;border:1px solid #EDEDED;margin-bottom:12px;">
-        ${p.gorsel
-          ? `<img src="${p.gorsel}" alt="" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" />`
-          : `<div style="width:100%;aspect-ratio:1;background:linear-gradient(135deg,#F1FBF6,#E3F2F7);display:flex;align-items:center;justify-content:center;font-size:80px;">${urunEmoji(p.kategori)}</div>`}
-      </div>
+      ${urunGaleriHTML(p)}
 
       ${ind > 0 ? `<div style="background:#FFF3E0;border:1px solid #FFCC80;border-radius:9px;padding:8px;margin-bottom:10px;text-align:center;">
         <span style="font-size:11px;font-weight:800;color:#E65100;">🔥 %${ind} İNDİRİM · ${accTL0(accNum(p.fiyat) - fiyat)} kazancınız</span>
       </div>` : ""}
+
+      ${typeof magazaAIKartiHTML === "function" ? magazaAIKartiHTML(p) : ""}
 
       ${typeof urunYorumlarHTML === "function" ? urunYorumlarHTML(p.id) : ""}
 
@@ -414,17 +492,37 @@ function renderAccMagaza() {
       </div>
 
       <div class="field">
-        <label>Ürün görseli</label>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
-          ${p.gorsel
-            ? `<img src="${p.gorsel}" alt="" style="width:60px;height:60px;object-fit:cover;border-radius:9px;border:1px solid var(--line);" />`
-            : `<div style="width:60px;height:60px;border-radius:9px;background:#F0F0F0;display:flex;align-items:center;justify-content:center;font-size:24px;">📷</div>`}
-          <div style="flex:1;">
-            <input type="file" id="mp-gorsel-dosya" accept="image/*" style="font-size:10.5px;width:100%;" />
-            <p style="font-size:8.5px;color:#888;margin:3px 0 0;">Galeriden seç · otomatik küçültülür</p>
-          </div>
+        <label>Ürün fotoğrafları <span style="font-weight:400;color:var(--muted);font-size:10px;">(en fazla ${URUN_MAX_FOTO} adet)</span></label>
+
+        <!-- Mevcut fotoğraflar -->
+        ${(() => {
+          const fotolar = urunFotolari(p);
+          if (!fotolar.length) {
+            return `<div style="width:100%;height:80px;border-radius:10px;background:#F0F0F0;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:8px;">📷</div>`;
+          }
+          return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px;">
+            ${fotolar.map((u, i) => `
+              <div style="position:relative;">
+                <img src="${escapeAttr(u)}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:9px;border:2px solid ${i === 0 ? "#F27A1A" : "var(--line)"};display:block;" />
+                ${i === 0 ? `<span style="position:absolute;bottom:-3px;left:50%;transform:translateX(-50%);background:#F27A1A;color:#fff;font-size:7px;font-weight:800;padding:1px 5px;border-radius:99px;white-space:nowrap;">KAPAK</span>` : ""}
+                <button data-action="mp-foto-sil" data-id="${p.id || "yeni"}" data-i="${i}"
+                  style="position:absolute;top:-5px;right:-5px;width:19px;height:19px;border-radius:50%;border:none;background:#E53935;color:#fff;
+                  font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;">×</button>
+                ${i > 0 ? `<button data-action="mp-foto-kapak" data-id="${p.id || "yeni"}" data-i="${i}"
+                  style="position:absolute;top:-5px;left:-5px;width:19px;height:19px;border-radius:50%;border:none;background:#1E88E5;color:#fff;
+                  font-size:9px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Kapak yap">★</button>` : ""}
+              </div>`).join("")}
+          </div>`;
+        })()}
+
+        <input type="file" id="mp-gorsel-dosya" accept="image/*" multiple style="font-size:10.5px;width:100%;" />
+        <p style="font-size:8.5px;color:#888;margin:3px 0 6px;line-height:1.5;">
+          Birden fazla fotoğraf seçebilirsin · otomatik küçültülür (${URUN_MAX_FOTO} adede kadar)
+        </p>
+        <div style="display:flex;gap:6px;">
+          <input class="input" id="mp-gorsel-url" placeholder="veya görsel URL'si yapıştır" style="font-size:11px;flex:1;" />
+          <button class="btn-primary" style="width:auto;padding:0 12px;font-size:11px;background:#1E88E5;" data-action="mp-foto-url-ekle" data-id="${p.id || "yeni"}">Ekle</button>
         </div>
-        <input class="input" id="mp-gorsel-url" value="${escapeAttr(p.gorsel && !p.gorsel.startsWith("data:") ? p.gorsel : "")}" placeholder="veya görsel URL'si yapıştır" style="font-size:11px;" />
       </div>
 
       <label style="display:flex;align-items:center;gap:8px;font-size:11.5px;margin-bottom:12px;cursor:pointer;">
@@ -606,22 +704,121 @@ function magazaAction(action, el) {
       render();
     };
 
-    /* Görsel dosyası seçildiyse küçült ve kaydet */
+    /* ---- ÇOKLU FOTOĞRAF: seçilen tüm dosyaları sırayla küçült ---- */
     const dosyaInput = document.getElementById("mp-gorsel-dosya");
-    const dosya = dosyaInput && dosyaInput.files && dosyaInput.files[0];
-    if (dosya && typeof dosyaHazirla === "function") {
+    const dosyalar = dosyaInput && dosyaInput.files ? Array.from(dosyaInput.files) : [];
+    if (dosyalar.length && typeof dosyaHazirla === "function") {
       dosyaInput.disabled = true;
-      dosyaHazirla(dosya, 900, 110).then((r) => {
-        rec.gorsel = r.dataUrl;
-        kaydet();
-      }).catch((err) => {
+
+      /* Ürünün mevcut fotoğrafları + yeni seçilenler (en fazla 6) */
+      const mevcut = Array.isArray(rec.gorseller) ? rec.gorseller.slice() : [];
+      if (!mevcut.length && rec.gorsel) mevcut.push(rec.gorsel);
+      const kalanYer = Math.max(0, URUN_MAX_FOTO - mevcut.length);
+      const islenecek = dosyalar.slice(0, kalanYer);
+
+      if (!islenecek.length) {
         dosyaInput.disabled = false;
-        alert("Görsel yüklenemedi: " + (err && err.message ? err.message : ""));
-      });
+        alert("Bu ürün için en fazla " + URUN_MAX_FOTO + " fotoğraf ekleyebilirsin.\n\nÖnce mevcutlardan birini sil.");
+        kaydet();
+        return true;
+      }
+
+      /* Sırayla işle (paralel değil — bellek dostu) */
+      (async () => {
+        const yeniFotolar = [];
+        for (const d of islenecek) {
+          try {
+            const r = await dosyaHazirla(d, 900, 110);
+            if (r && r.dataUrl) yeniFotolar.push(r.dataUrl);
+          } catch (e) { /* tek dosya hata verirse diğerleri devam etsin */ }
+        }
+        rec.gorseller = mevcut.concat(yeniFotolar).slice(0, URUN_MAX_FOTO);
+        rec.gorsel = rec.gorseller[0] || "";          /* kapak = ilk foto */
+        kaydet();
+      })();
       return true;
     }
 
     kaydet();
+    return true;
+  }
+
+  /* ---- ÜRÜN FOTOĞRAFLARI (müşteri tarafı) ---- */
+  if (action === "urun-foto") {
+    const p = urunBul(state.magazaUrunId);
+    if (!p) return true;
+    const n = urunFotolari(p).length;
+    if (!n) return true;
+    const yon = parseInt(el.dataset.yon, 10) || 1;
+    state.urunFotoIdx = ((state.urunFotoIdx || 0) + yon + n) % n;
+    render();
+    return true;
+  }
+
+  if (action === "urun-foto-sec") {
+    state.urunFotoIdx = parseInt(el.dataset.i, 10) || 0;
+    render();
+    return true;
+  }
+
+  /* ---- ÜRÜN FOTOĞRAFLARI (yönetici) ---- */
+  if (action === "mp-foto-sil") {
+    const p = urunBul(el.dataset.id) ||
+      (state.magazaUrunEdit ? state.products.find(x => x.id === state.magazaUrunEdit) : null) ||
+      (state._yeniUrunTaslak || null);
+    if (!p) return true;
+    const i = parseInt(el.dataset.i, 10) || 0;
+    const fotolar = urunFotolari(p).slice();
+    fotolar.splice(i, 1);
+    p.gorseller = fotolar;
+    p.gorsel = fotolar[0] || "";
+    if (p.id && urunBul(p.id)) urunKaydet();
+    render();
+    return true;
+  }
+
+  if (action === "mp-foto-kapak") {
+    const p = urunBul(el.dataset.id) ||
+      (state.magazaUrunEdit ? state.products.find(x => x.id === state.magazaUrunEdit) : null);
+    if (!p) return true;
+    const i = parseInt(el.dataset.i, 10) || 0;
+    const fotolar = urunFotolari(p).slice();
+    if (i <= 0 || i >= fotolar.length) return true;
+    const secilen = fotolar.splice(i, 1)[0];
+    fotolar.unshift(secilen);
+    p.gorseller = fotolar;
+    p.gorsel = fotolar[0];
+    urunKaydet();
+    render();
+    return true;
+  }
+
+  if (action === "mp-foto-url-ekle") {
+    const alan = document.getElementById("mp-gorsel-url");
+    const url = (alan && alan.value || "").trim();
+    if (!url) { alert("Görsel adresi girin."); return true; }
+    if (!/^https?:\/\//i.test(url) && !/^data:image\//i.test(url)) {
+      alert("Geçerli bir adres girin (https:// ile başlamalı).");
+      return true;
+    }
+    const p = urunBul(el.dataset.id) ||
+      (state.magazaUrunEdit ? state.products.find(x => x.id === state.magazaUrunEdit) : null);
+    if (!p) {
+      /* Yeni ürün henüz kaydedilmedi → taslakta tut */
+      state._yeniUrunFotolar = state._yeniUrunFotolar || [];
+      if (state._yeniUrunFotolar.length >= URUN_MAX_FOTO) { alert("En fazla " + URUN_MAX_FOTO + " fotoğraf."); return true; }
+      state._yeniUrunFotolar.push(url);
+      alert("Adres eklendi. Ürünü kaydedince fotoğraf listeye girer.");
+      render();
+      return true;
+    }
+    const fotolar = urunFotolari(p).slice();
+    if (fotolar.length >= URUN_MAX_FOTO) { alert("En fazla " + URUN_MAX_FOTO + " fotoğraf ekleyebilirsin."); return true; }
+    fotolar.push(url);
+    p.gorseller = fotolar;
+    p.gorsel = fotolar[0];
+    urunKaydet();
+    render();
     return true;
   }
 

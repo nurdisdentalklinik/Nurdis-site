@@ -538,6 +538,16 @@
   .dil-sec.aktif{border-color:var(--teal);background:rgba(11,110,134,.08);color:var(--teal);}
   .dil-sec .bayrak{font-size:19px;line-height:1;}
   .dil-sec .tik{margin-inline-start:auto;font-size:15px;font-weight:900;color:var(--teal);}
+  /* ===== AÇILIŞ: beyaz ekran yanıp sönmesini önle ===== */
+  html{background:#EAF6F8;}
+  body{background:var(--bg,#EAF6F8);}
+  .splash-screen{background:#0B2330;}
+  .splash-screen.hide{opacity:0;transform:scale(1.04);pointer-events:none;transition:opacity .22s ease,transform .22s ease;}
+  /* Markalı "hazırlanıyor" çubuğu */
+  .splash-hazirlik-cubuk{width:150px;height:4px;border-radius:99px;background:rgba(255,255,255,.25);overflow:hidden;}
+  .splash-hazirlik-cubuk span{display:block;height:100%;width:40%;border-radius:99px;background:#fff;
+    animation:splashYukle 1.1s ease-in-out infinite;}
+  @keyframes splashYukle{0%{transform:translateX(-100%);}100%{transform:translateX(320%);}}
 </style>
 <script>
 /* ===== ÖNBELLEK KIRICI (v61) =====
@@ -596,6 +606,7 @@
 <script type="module" src="firebase-init.js?v=61"></script>
 <script src="js/core.js?v=61"></script>
   <script src="js/i18n.js?v=61"></script>
+  <script src="js/duyuru.js?v=62"></script>
   <script src="js/guvenlik.js?v=61"></script>
   <script src="js/bilgi.js?v=61"></script>
 <script src="js/muhasebe.js?v=61"></script>
@@ -614,6 +625,7 @@
 <script src="js/medya.js?v=61"></script>
 <script src="js/doktorlar.js?v=61"></script>
 <script src="js/magaza.js?v=61"></script>
+  <script src="js/magaza-ai.js?v=62"></script>
 <script src="js/senkron.js?v=61"></script>
 <script src="js/portal.js?v=61"></script>
 <script src="js/otomasyon.js?v=61"></script>

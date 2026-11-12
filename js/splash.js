@@ -14,11 +14,77 @@
     '🚪 Hoş geldiniz!'
   ];
 
+  /* =====================================================================
+     "GEÇ" → BEYAZ EKRAN SORUNU DÜZELTMESİ
+     ---------------------------------------------------------------------
+     ESKİ DAVRANIŞ: Geç'e basınca splash 1 saniye boyunca saydam oluyor,
+     arkada uygulama henüz çizilmemişse BOŞ/BEYAZ ekran görünüyordu.
+     (Uygulama 26 JS dosyası + Firebase bağlantısı ile ~0.5-3 sn sürebiliyor.)
+
+     YENİ DAVRANIŞ:
+       1) Uygulama hazırsa → splash 220 ms'de kaybolur (beyaz kare yok)
+       2) Uygulama hazır değilse → splash KALDIRILMAZ; içeriği markalı
+          "hazırlanıyor" ekranına dönüşür, ekran dolunca kaybolur
+       3) En fazla 6 sn bekler, sonra yine de kapatır (sonsuz bekleme yok)
+     ===================================================================== */
+  function uygulamaHazirMi() {
+    var scr = document.getElementById('screen');
+    return !!(scr && scr.children.length > 0);
+  }
+
+  function markaliBeklemeEkrani(splash) {
+    if (!splash || splash.dataset.bekleme === '1') return;
+    splash.dataset.bekleme = '1';
+    var slaytlar = splash.querySelectorAll('.splash-slide');
+    for (var i = 0; i < slaytlar.length; i++) slaytlar[i].classList.remove('active');
+    var skip = document.getElementById('splash-skip');
+    if (skip) skip.style.display = 'none';
+    var sahne = document.getElementById('splash-scene');
+    if (sahne) sahne.style.display = 'none';
+    var cubuk = document.getElementById('splash-bar');
+    if (cubuk) cubuk.parentElement.style.display = 'none';
+
+    var kutu = document.createElement('div');
+    kutu.setAttribute('style', 'position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;gap:16px;color:#fff;text-align:center;padding:0 24px;');
+    kutu.innerHTML =
+      '<img src="icon-192.png" alt="Nur Diş" style="width:84px;height:84px;border-radius:22px;box-shadow:0 8px 32px rgba(0,0,0,.35);" />' +
+      '<p style="margin:0;font-size:17px;font-weight:800;letter-spacing:.02em;">Nur Diş &amp; Dental Klinik</p>' +
+      '<div class="splash-hazirlik-cubuk"><span></span></div>' +
+      '<p style="margin:0;font-size:12px;opacity:.85;">Hazırlanıyor…</p>';
+    /* Arka planı klinik rengine çevir — beyaz/boş görünmesin */
+    splash.style.background = 'linear-gradient(160deg,#0B6E86,#0E8FA8)';
+    splash.appendChild(kutu);
+  }
+
+  function splashKaldir(splash, hizli) {
+    if (!splash) return;
+    splash.classList.add('hide');
+    setTimeout(function () { if (splash.parentNode) splash.remove(); }, hizli ? 220 : 400);
+  }
+
   function closeSplash() {
     if (splashClosed) return;
     splashClosed = true;
     var splash = document.getElementById('splash-screen');
-    if (splash) { splash.classList.add('hide'); setTimeout(function() { splash.remove(); }, 1000); }
+    if (!splash) return;
+
+    /* Slayt döngüsünü durdur */
+    if (window.__splashInterval) { clearInterval(window.__splashInterval); window.__splashInterval = null; }
+
+    if (uygulamaHazirMi()) {
+      splashKaldir(splash, true);           /* anında kapat */
+      return;
+    }
+
+    /* Uygulama henüz çizilmedi → beyaz ekran yerine markalı bekleme */
+    markaliBeklemeEkrani(splash);
+    var baslangic = Date.now();
+    var kontrol = setInterval(function () {
+      if (uygulamaHazirMi() || Date.now() - baslangic > 6000) {
+        clearInterval(kontrol);
+        splashKaldir(splash, true);
+      }
+    }, 120);
   }
 
   // "Geç" butonu
@@ -48,8 +114,9 @@
       if (bar) bar.style.width = ((currentSlide+1)/totalSlides*100) + '%';
     }
   }, 1000);
+  window.__splashInterval = slideInterval;
 
-  setTimeout(function() { clearInterval(slideInterval); closeSplash(); }, 7000);
+  setTimeout(closeSplash, 7000);
 
   // Dokunma ile atla
   var splash = document.getElementById('splash-screen');

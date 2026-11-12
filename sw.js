@@ -1,5 +1,5 @@
 /* Sürüm numarasını HER değişiklikte artır — eski önbellek otomatik silinir. */
-const CACHE_VERSION = "v61";
+const CACHE_VERSION = "v62";
 const CACHE_NAME = "nurdis-" + CACHE_VERSION;
 const ASSETS = [
   "./index.html", "./manifest.json",
@@ -10,8 +10,8 @@ const ASSETS = [
   "./icon-kampanya.png",
   "./icon-kargo.png",
 
-  "./js/core.js", "./js/i18n.js", "./js/guvenlik.js", "./js/splash.js", "./js/bilgi.js", "./js/muhasebe.js", "./js/stok.js", "./js/crm.js", "./js/randevu.js",
-  "./js/anket.js", "./js/prim.js", "./js/mali.js", "./js/ekran.js", "./js/kargo.js", "./js/hesap.js", "./js/iade.js", "./js/magaza-ek.js", "./js/hesap-sil.js", "./js/medya.js", "./js/doktorlar.js", "./js/magaza.js", "./js/senkron.js", "./js/portal.js", "./js/otomasyon.js", "./js/kvkk.js", "./js/yedek.js", "./js/firebase.js",
+  "./js/core.js", "./js/i18n.js", "./js/duyuru.js", "./js/guvenlik.js", "./js/splash.js", "./js/bilgi.js", "./js/muhasebe.js", "./js/stok.js", "./js/crm.js", "./js/randevu.js",
+  "./js/anket.js", "./js/prim.js", "./js/mali.js", "./js/ekran.js", "./js/kargo.js", "./js/hesap.js", "./js/iade.js", "./js/magaza-ek.js", "./js/hesap-sil.js", "./js/medya.js", "./js/doktorlar.js", "./js/magaza.js", "./js/magaza-ai.js", "./js/senkron.js", "./js/portal.js", "./js/otomasyon.js", "./js/kvkk.js", "./js/yedek.js", "./js/firebase.js",
   "./doctor-photo.jpg", "./clinic-hero.jpg", "./whitening-before-after.jpg",
   "./treatment-process.jpg", "./info-toothache.jpg",
   "./screenshot-1-home.png", "./screenshot-2-services.png", "./screenshot-3-booking.png"
