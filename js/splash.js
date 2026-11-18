@@ -3,15 +3,15 @@
 (function() {
   var splashClosed = false;
   var currentSlide = 0;
-  var totalSlides = 7;
+  var totalSlides = 4;
+  /* Sahne etiketleri — KULLANICI İSTEĞİ (18 Kasım 2026):
+     "Uzaydan geliyoruz" ve "Kıtalar görünüyor / dünya" ifadeleri kaldırıldı.
+     Klinik/marka odaklı, sade akış bırakıldı. */
   var sceneLabels = [
-    '🌍 Uzaydan geliyoruz...',
-    '🌏 Kıtalar görünüyor...',
-    '🇹🇷 Türkiye...',
-    '🏛️ Mardin...',
-    '🏘️ Kızıltepe TOKİ...',
-    '🏥 Kliniğimiz...',
-    '🚪 Hoş geldiniz!'
+    'Nur Diş & Dental Klinik',
+    'Mardin · Kızıltepe',
+    'Gülümsemenin adresi',
+    'Hoş geldiniz'
   ];
 
   /* =====================================================================

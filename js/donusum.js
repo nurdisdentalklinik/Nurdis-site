@@ -34,8 +34,19 @@ function yorumPuani() {
   return { puan: 4.9, adet: 127, platform: "Google" };
 }
 
-/* WhatsApp linki — otomatik karsilama mesaji ile */
-function waLink(mesaj) {
+/* WhatsApp linki — otomatik karsilama mesaji ile
+   -------------------------------------------------------------------
+   ⚠️ BUG FIX (18 Kasım 2026): Bu fonksiyonun adı ESKİDEN "waLink" idi
+   ve js/crm.js'de de "waLink(tel, mesaj)" vardi. İki farklı imza,
+   aynı global isim → SON YÜKLENEN kazanıyordu (crm.js sonra yüklendiği
+   için onun 2 parametreli sürümü geçerliydi). Dönüşüm bileşenleri
+   1 parametreyle çağırınca tel=mesaj, mesaj=undefined oluyordu →
+   ekranda "undefined" yazıyordu.
+
+   Çözüm: bu dosyadaki fonksiyonun adı waLinkMesaj oldu. crm.js'deki
+   waLink(tel, mesaj) dokunulmadı (muhasebe/CRM onu kullanıyor).
+   ------------------------------------------------------------------- */
+function waLinkMesaj(mesaj) {
   const m = mesaj || "Merhaba, Nur Diş & Dental Klinik hakkında bilgi almak istiyorum.";
   const num = (state.socialMedia && state.socialMedia.whatsapp)
     ? String(state.socialMedia.whatsapp).replace(/\D/g, "")
@@ -161,7 +172,7 @@ function yuzenWhatsAppHTML() {
   return `
   <div id="wa-yuzen" style="position:fixed;right:14px;bottom:88px;z-index:9000;
     display:flex;flex-direction:column;align-items:flex-end;gap:8px;pointer-events:none;">
-    <a href="${waLink()}" target="_blank" rel="noopener"
+    <a href="${waLinkMesaj()}" target="_blank" rel="noopener"
       title="WhatsApp ile yazın"
       style="pointer-events:auto;display:flex;align-items:center;justify-content:center;
       width:56px;height:56px;border-radius:50%;background:#25D366;
@@ -212,7 +223,7 @@ function hemenAraHTML(kompakt) {
       </svg>
       Hemen Ara
     </a>
-    <a href="${waLink()}" target="_blank" rel="noopener"
+    <a href="${waLinkMesaj()}" target="_blank" rel="noopener"
       style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
       background:#25D366;color:#fff;border-radius:12px;padding:13px 10px;text-decoration:none;
       font-size:12.5px;font-weight:800;box-shadow:0 3px 12px rgba(37,211,102,.28);">
