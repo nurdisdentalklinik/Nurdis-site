@@ -38,7 +38,7 @@
 
 /* ─── İZİN VERİLEN KAYNAKLAR ─── */
 const IZINLI_ORIGINLER = [
-  "https://nurdis.pages.dev",
+  "https://nurdisdentalklinik.github.io/Nurdis-site",
   "https://nurdisdentalklinik.github.io",
 ];
 
