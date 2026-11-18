@@ -1,40 +1,20 @@
 # ============================================================================
-#  ANA DOMAINE YÖNLENDİRME (madde 1)
+#  TEK SİTE: nurdisdentalklinik.github.io/Nurdis-site
 # ============================================================================
-#  nurdis.pages.dev ANA adres, nurdisdentalklinik.github.io YEDEK adres
-#  (APK hâlâ github.io'ya bağlı olduğu için kapatılmamalı).
+#  KULLANICI KARARI (18 Kasım 2026): Tek site GitHub'da kalacak.
 #
-#  ⚠️ BİLİNÇLİ OLARAK catch-all (/*) KURALI YOK:
-#     "/* /index.html 200" gibi bir kural /js/core.js gibi statik dosya
-#     isteklerini de yakalayıp HTML döndürebilir → site komple çöker.
-#     Uygulama hash tabanlı yönlendirme kullanıyor (#hesap), bu yüzden
-#     catch-all zaten gerekmiyor.
+#  Bu dosya SADECE Cloudflare Pages'te (nurdis.pages.dev) çalışır.
+#  GitHub Pages "_redirects" dosyasını YOK SAYAR → github.io etkilenmez.
+#  Yani: pages.dev'e giren herkes github.io'ya gider. Tek site.
 #
-#  github.io tarafındaki yönlendirme bu dosyayla YAPILAMAZ (GitHub Pages
-#  _redirects desteklemez). Onun için index.html içindeki
-#  "domain-yonlendirme" script bloğuna bakınız — yalnızca github.io
-#  alanında çalışır, pages.dev'i etkilemez.
+#  NEDEN SİLMİYORUZ? Cloudflare'de 100+ deploy birikmiş, proje silinemiyor
+#  ("Your project has too many deployments to be deleted"). Bu yönlendirme
+#  aynı sonucu verir: sayfa kopyası yok, herkes github.io'da.
+#
+#  302 (301 DEĞİL): geçici. İleride pages.dev'i geri açmak istersek
+#  Google kalıcı olarak öğrenmemiş olur — sadece bu dosyayı silmek yeter.
 # ============================================================================
 
-/eski-site            /                         301
-/anasayfa             /                         301
-
-# Arapça sayfalar Cloudflare'den kaldırıldı (kullanıcı isteği).
-# GitHub'da duruyor; canlıda erişilmesin diye ana sayfaya yönlendiriliyor.
-# NOT: 302 kullanılıyor (301 DEĞİL) — Google kalıcı olarak öğrenmesin,
-# ileride Arapça sayfaları geri getirmek istersek sorun çıkmasın.
-/ar/                       /                          302
-/ar/index.html             /                          302
-/ar/hizmet/                /hizmet/                   302
-/ar/hizmet/muayene         /hizmet/muayene            302
-/ar/hizmet/temizlik        /hizmet/temizlik           302
-/ar/hizmet/dolgu           /hizmet/dolgu              302
-/ar/hizmet/kanal           /hizmet/kanal              302
-/ar/hizmet/cekim           /hizmet/cekim              302
-/ar/hizmet/beyazlatma      /hizmet/beyazlatma         302
-/ar/hizmet/implant         /hizmet/implant            302
-/ar/hizmet/zirkonyum       /hizmet/zirkonyum          302
-/ar/hizmet/ortodonti       /hizmet/ortodonti          302
-/ar/hizmet/seffafplak      /hizmet/seffafplak         302
-/ar/hizmet/kopru           /hizmet/kopru              302
-/ar/*                      /                          302
+# Kök ve her şey → github.io (yol korunarak)
+/                               https://nurdisdentalklinik.github.io/Nurdis-site/    302
+/*                              https://nurdisdentalklinik.github.io/Nurdis-site/:splat  302
