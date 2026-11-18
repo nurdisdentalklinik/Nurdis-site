@@ -4,7 +4,11 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
-const GEMINI_API_KEY = "AIzaSyAgWqZcXlTFjz5Sg5kkFf_-aUUNJO_-bkA";
+/* ÖLÜ ANAHTAR TEMİZLENDİ: buraya açık metin Gemini anahtarı yazılmıştı.
+   Anahtar Google tarafından geçersiz kılınmış (HTTP 403) ama koddan da
+   çıkarıldı. Yeni anahtar gerekiyorsa ORTAM DEĞİŞKENİ olarak verilmeli:
+   process.env.GEMINI_API_KEY */
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const MODEL = "gemini-1.5-flash";
 
 /* ========== AI CHATBOT: DT. Ramazan DAĞ'ın Dijitali ========== */

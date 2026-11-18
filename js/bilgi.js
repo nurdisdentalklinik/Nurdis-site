@@ -734,7 +734,7 @@ function biMakaleHTML(grup) {
       <p style="font-size:13.5px;font-weight:800;margin:0;">${basliklar[g] || g}</p>
       <p class="desc" style="margin:4px 0 0;font-size:11.5px;">${liste.length + eski.length} bilgi kartı · başlığa dokunun</p>
     </div>
-    ${grup === "bebek" ? `<div class="card p4 mb3" style="padding:0;overflow:hidden;"><img src="info-toothache.jpg" style="width:100%;display:block;" alt="Diş sağlığı bilgi kartı" /></div>` : ""}
+    ${grup === "bebek" ? `<div class="card p4 mb3" style="padding:0;overflow:hidden;"><img src="info-toothache.webp" style="width:100%;display:block;" alt="Diş sağlığı bilgi kartı" /></div>` : ""}
     ${yeniKart}${eskiKart}`;
 }
 

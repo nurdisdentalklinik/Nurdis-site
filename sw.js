@@ -1,19 +1,19 @@
 /* Sürüm numarasını HER değişiklikte artır — eski önbellek otomatik silinir. */
-const CACHE_VERSION = "v62";
+const CACHE_VERSION = "v68";
 const CACHE_NAME = "nurdis-" + CACHE_VERSION;
 const ASSETS = [
   "./index.html", "./manifest.json",
-  "./urunler/c1.jpg", "./urunler/c2.jpg", "./urunler/y1.jpg", "./urunler/y2.jpg", "./urunler/y3.jpg",
-  "./urunler/y4.jpg", "./urunler/y5.jpg", "./urunler/y6.jpg", "./urunler/y7.jpg", "./urunler/y8.jpg", "./icon-192.png", "./icon-512.png",
-  "./icon-portal.png",
-  "./icon-kvkk.png",
-  "./icon-kampanya.png",
-  "./icon-kargo.png",
+  "./urunler/c1.webp", "./urunler/c2.webp", "./urunler/y1.webp", "./urunler/y2.webp", "./urunler/y3.webp",
+  "./urunler/y4.webp", "./urunler/y5.webp", "./urunler/y6.webp", "./urunler/y7.webp", "./urunler/y8.webp", "./icon-192.png", "./icon-512.png",
+  "./icon-portal.webp",
+  "./icon-kvkk.webp",
+  "./icon-kampanya.webp",
+  "./icon-kargo.webp",
 
-  "./js/core.js", "./js/i18n.js", "./js/duyuru.js", "./js/guvenlik.js", "./js/splash.js", "./js/bilgi.js", "./js/muhasebe.js", "./js/stok.js", "./js/crm.js", "./js/randevu.js",
-  "./js/anket.js", "./js/prim.js", "./js/mali.js", "./js/ekran.js", "./js/kargo.js", "./js/hesap.js", "./js/iade.js", "./js/magaza-ek.js", "./js/hesap-sil.js", "./js/medya.js", "./js/doktorlar.js", "./js/magaza.js", "./js/magaza-ai.js", "./js/senkron.js", "./js/portal.js", "./js/otomasyon.js", "./js/kvkk.js", "./js/yedek.js", "./js/firebase.js",
-  "./doctor-photo.jpg", "./clinic-hero.jpg", "./whitening-before-after.jpg",
-  "./treatment-process.jpg", "./info-toothache.jpg",
+  "./js/core.js", "./js/i18n.js", "./js/duyuru.js", "./js/guvenlik.js", "./js/donusum.js", "./js/splash.js", "./js/tembel.js", "./js/stok.js", "./js/crm.js", "./js/randevu.js",
+  "./js/ekran.js", "./js/kargo.js", "./js/hesap.js", "./js/iade.js", "./js/magaza-ek.js", "./js/hesap-sil.js", "./js/medya.js", "./js/doktorlar.js", "./js/magaza.js", "./js/magaza-ai.js", "./js/recete.js", "./js/senkron.js", "./js/portal.js", "./js/firebase.js",
+  "./doctor-photo.webp", "./clinic-hero.webp", "./whitening-before-after.webp",
+  "./treatment-process.webp", "./info-toothache.webp",
   "./screenshot-1-home.png", "./screenshot-2-services.png", "./screenshot-3-booking.png"
 ];
 

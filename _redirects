@@ -1,0 +1,20 @@
+# ============================================================================
+#  ANA DOMAINE YÖNLENDİRME (madde 1)
+# ============================================================================
+#  nurdis.pages.dev ANA adres, nurdisdentalklinik.github.io YEDEK adres
+#  (APK hâlâ github.io'ya bağlı olduğu için kapatılmamalı).
+#
+#  ⚠️ BİLİNÇLİ OLARAK catch-all (/*) KURALI YOK:
+#     "/* /index.html 200" gibi bir kural /js/core.js gibi statik dosya
+#     isteklerini de yakalayıp HTML döndürebilir → site komple çöker.
+#     Uygulama hash tabanlı yönlendirme kullanıyor (#hesap), bu yüzden
+#     catch-all zaten gerekmiyor.
+#
+#  github.io tarafındaki yönlendirme bu dosyayla YAPILAMAZ (GitHub Pages
+#  _redirects desteklemez). Onun için index.html içindeki
+#  "domain-yonlendirme" script bloğuna bakınız — yalnızca github.io
+#  alanında çalışır, pages.dev'i etkilemez.
+# ============================================================================
+
+/eski-site            /                         301
+/anasayfa             /                         301

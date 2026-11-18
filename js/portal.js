@@ -194,6 +194,12 @@ function dosyaYukle(file, tur, baslik, not) {
 /* ---------------- RENDER: HASTA PORTALI ---------------- */
 
 function renderPortal() {
+  /* 💊 Reçete tam ekran görünümü (portal içinden açılır) */
+  if (state.screen === "portal-recete" || state.screen === "portal-receteler") {
+    if (typeof portalReceteHTML === "function") return portalReceteHTML();
+    return topbar("Reçetem", "", { back: "portal" }) + `<div class="content"><p class="footnote">Reçete modülü yüklenemedi.</p></div>`;
+  }
+
   if (!state.user || (state.user.isGuest)) {
     return `${topbar("Hasta Portalı", "Kendi tedavi kayıtlarınızı görün", { back: "home" })}
       <div class="content">
@@ -228,6 +234,23 @@ function renderPortal() {
 
   let icerik = "";
 
+  /* ---- 💊 REÇETELERİM ---- */
+  if (tab === "receteler") {
+    icerik = `
+      <div class="card p4 mb3" style="background:linear-gradient(135deg,#4A148C,#7B1FA2);color:#fff;border:none;">
+        <p style="font-size:13px;font-weight:700;margin:0 0 2px;">💊 Reçetelerim</p>
+        <p style="font-size:10.5px;opacity:.85;margin:0;">Hekiminizin yazdığı reçeteler · yazdırılabilir</p>
+      </div>
+      ${(typeof portalRecetelerHTML === "function") ? portalRecetelerHTML() : ""}
+      <div class="card p3 mt3" style="background:#FFF8E1;border:1px solid #FFE082;margin-top:12px;">
+        <p style="margin:0;font-size:10px;color:#8D6E63;line-height:1.65;">
+          ℹ️ Daha önce başka bir klinikten aldığınız reçetelerin fotoğrafını/PDF'ini
+          <b>📁 Belgeler</b> sekmesinden "Reçete" türüyle yükleyebilirsiniz.
+        </p>
+      </div>
+    `;
+  }
+
   /* ---- TEDAVİLER ---- */
   if (tab === "tedaviler") {
     const toplam = tedaviler.reduce((s, t) => s + accNum(t.amount), 0);
@@ -258,6 +281,7 @@ function renderPortal() {
               <p style="font-size:10px;color:var(--muted);margin:2px 0 0;">📅 ${accTarihTR(t.date)}${t.invoiceNo ? " · 🧾 " + escapeHtml(t.invoiceNo) : ""}</p>
               ${t.notes ? `<p style="font-size:10.5px;color:#555;margin:5px 0 0;background:#F5F5F5;padding:6px 8px;border-radius:6px;line-height:1.5;"><b>Hekim notu:</b> ${escapeHtml(t.notes)}</p>` : ""}
               ${t.paymentMethod ? `<p style="font-size:9.5px;color:#888;margin:3px 0 0;">Ödeme: ${escapeHtml(t.paymentMethod)}${t.patientType === "mukellef" ? " · Vergi mükellefi" : ""}</p>` : ""}
+              ${(typeof receteKartiHTML === "function") ? receteKartiHTML(t) : ""}
             </div>
             <p style="font-size:13px;font-weight:800;margin:0;color:#00695C;flex-shrink:0;">${accTL0(t.amount)}</p>
           </div>
@@ -395,6 +419,7 @@ function renderPortal() {
     <div class="content">
       <div style="display:flex;gap:5px;margin-bottom:12px;">
         ${chip("tedaviler", "🦷 Tedaviler", tedaviler.length)}
+        ${chip("receteler", "💊 Reçeteler", tedaviler.filter(receteVarMi).length)}
         ${chip("belgeler", "📁 Belgeler", dosyalar.length)}
         ${chip("not", "💬 Not", notlar.length)}
         ${chip("enabiz", "🏥 e-Nabız", null)}

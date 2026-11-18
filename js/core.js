@@ -14,32 +14,32 @@
 /* ---------------- VERİ ---------------- */
 
 const SERVICES = [
-  { id:"muayene", name:"Diş Muayenesi & Kontrol", price:"Ücretsiz", desc:"Genel ağız sağlığı kontrolü ve yönlendirme.", img:"icon-muayene.png", tone:"teal",
+  { id:"muayene", name:"Diş Muayenesi & Kontrol", price:"Ücretsiz", desc:"Genel ağız sağlığı kontrolü ve yönlendirme.", img:"icon-muayene.webp", tone:"teal",
     info:"İlk muayenede ağız içi kontrol edilir, gerekiyorsa röntgen çekilir ve size özel tedavi planı çıkarılır.", before:null, after:null, video:null },
-  { id:"temizlik", name:"Diş Temizliği (Detertraj)", price:"900 ₺", desc:"Diş taşı ve leke temizliği, parlatma.", img:"icon-temizlik.png", tone:"teal",
+  { id:"temizlik", name:"Diş Temizliği (Detertraj)", price:"900 ₺", desc:"Diş taşı ve leke temizliği, parlatma.", img:"icon-temizlik.webp", tone:"teal",
     info:"Ultrasonik cihazla diş taşları temizlenir, ardından parlatma işlemi yapılır. Ortalama 20-30 dakika sürer, ağrısızdır.", before:null, after:null, video:null },
-  { id:"dolgu", name:"Dolgu", price:"700–1.500 ₺", desc:"Estetik kompozit dolgu uygulamaları.", img:"icon-dolgu.png", tone:"teal",
+  { id:"dolgu", name:"Dolgu", price:"700–1.500 ₺", desc:"Estetik kompozit dolgu uygulamaları.", img:"icon-dolgu.webp", tone:"teal",
     info:"Çürük temizlenir, diş rengiyle uyumlu kompozit malzeme ile doldurulur. Tek seansta tamamlanır.", before:null, after:null, video:null },
-  { id:"kanal", name:"Kanal Tedavisi", price:"2.500–4.000 ₺", desc:"Ağrısız kanal tedavisi, tek/çok seans.", img:"icon-kanal.png", tone:"teal",
+  { id:"kanal", name:"Kanal Tedavisi", price:"2.500–4.000 ₺", desc:"Ağrısız kanal tedavisi, tek/çok seans.", img:"icon-kanal.webp", tone:"teal",
     info:"Lokal anestezi ile ağrısız şekilde uygulanır. Diş içindeki iltihaplı doku temizlenir, kanallar doldurulur.", before:null, after:null, video:"placeholder" },
-  { id:"cekim", name:"Diş Çekimi", price:"800–2.000 ₺", desc:"Basit ve cerrahi çekim işlemleri.", img:"icon-cekim.png", tone:"teal",
+  { id:"cekim", name:"Diş Çekimi", price:"800–2.000 ₺", desc:"Basit ve cerrahi çekim işlemleri.", img:"icon-cekim.webp", tone:"teal",
     info:"Lokal anestezi altında yapılır. Gömülü/yirmilik diş gibi zor vakalarda cerrahi yöntem uygulanabilir.", before:null, after:null, video:null },
-  { id:"beyazlatma", name:"Diş Beyazlatma", price:"3.000 ₺", desc:"Ofis tipi profesyonel beyazlatma.", img:"icon-beyazlatma.png", tone:"teal",
+  { id:"beyazlatma", name:"Diş Beyazlatma", price:"3.000 ₺", desc:"Ofis tipi profesyonel beyazlatma.", img:"icon-beyazlatma.webp", tone:"teal",
     info:"Diş minesine zarar vermeyen özel jel ve ışık sistemi ile 1 seansta belirgin fark elde edilir.", before:null, after:null, video:null },
-  { id:"implant", name:"İmplant", price:"12.000–18.000 ₺", desc:"Tek dişten tam çeneye implant çözümleri.", img:"icon-implant.png", tone:"teal",
+  { id:"implant", name:"İmplant", price:"12.000–18.000 ₺", desc:"Tek dişten tam çeneye implant çözümleri.", img:"icon-implant.webp", tone:"teal",
     info:"Eksik diş kökünün yerine titanyum vida yerleştirilir, üzerine kalıcı diş yapılır. Süreç ortalama 3-6 ay sürer, ara dönemde geçici diş kullanılır.", before:null, after:null, video:"placeholder" },
-  { id:"zirkonyum", name:"Zirkonyum Kaplama", price:"4.500–7.000 ₺ / diş", desc:"Doğal görünümlü, dayanıklı diş kaplaması.", img:"icon-zirkonyum.png", tone:"blue",
+  { id:"zirkonyum", name:"Zirkonyum Kaplama", price:"4.500–7.000 ₺ / diş", desc:"Doğal görünümlü, dayanıklı diş kaplaması.", img:"icon-zirkonyum.webp", tone:"blue",
     info:"Diş az miktarda küçültülür, ölçü alınır, zirkonyum kaplama üretilip yapıştırılır. Işığı doğal diş gibi yansıtır.", before:null, after:null, video:"placeholder" },
-  { id:"ortodonti", name:"Ortodonti (Tel Tedavisi)", price:"Muayene sonrası", desc:"Şeffaf plak ve metal braket seçenekleri.", img:"icon-ortodonti.png", tone:"blue",
+  { id:"ortodonti", name:"Ortodonti (Tel Tedavisi)", price:"Muayene sonrası", desc:"Şeffaf plak ve metal braket seçenekleri.", img:"icon-ortodonti.webp", tone:"blue",
     info:"Diş sıralaması ve kapanış bozukluklarını düzeltmek için tel veya şeffaf plak kullanılır. Süreç 6 ay - 2 yıl arasında değişir.", before:null, after:null, video:"placeholder" },
-  { id:"seffafplak", name:"Şeffaf Plak", price:"Muayene sonrası", desc:"Görünmez, çıkarılabilir diş düzeltme plakları.", img:"icon-seffafplak.png", tone:"blue",
+  { id:"seffafplak", name:"Şeffaf Plak", price:"Muayene sonrası", desc:"Görünmez, çıkarılabilir diş düzeltme plakları.", img:"icon-seffafplak.webp", tone:"blue",
     info:"Şeffaf, çıkarılabilir plaklar ile fark edilmeden diş düzeltme yapılır. Günde 20-22 saat takılması önerilir.", before:null, after:null, video:null },
-  { id:"kopru", name:"Köprü", price:"4.000–9.000 ₺ / diş", desc:"Eksik dişler için sabit köprü protezi.", img:"icon-kopru.png", tone:"blue",
+  { id:"kopru", name:"Köprü", price:"4.000–9.000 ₺ / diş", desc:"Eksik dişler için sabit köprü protezi.", img:"icon-kopru.webp", tone:"blue",
     info:"Eksik dişin iki yanındaki dişler destek alınarak köprü protezi yapılır, sabittir ve çıkarılmaz.", before:null, after:null, video:null },
 ];
 
 const DOCTORS = [
-  { id:"ramazan", name:"Dt. Ramazan DAĞ", title:"Diş Hekimi — Klinik Sorumlusu", photo:"doctor-photo.jpg",
+  { id:"ramazan", name:"Dt. Ramazan DAĞ", title:"Diş Hekimi — Klinik Sorumlusu", photo:"doctor-photo.webp",
     school:"Çukurova Üniversitesi Diş Hekimliği Fakültesi mezunu.",
     experience:"5 yıllık klinik deneyim.",
     focus:"İlgi alanları: kanal tedavisi, estetik diş hekimliği (zirkonyum/şeffaf plak) ve implantoloji.",
@@ -47,17 +47,17 @@ const DOCTORS = [
 ];
 
 const DEVICES = [
-  { id:"cbct", name:"CBCT (Konik Işınlı Bilgisayarlı Tomografi)", img:"icon-cbct.png",
+  { id:"cbct", name:"CBCT (Konik Işınlı Bilgisayarlı Tomografi)", img:"icon-cbct.webp",
     desc:"Çene ve diş yapısını 3 boyutlu olarak, milimetrik hassasiyetle görüntüler. Özellikle implant planlamasında sinir kanalı, kemik yoğunluğu ve yapının tam konumunu görmemizi sağlar — bu da işlemi çok daha öngörülebilir ve güvenli hale getirir." },
-  { id:"scanner", name:"Ağız İçi 3D Tarayıcı (İntraoral Scanner)", img:"icon-scanner.png",
+  { id:"scanner", name:"Ağız İçi 3D Tarayıcı (İntraoral Scanner)", img:"icon-scanner.webp",
     desc:"Klasik ölçü kaşığı ve ölçü maddesi yerine ağız içini birkaç dakikada dijital olarak tarar. Kusma hissi ya da rahatsızlık olmadan, çok daha konforlu ve hassas bir ölçü alma deneyimi sunar." },
-  { id:"printer3d", name:"3D Yazıcı", img:"icon-printer3d.png",
+  { id:"printer3d", name:"3D Yazıcı", img:"icon-printer3d.webp",
     desc:"Şeffaf plak, cerrahi rehber ve geçici protez modellerini dijital tasarımdan doğrudan üretir. Bu sayede üretim süresi kısalır ve hassasiyet artar." },
-  { id:"panoramic", name:"Dijital Panoramik Röntgen", img:"icon-panoramic.png",
+  { id:"panoramic", name:"Dijital Panoramik Röntgen", img:"icon-panoramic.webp",
     desc:"Tüm ağız yapısını, çeneleri ve diş köklerini tek karede, klasik filme göre çok daha düşük radyasyon dozuyla görüntüler. Sonuç saniyeler içinde ekranda incelenebilir." },
-  { id:"scaler", name:"Diş Taşı Temizleme Ünitesi (Ultrasonik Scaler)", img:"icon-scaler.png",
+  { id:"scaler", name:"Diş Taşı Temizleme Ünitesi (Ultrasonik Scaler)", img:"icon-scaler.webp",
     desc:"Diş taşı ve renklenmeleri diş minesine zarar vermeden, ultrasonik titreşimle nazikçe temizler." },
-  { id:"ledwhite", name:"LED Beyazlatma Sistemi", img:"icon-ledwhite.png",
+  { id:"ledwhite", name:"LED Beyazlatma Sistemi", img:"icon-ledwhite.webp",
     desc:"Özel jel ile birlikte kullanılan LED ışık sistemi, tek seansta belirgin ve güvenli bir beyazlatma sonucu sağlar." },
 ];
 
@@ -65,27 +65,27 @@ const DEVICES = [
 
 const PRODUCT_CATEGORIES = [
   { id:"cocuk", name:"Çocuk Ürünleri", items:[
-    { id:"c1", name:"Çocuk Diş Fırçası (Yumuşak, Karakterli)", price:80, gorsel:"urunler/c1.jpg",
+    { id:"c1", name:"Çocuk Diş Fırçası (Yumuşak, Karakterli)", price:80, gorsel:"urunler/c1.webp",
       marka:"Nur Diş", aciklama:"Yumuşak kıllı, küçük başlı — 2-7 yaş çocuklar için.\n\n• Ekstra yumuşak naylon kıllar\n• Kaymaz tutamak\n• Eğlenceli karakter tasarımı\n• Diş etine zarar vermez" },
-    { id:"c2", name:"Çocuk Diş Macunu (Florürsüz, Meyveli)", price:70, gorsel:"urunler/c2.jpg",
+    { id:"c2", name:"Çocuk Diş Macunu (Florürsüz, Meyveli)", price:70, gorsel:"urunler/c2.webp",
       marka:"Nur Diş", aciklama:"3 yaş altı çocuklar için florürsüz, yutulabilir formül.\n\n• Meyve aromalı\n• Şekersiz\n• Çocukların seveceği tat\n• Diş hekimi onaylı" },
   ]},
   { id:"yetiskin", name:"Yetişkin Ürünleri", items:[
-    { id:"y1", name:"Diş Fırçası (Orta Sertlik)", price:60, gorsel:"urunler/y1.jpg",
+    { id:"y1", name:"Diş Fırçası (Orta Sertlik)", price:60, gorsel:"urunler/y1.webp",
       marka:"Nur Diş", aciklama:"Günlük kullanım için ideal orta sertlikte diş fırçası.\n\n• Ergonomik tutamak\n• Ulaşılması zor bölgelere uygun baş\n• Kıl uçları yuvarlatılmış\n• Diş etini tahriş etmez" },
-    { id:"y2", name:"Diş Macunu (Florürlü)", price:90, gorsel:"urunler/y2.jpg",
+    { id:"y2", name:"Diş Macunu (Florürlü)", price:90, gorsel:"urunler/y2.webp",
       marka:"Nur Diş", aciklama:"Günlük florürlü koruma — çürük önleyici.\n\n• 1450 ppm florür\n• Diş minesini güçlendirir\n• Ferah nefes\n• 75 ml" },
-    { id:"y3", name:"Diş Macunu (Hassas Dişler İçin)", price:110, gorsel:"urunler/y3.jpg",
+    { id:"y3", name:"Diş Macunu (Hassas Dişler İçin)", price:110, gorsel:"urunler/y3.webp",
       marka:"Nur Diş", aciklama:"Hassas dişler ve çekilmiş diş eti için özel formül.\n\n• Sinir uçlarını korur\n• Sıcak-soğuk hassasiyetini azaltır\n• Nazik temizlik\n• 75 ml" },
-    { id:"y4", name:"Ağız Gargarası (Alkolsüz)", price:120, gorsel:"urunler/y4.jpg",
+    { id:"y4", name:"Ağız Gargarası (Alkolsüz)", price:120, gorsel:"urunler/y4.webp",
       marka:"Nur Diş", aciklama:"Alkol içermeyen, günlük kullanıma uygun gargara.\n\n• 12 saat nefes koruması\n• Diş eti sağlığını destekler\n• Ağız kokusunu önler\n• 500 ml" },
-    { id:"y5", name:"Diş İpi", price:40, gorsel:"urunler/y5.jpg",
+    { id:"y5", name:"Diş İpi", price:40, gorsel:"urunler/y5.webp",
       marka:"Nur Diş", aciklama:"Diş aralarındaki plak ve yemek artıklarını temizler.\n\n• Mumlu yapı — kolay kayar\n• Kopmaz\n• Nane aromalı\n• 50 metre" },
-    { id:"y6", name:"Ağız Duşu (Irrigatör)", price:650, gorsel:"urunler/y6.jpg",
+    { id:"y6", name:"Ağız Duşu (Irrigatör)", price:650, gorsel:"urunler/y6.webp",
       marka:"Nur Diş", aciklama:"Diş aralarını su basıncıyla derinlemesine temizler.\n\n• 3 basınç kademesi\n• 300 ml hazne\n• Şarj edilebilir\n• Su geçirmez (IPX7)\n• Braket ve implant kullananlar için ideal" },
-    { id:"y7", name:"Ev Tipi Beyazlatma Kiti", price:950, gorsel:"urunler/y7.jpg",
+    { id:"y7", name:"Ev Tipi Beyazlatma Kiti", price:950, gorsel:"urunler/y7.webp",
       marka:"Nur Diş", aciklama:"Diş hekimi kontrolünde evde beyazlatma.\n\n• Kişiye özel kalıp\n• Jel + uygulama seti\n• 2 haftalık kür\n• Mine dostu formül\n\n⚠️ Kullanım öncesi hekiminize danışın." },
-    { id:"y8", name:"Ortodontik Fırça (Tel Tedavisi İçin)", price:75, gorsel:"urunler/y8.jpg",
+    { id:"y8", name:"Ortodontik Fırça (Tel Tedavisi İçin)", price:75, gorsel:"urunler/y8.webp",
       marka:"Nur Diş", aciklama:"Braket ve tellerin etrafını temizlemek için özel V kesim.\n\n• V şeklinde kıl kesimi\n• Tel aralarına girer\n• Yumuşak kıllar\n• Ortodonti hastaları için" },
   ]},
 ];
@@ -163,11 +163,11 @@ function geceMi(time) {
 }
 
 const NAV_TABS = [
-  { id:"home", label:"Ana Sayfa", icon:"home", img:"tab-home.png" },
-  { id:"services", label:"Hizmetler", icon:"sparkle", img:"tab-services.png" },
-  { id:"booking", label:"Randevu", icon:"calendar", img:"tab-booking.png" },
-  { id:"chatbot", label:"DİJİ RAMO", icon:"chat", img:"tab-chatbot.png" },
-  { id:"more", label:"Diğer", icon:"dots", img:"tab-more.png" },
+  { id:"home", label:"Ana Sayfa", icon:"home", img:"tab-home.webp" },
+  { id:"services", label:"Hizmetler", icon:"sparkle", img:"tab-services.webp" },
+  { id:"booking", label:"Randevu", icon:"calendar", img:"tab-booking.webp" },
+  { id:"chatbot", label:"DİJİ RAMO", icon:"chat", img:"tab-chatbot.webp" },
+  { id:"more", label:"Diğer", icon:"dots", img:"tab-more.webp" },
 ];
 
 /* =====================================================================
@@ -200,25 +200,25 @@ const MORE_GROUPS = [
   {
     baslik: "🏥 Klinik & İletişim",
     items: [
-      { id: "devices",  label: "CİHAZLAR",  img: "icon-devices.png" },
-      { id: "address",  label: "ADRES",     img: "icon-address.png" },
-      { id: "contact",  label: "İLETİŞİM",  img: "icon-contact.png" },
-      { id: "reviews",  label: "YORUMLAR",  img: "icon-reviews.png" }
+      { id: "devices",  label: "CİHAZLAR",  img: "icon-devices.webp" },
+      { id: "address",  label: "ADRES",     img: "icon-address.webp" },
+      { id: "contact",  label: "İLETİŞİM",  img: "icon-contact.webp" },
+      { id: "reviews",  label: "YORUMLAR",  img: "icon-reviews.webp" }
     ]
   },
   {
     baslik: "🦷 Sağlık Araçları",
     items: [
-      { id: "fircalama",    label: "FIRÇALAMA", img: "icon-temizlik.png" },
-      { id: "dentist-game", label: "OYUN",      img: "dentist-game-logo.png" }
+      { id: "fircalama",    label: "FIRÇALAMA", img: "icon-temizlik.webp" },
+      { id: "dentist-game", label: "OYUN",      img: "dentist-game-logo.webp" }
     ]
   },
   {
     baslik: "👤 Hesabım",
     items: [
-      { id: "portal",   label: "HASTA PORTALI", img: "icon-portal.png" },
-      { id: "kvkk",     label: "GİZLİLİK",      img: "icon-kvkk.png" },
-      { id: "settings", label: "AYARLAR",       img: "icon-settings.png" }
+      { id: "portal",   label: "HASTA PORTALI", img: "icon-portal.webp" },
+      { id: "kvkk",     label: "GİZLİLİK",      img: "icon-kvkk.webp" },
+      { id: "settings", label: "AYARLAR",       img: "icon-settings.webp" }
     ]
   }
 ];
@@ -634,13 +634,13 @@ function renderHome() {
      Etiketler i.label'dan okunuyor (t() çeviri kaynaklı "smile" sorunu bitti)
      v59: KARGO buradan KALDIRILDI → Hesabım → Siparişlerim içinde panel. */
   const ANA_ERISIM = [
-    { id: "booking",     label: "RANDEVU AL",   img: "tab-booking.png" },
-    { id: "smile",       label: "GÜLÜŞÜNÜ TASARLA", img: "icon-smile.png" },
-    { id: "info",        label: "DİŞ SAĞLIĞI",  img: "icon-info.png" },
-    { id: "doctors",     label: "DOKTORLAR",    img: "icon-doctors.png" },
-    { id: "store",       label: "MAĞAZA",       img: "icon-store.png" },
-    { id: "kampanya",    label: "KAMPANYA",     img: "icon-kampanya.png" },
-    { id: "account",     label: "HESABIM",      img: "icon-account.png" }
+    { id: "booking",     label: "RANDEVU AL",   img: "tab-booking.webp" },
+    { id: "smile",       label: "GÜLÜŞÜNÜ TASARLA", img: "icon-smile.webp" },
+    { id: "info",        label: "DİŞ SAĞLIĞI",  img: "icon-info.webp" },
+    { id: "doctors",     label: "DOKTORLAR",    img: "icon-doctors.webp" },
+    { id: "store",       label: "MAĞAZA",       img: "icon-store.webp" },
+    { id: "kampanya",    label: "KAMPANYA",     img: "icon-kampanya.webp" },
+    { id: "account",     label: "HESABIM",      img: "icon-account.webp" }
   ];
 
   const grid = ANA_ERISIM.map(i => `
@@ -659,14 +659,23 @@ function renderHome() {
 
   return `
     <div class="topbar" style="background:none;padding:0;">
-      <div class="hero" style="background-image:linear-gradient(160deg, rgba(10,92,82,.88), rgba(46,143,192,.82)), url('clinic-hero.jpg');">
+      <div class="hero" style="background-image:linear-gradient(160deg, rgba(10,92,82,.88), rgba(46,143,192,.82)), url('clinic-hero.webp');">
         <div class="hero-inner">
           <img src="icon-192.png" class="logo-badge-img" alt="Nur Diş logo" />
           <p class="eyebrow">Nur Diş &amp; Dental Klinik</p>
           <h1 class="title" style="font-size:26px;">Gülümsemenin adresi</h1>
           <p class="subtitle">Mardin, Kızıltepe TOKİ'de güven veren bakım.</p>
+
+          ${(typeof yorumRozetiHTML === "function") ? `<div style="margin-top:12px;">${yorumRozetiHTML()}</div>` : ""}
+          ${(typeof canliSayacHTML === "function") ? `<div style="margin-top:9px;">${canliSayacHTML()}</div>` : ""}
+
+          ${(typeof ucretsizRandevuButonuHTML === "function") ? `
+          <div style="margin-top:14px;width:100%;max-width:300px;">
+            ${ucretsizRandevuButonuHTML()}
+          </div>` : ""}
+
           <button data-action="goto" data-screen="smile"
-            style="margin-top:14px;background:rgba(255,255,255,.95);border:none;border-radius:22px;padding:9px 18px;display:inline-flex;align-items:center;gap:8px;font-family:inherit;font-size:12px;font-weight:800;letter-spacing:.05em;color:#0B6E86;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.18);">
+            style="margin-top:10px;background:rgba(255,255,255,.92);border:none;border-radius:22px;padding:9px 18px;display:inline-flex;align-items:center;gap:8px;font-family:inherit;font-size:11.5px;font-weight:800;letter-spacing:.04em;color:#0B6E86;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.16);">
             ✨ GÜLÜŞÜNÜ TASARLA →
           </button>
         </div>
@@ -676,7 +685,7 @@ function renderHome() {
     <div class="content">
       <div class="card p5 mb4" style="border-color:var(--cta);">
         <div class="row-start">
-          <img src="tab-quickbook.png" style="width:48px;height:48px;border-radius:12px;object-fit:contain;" />
+          <img src="tab-quickbook.webp" style="width:48px;height:48px;border-radius:12px;object-fit:contain;" />
           <div>
             <p class="name" style="font-size:17px;">Hızlı randevu</p>
             <p class="desc">60 saniyede muayene randevusu oluştur, biz seni arayalım.</p>
@@ -686,7 +695,7 @@ function renderHome() {
       </div>
 
       <div class="card p4 mb5 row">
-        <img src="doctor-photo.jpg" class="avatar-sm" alt="Dt. Ramazan DAĞ" />
+        <img src="doctor-photo.webp" class="avatar-sm" alt="Dt. Ramazan DAĞ" />
         <div>
           <p class="name" style="font-size:14px;">Dt. Ramazan DAĞ</p>
           <p class="desc">Klinik sorumlu hekimi · 5 yıl deneyim</p>
@@ -696,6 +705,8 @@ function renderHome() {
       <div class="stats-band mb5">
         ${stats.map(s => `<div class="stat-cell"><p class="stat-num">${s.n}</p><p class="stat-tr">${s.tr}</p><p class="stat-en">${s.en}</p></div>`).join("")}
       </div>
+
+      ${(typeof cihazlarBandiHTML === "function") ? cihazlarBandiHTML() : ""}
 
       ${(typeof duyurularBolumuHTML === "function") ? duyurularBolumuHTML() : ""}
 
@@ -1473,6 +1484,16 @@ function renderAddress() {
   return `${topbar("Adresimiz","Bizi haritada bulun veya QR kodu okutun.", {back:"home"})}
     <div class="content">
       <div class="card p4 mb4 row"><div>${icon("pin",18)}</div><p style="margin:0;font-size:14px;">Mardin, Kızıltepe, TOKİ Mahallesi</p></div>
+      <!-- GÖMÜLÜ HARİTA — Google Maps embed (API anahtarı gerekmez) -->
+      <div class="card p2 mb4" style="padding:0;overflow:hidden;border-radius:14px;">
+        <iframe
+          title="Nur Diş & Dental Klinik konumu"
+          src="https://maps.google.com/maps?q=Nur%20Di%C5%9F%20%26%20Dental%20Klinik%20K%C4%B1z%C4%B1ltepe%20Mardin&z=15&output=embed"
+          width="100%" height="300" style="border:0;display:block;"
+          loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+          allowfullscreen></iframe>
+      </div>
+
       <div class="card p5 mb4" style="text-align:center;">
         <img src="${qrUrl}" alt="Konum QR kodu" style="width:200px;height:200px;margin:0 auto;display:block;border-radius:12px;" />
         <p class="footnote">QR kodu okutunca doğrudan harita konumumuz açılır.</p>
@@ -1493,7 +1514,12 @@ function renderContact() {
     <div class="content">
       <div class="mb5">
         <div class="card p4 mb3 row"><div>${icon("pin",18)}</div><p style="margin:0;font-size:14px;">Mardin, Kızıltepe, TOKİ</p></div>
-        <div class="card p4 mb3 row"><div>${icon("mail",18)}</div><p style="margin:0;font-size:14px;">0505 105 03 02</p></div>
+        <a href="tel:+905051050302" class="card p4 mb3 row" style="text-decoration:none;color:var(--ink);">
+          <div>${icon("mail",18)}</div>
+          <p style="margin:0;font-size:14px;flex:1;">0505 105 03 02</p>
+          <span style="font-size:10px;font-weight:800;color:#0B6E86;background:#E0F7FA;padding:4px 9px;border-radius:99px;">ARA</span>
+        </a>
+        <div class="mb3">${(typeof hemenAraHTML === "function") ? hemenAraHTML(true) : ""}</div>
         <div class="card p4 mb3 row"><div>${icon("calendar",18)}</div><p style="margin:0;font-size:14px;">Hafta içi 09:00–18:00, Cumartesi 10:00–14:00</p></div>
         <div class="card p4 row"><div>${icon("user",18)}</div><p style="margin:0;font-size:14px;">Dt. Ramazan DAĞ</p></div>
       </div>

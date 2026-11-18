@@ -3146,6 +3146,7 @@ function renderAdminPanel() {
             <p style="font-size:13px;font-weight:600;margin:0;">🦷 ${escapeHtml(t.treatmentName)} — ${escapeHtml(t.userName || "Bilinmeyen")}</p>
             <p style="font-size:11px;color:var(--muted);margin:2px 0 0;">📅 ${escapeHtml(t.date || "")} ${t.notes ? "· " + escapeHtml(t.notes) : ""}</p>
             ${t.amount ? `<p style="font-size:12px;font-weight:700;color:#2E7D32;margin:4px 0 0;">💰 ₺${parseFloat(t.amount).toLocaleString('tr-TR')} ${t.invoiceNo ? "· F: " + escapeHtml(t.invoiceNo) : ""}</p>` : ""}
+            ${receteOzetHTML(t)}
           </div>
           <button data-action="delete-treatment" data-id="${t.id}" style="background:#FFEBEE;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:#C62828;">🗑️</button>
         </div>
@@ -3182,11 +3183,18 @@ function renderAdminPanel() {
         <p style="font-size:14px;font-weight:700;margin:0 0 10px;color:#1B5E20;">🦷 Hasta Tedavi Kaydet</p>
         <p style="font-size:11px;color:#2E7D32;margin:0 0 10px;">Tedavi seçildiğinde otomatik fiyatlandırma + fatura + muhasebe kaydı yapılır.</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <input class="input" id="tr-user" placeholder="Hasta adı" />
+          <input class="input" id="tr-user" placeholder="Hasta adı" list="tr-hasta-listesi" />
           <select class="input" id="tr-name">
             ${Object.entries(allPrices).map(([name, price]) => `<option value="${name}" data-price="${price}">${name} — ₺${price.toLocaleString('tr-TR')}</option>`).join("")}
           </select>
         </div>
+        <datalist id="tr-hasta-listesi">
+          ${(typeof hastaRehberi === "function" ? hastaRehberi() : []).map(h => `<option value="${escapeAttr(h.ad)}"></option>`).join("")}
+        </datalist>
+        ${hastaSelectHTML()}
+        <p style="font-size:9px;color:#558B2F;margin:5px 0 0;line-height:1.5;">
+          👤 Reçetenin hasta portalında görünmesi için listeden <b>kayıtlı hasta</b> seçin.
+        </p>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px;">
           <input class="input" id="tr-date" type="date" value="${now.toISOString().split('T')[0]}" style="font-size:11px;" />
           <select class="input" id="tr-payment" style="font-size:11px;">
@@ -3199,6 +3207,9 @@ function renderAdminPanel() {
         <input class="input" id="tr-notes" placeholder="Not (isteğe bağlı)" style="margin-top:8px;font-size:11px;" />
         <button class="btn-primary" style="margin-top:10px;background:linear-gradient(135deg,#2E7D32,#43A047);" data-action="add-treatment">🦷 Tedavi Kaydet & Fatura Kes</button>
       </div>
+
+      <!-- 💊 REÇETE — tedaviyle birlikte kaydedilir, hasta portalında görünür -->
+      ${receteFormuHTML()}
 
       <!-- Mevcut Tedaviler -->
       <div class="card p4 mb3">

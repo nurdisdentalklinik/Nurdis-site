@@ -17,7 +17,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp,
-  doc, setDoc, updateDoc, deleteDoc, getDocs, getDoc, where
+  doc, setDoc, updateDoc, deleteDoc, getDocs, getDoc, where, deleteField
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
   initializeAppCheck, ReCaptchaV3Provider, ReCaptchaEnterpriseProvider
@@ -194,8 +194,28 @@ async function adminMfaDogrula(kod) {
    Mobil tarayıcılarda (Instagram/WhatsApp içi tarayıcı, Safari ITP)
    popup sık engellendiği için redirect yedek yolu şart. */
 async function _googleGirisDene() {
+  /* ---- SONSUZ YÖNLENDİRME DÖNGÜSÜ KORUMASI (v63) ----
+     SORUN: signInWithRedirect akışı, yönlendirme dönüşünde Firebase
+     tarafından otomatik tetiklenir ve "internal-error" ile sonuçlanırsa
+     kod popup'ı tekrar deniyor, o da başarısız olup yeniden yönlendirmeye
+     gidiyordu → sayfa sonsuz yenileniyordu (kullanıcı bunu "yönetici
+     girişi olmuyor" olarak görür; aslında döngüde kalıyor).
+
+     KORUMA: yönlendirme denemesi sayaçla sınırlanır (90 sn içinde en fazla
+     2). Sınır aşılırsa kullanıcıya net hata gösterilir, döngü kırılır. */
+  const SIMDI = Date.now();
+  let gecmis = [];
+  try { gecmis = JSON.parse(sessionStorage.getItem("nurdis_giris_deneme") || "[]"); } catch (e) {}
+  gecmis = gecmis.filter((t) => SIMDI - t < 90000);
+  if (gecmis.length >= 2) {
+    return { tip: "hata", error: "Giriş birkaç kez başarısız oldu. Sayfayı yenileyip tekrar deneyin. Sorun sürerse tarayıcı çerezlerini temizleyin." };
+  }
+  gecmis.push(SIMDI);
+  try { sessionStorage.setItem("nurdis_giris_deneme", JSON.stringify(gecmis)); } catch (e) {}
+
   try {
     const res = await signInWithPopup(auth, googleProvider);
+    try { sessionStorage.removeItem("nurdis_giris_deneme"); } catch (e) {}
     return { tip: "popup", user: res.user };
   } catch (err) {
     const kod = (err && err.code) || "";
@@ -210,6 +230,7 @@ async function adminGoogleSignIn() {
   try {
     const sonuc = await _googleGirisDene();
     if (sonuc.tip === "redirect") return { ok: false, redirect: true, error: "" };
+    if (sonuc.tip === "hata") return { ok: false, error: sonuc.error };
 
     const email = (sonuc.user.email || "").toLowerCase();
     if (email !== ADMIN_EMAIL.toLowerCase()) {
@@ -623,6 +644,14 @@ function addTreatment(data) {
   return addDoc(collection(db, "treatments"), { ...data, createdAt: serverTimestamp() });
 }
 
+function updateTreatment(id, veri) {
+  /* recete:null gönderilirse alan tamamen silinir (deleteField) — Firestore'da
+     updateDoc null değeri yazar; bu da reçetenin "var ama boş" görünmesine yol açar. */
+  const temiz = { ...veri };
+  if (temiz.recete === null) temiz.recete = deleteField();
+  return updateDoc(doc(db, "treatments", id), { ...temiz, guncelleme: new Date().toISOString() });
+}
+
 function deleteTreatment(id) {
   return deleteDoc(doc(db, "treatments", id));
 }
@@ -748,6 +777,7 @@ window.fb = {
   deleteHealthTip: (id) => deleteHealthTip(id),
   subscribeTreatments: (cb) => subscribeTreatments(cb),
   addTreatment: (data) => addTreatment(data),
+  updateTreatment: (id, veri) => updateTreatment(id, veri),
   deleteTreatment: (id) => deleteTreatment(id),
 };
 

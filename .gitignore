@@ -1,1 +1,14 @@
+# Android imzalama anahtarı — ASLA repoya girmemeli
+signing.keystore
+signing-key-info.txt
+*.keystore
+*.jks
+
+# Eski worker yedekleri
 arsiv/worker-eski/*KEYLI*
+
+# Worker secret'ları — asla repoya girmemeli
+.dev.vars
+*.dev.vars
+.env
+.env.local

@@ -90,6 +90,12 @@ function render() {
      "Tüm menü" sayfası da dahil. Türkçe seçiliyse sıfır maliyet. */
   if (typeof ceviriUygula === "function") { try { ceviriUygula(document.body); } catch (e) {} }
 
+  /* Yüzen WhatsApp butonu — her ekranda tazele */
+  try {
+    const waKap = document.getElementById("wa-yuzen-kap");
+    if (waKap && typeof yuzenWhatsAppHTML === "function") waKap.innerHTML = yuzenWhatsAppHTML();
+  } catch (e) {}
+
   if (state.screen === "smile") initSmile();
   if (state.screen === "chatbot") { const log = document.getElementById("chat-log"); if (log) log.scrollTop = log.scrollHeight; }
 }
@@ -430,6 +436,12 @@ document.addEventListener("click", (e) => {
   /* 📢 Duyurular (yeni sistem) */
   if (typeof duyuruAction === "function" && duyuruAction(el, action)) return;
 
+  /* 💊 Reçete sistemi — doktor yazar, hasta portalında görür */
+  if (typeof receteAction === "function" && receteAction(el, action)) return;
+
+  /* 💰 Dönüşüm bileşenleri (Google puanı ayarı vb.) */
+  if (typeof donusumAction === "function" && donusumAction(el, action)) return;
+
   /* 💬 DİJİ RAMO GÖNDER — bu butonun HİÇ işleyicisi yoktu (ölü buton).
      Enter tuşu çalışıyordu ama "Gönder" tıklaması hiçbir şey yapmıyordu. */
   if (action === "send-chat") {
@@ -512,8 +524,29 @@ document.addEventListener("click", (e) => {
         }
       }
 
+      /* 🔔 KLİNİĞE ANINDA BİLDİRİM (madde 7)
+         Önceden randevu alındığında kliniğe hiçbir bildirim gitmiyordu;
+         doktor paneli açılmadıkça randevu görülmüyordu. Artık Firebase'e
+         yazma başarılı olsa da olmasa da Worker üzerinden e-posta +
+         WhatsApp yedeği gönderilir. Böylece "done_offline" durumunda bile
+         klinik randevudan haberdar olur. */
+      try {
+        if (typeof randevuBildirimiGonder === "function") {
+          randevuBildirimiGonder(entry);
+        } else if (typeof WORKER_ADRES === "string") {
+          fetch(WORKER_ADRES, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "bildirim", randevu: entry })
+          }).catch(function () {});
+        }
+      } catch (e) {}
+
       state.lastBooking = entry;
       state.myAppointments.push({ id: Date.now(), ...entry });
+      /* 📊 DÖNÜŞÜM ÖLÇÜMÜ (madde 16) — tek hedef: randevu formu gönderimi */
+      try { if (typeof window.randevuDonusum === "function") window.randevuDonusum(entry); } catch (e) {}
+
       state.bookingStatus = bulutOk ? "done" : "done_offline";
       state.bookingForm = { date: "", time: "", name: "", phone: "", note: "", kvkk: false, doctor: "" };
       playSound("success");
@@ -1001,6 +1034,33 @@ document.addEventListener("click", (e) => {
     const patientType = document.getElementById("tr-patient-type")?.value || "kisi";
     if (!userName || !treatmentName) { alert("Hasta adı ve tedavi gerekli!"); return; }
 
+    /* 💊 REÇETE — doktor ilaç seçtiyse tedaviyle birlikte kaydedilir.
+       Hasta portalında görünmesi için uid gerekir; doktor listeden hasta
+       seçmediyse reçete yine kaydedilir ve "Reçete Geçmişi" panelinden
+       yazdırılabilir, ancak portalda görünmez. */
+    const receteIlaclari = (typeof receteTaslak === "function") ? receteTaslak() : [];
+    const receteNotu = (document.getElementById("rec-not")?.value || "").trim();
+    let secilenUid = (document.getElementById("tr-uid")?.value || "").trim();
+    /* Hasta listeden seçilmediyse isimden otomatik eşleştir.
+       Yalnızca rehberde TEK eşleşme varsa bağlanır — aynı adlı iki hasta
+       varsa yanlış kişiye reçete göstermemek için bağlanmaz. */
+    if (!secilenUid && typeof hastaIsimdenBul === "function") {
+      const bulunan = hastaIsimdenBul(userName);
+      if (bulunan) secilenUid = bulunan.uid;
+    }
+    let recete = null;
+    if (receteIlaclari.length && typeof receteYazdirilabilir === "function") {
+      recete = {
+        ilaclar: receteIlaclari.map(x => ({
+          ad: x.ad || "", doz: x.doz || "", kullanim: x.kullanim || "",
+          sure: x.sure || "", aciklama: x.aciklama || ""
+        })),
+        tarih: date,
+        hekim: "Dt. Ramazan DAĞ",
+        not: receteNotu
+      };
+    }
+
     // Fiyat listesinden fiyatı al
     const defaultPrices = { "Muayene":0,"Dolgu":2000,"Kanal Tedavisi":4000,"İmplant":15000,"Zirkonyum Kaplama":5000,"Diş Beyazlatma":3000,"Ortodonti":25000,"Protez":12000,"Diş Taşı Temizliği":1000,"Diş Çekimi":1500,"Köprü":8000,"Lamine Veneer":6000,"Şeffaf Plak":20000,"Cerrahi Çekim":3000 };
     const allPrices = { ...defaultPrices, ...(state.treatmentPrices || {}) };
@@ -1008,6 +1068,8 @@ document.addEventListener("click", (e) => {
 
     // Tedavi kaydını Firebase'e ekle
     const treatmentData = { userName, treatmentName, date, notes, amount: grossAmount, paymentMethod: payment, patientType };
+    if (secilenUid) treatmentData.uid = secilenUid;
+    if (recete) treatmentData.recete = recete;
 
     /* STOK OTOMATİK DÜŞÜM — tedaviye tanımlı malzemeler stoktan düşer */
     let stokMesaji = "";
@@ -1059,7 +1121,22 @@ document.addEventListener("click", (e) => {
         let msg = "✅ Tedavi kaydedildi: " + treatmentName;
         if (grossAmount > 0) msg += "\n💰 ₺" + grossAmount.toLocaleString('tr-TR') + (treatmentData.invoiceNo ? "\n🧾 Fatura: " + treatmentData.invoiceNo : "");
         msg += stokMesaji;
+        if (recete) {
+          msg += "\n\n💊 Reçete kaydedildi: " + recete.ilaclar.length + " ilaç";
+          msg += secilenUid
+            ? "\n👤 Hasta portalında görünecek."
+            : "\n⚠️ Hasta hesabı seçilmediği için portalda GÖRÜNMEZ.\n   (Yalnızca yazdırılabilir)";
+          /* Reçete yazıldıysa hemen çıktı teklif et */
+          setTimeout(function () {
+            if (confirm("Reçeteyi şimdi yazdırmak ister misiniz?")) {
+              receteYazdir(recete, userName, treatmentName, date);
+            }
+          }, 300);
+        }
         alert(msg);
+        /* Doktor formundaki reçete taslağını temizle */
+        state.receteTaslak = [];
+        state.receteNot = "";
         render();
       }).catch(() => alert("Kaydedilemedi."));
     } else {
@@ -1069,7 +1146,10 @@ document.addEventListener("click", (e) => {
       localStorage.setItem("nurdis_treatments_local", JSON.stringify(state.treatments));
       let msg = "✅ Tedavi kaydedildi: " + treatmentName;
       if (grossAmount > 0) msg += "\n💰 ₺" + grossAmount.toLocaleString('tr-TR');
+      if (recete) msg += "\n💊 Reçete: " + recete.ilaclar.length + " ilaç";
       alert(msg);
+      state.receteTaslak = [];
+      state.receteNot = "";
       render();
     }
   }

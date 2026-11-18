@@ -15,77 +15,96 @@
   ];
 
   /* =====================================================================
-     "GEÇ" → BEYAZ EKRAN SORUNU DÜZELTMESİ
+     "GEÇ" → ANINDA KAPAN (v65)
      ---------------------------------------------------------------------
-     ESKİ DAVRANIŞ: Geç'e basınca splash 1 saniye boyunca saydam oluyor,
-     arkada uygulama henüz çizilmemişse BOŞ/BEYAZ ekran görünüyordu.
-     (Uygulama 26 JS dosyası + Firebase bağlantısı ile ~0.5-3 sn sürebiliyor.)
+     KULLANICI İSTEĞİ: "Hazırlanıyor ekranı çıkmasın, sadece splash kalsın,
+     geç deyince hemen açılsın, müzik de kesilsin."
+
+     ESKİ DAVRANIŞ (kaldırıldı): Geç'e basınca uygulama henüz çizilmemişse
+     splash kaybolmuyor, yerine "Hazırlanıyor…" yazan ayrı bir markalı
+     bekleme ekranı geliyordu. Kullanıcı iki aşamalı bekleme görüyordu.
 
      YENİ DAVRANIŞ:
-       1) Uygulama hazırsa → splash 220 ms'de kaybolur (beyaz kare yok)
-       2) Uygulama hazır değilse → splash KALDIRILMAZ; içeriği markalı
-          "hazırlanıyor" ekranına dönüşür, ekran dolunca kaybolur
-       3) En fazla 6 sn bekler, sonra yine de kapatır (sonsuz bekleme yok)
+       1) Geç / dokunma → splash 180 ms içinde kaybolur, HİÇBİR ara ekran yok
+       2) Müzik anında kesilir (AudioContext.close + tüm osilatörler durur)
+       3) Uygulama çizilmemişse splash'in arkasında zaten hazırlanıyor olur;
+          splash saydamlaşarak kaybolduğu için boş ekran görünmez
      ===================================================================== */
-  function uygulamaHazirMi() {
-    var scr = document.getElementById('screen');
-    return !!(scr && scr.children.length > 0);
-  }
-
-  function markaliBeklemeEkrani(splash) {
-    if (!splash || splash.dataset.bekleme === '1') return;
-    splash.dataset.bekleme = '1';
-    var slaytlar = splash.querySelectorAll('.splash-slide');
-    for (var i = 0; i < slaytlar.length; i++) slaytlar[i].classList.remove('active');
-    var skip = document.getElementById('splash-skip');
-    if (skip) skip.style.display = 'none';
-    var sahne = document.getElementById('splash-scene');
-    if (sahne) sahne.style.display = 'none';
-    var cubuk = document.getElementById('splash-bar');
-    if (cubuk) cubuk.parentElement.style.display = 'none';
-
-    var kutu = document.createElement('div');
-    kutu.setAttribute('style', 'position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;gap:16px;color:#fff;text-align:center;padding:0 24px;');
-    kutu.innerHTML =
-      '<img src="icon-192.png" alt="Nur Diş" style="width:84px;height:84px;border-radius:22px;box-shadow:0 8px 32px rgba(0,0,0,.35);" />' +
-      '<p style="margin:0;font-size:17px;font-weight:800;letter-spacing:.02em;">Nur Diş &amp; Dental Klinik</p>' +
-      '<div class="splash-hazirlik-cubuk"><span></span></div>' +
-      '<p style="margin:0;font-size:12px;opacity:.85;">Hazırlanıyor…</p>';
-    /* Arka planı klinik rengine çevir — beyaz/boş görünmesin */
-    splash.style.background = 'linear-gradient(160deg,#0B6E86,#0E8FA8)';
-    splash.appendChild(kutu);
-  }
-
   function splashKaldir(splash, hizli) {
     if (!splash) return;
     splash.classList.add('hide');
-    setTimeout(function () { if (splash.parentNode) splash.remove(); }, hizli ? 220 : 400);
+    setTimeout(function () { if (splash.parentNode) splash.remove(); }, hizli ? 140 : 400);
   }
 
   function closeSplash() {
     if (splashClosed) return;
     splashClosed = true;
+
+    /* 1) MÜZİK ANINDA KESİLSİN */
+    muzigiKes();
+
     var splash = document.getElementById('splash-screen');
     if (!splash) return;
 
-    /* Slayt döngüsünü durdur */
+    /* 2) Slayt döngüsünü durdur */
     if (window.__splashInterval) { clearInterval(window.__splashInterval); window.__splashInterval = null; }
 
-    if (uygulamaHazirMi()) {
-      splashKaldir(splash, true);           /* anında kapat */
-      return;
-    }
-
-    /* Uygulama henüz çizilmedi → beyaz ekran yerine markalı bekleme */
-    markaliBeklemeEkrani(splash);
-    var baslangic = Date.now();
-    var kontrol = setInterval(function () {
-      if (uygulamaHazirMi() || Date.now() - baslangic > 6000) {
-        clearInterval(kontrol);
-        splashKaldir(splash, true);
-      }
-    }, 120);
+    /* 3) Ara ekran YOK — doğrudan kapat */
+    splashKaldir(splash, true);
   }
+
+  /* ---------------------------------------------------------------------
+     MÜZİK KESME
+     ---------------------------------------------------------------------
+     ÖNCEKİ HATA: Geç'e basılınca müzik devam ediyordu; hatta splash
+     kapandıktan sonra da piyano melodisi çalıyordu. Çünkü sadece ekran
+     gizleniyordu, AudioContext ve zamanlanmış osilatörler (7 saniyelik
+     melodi) çalışmaya devam ediyordu.
+     ÇÖZÜM: tüm osilatör düğümleri kaydedilir, kapatmada durdurulur ve
+     AudioContext tamamen kapatılır (close).
+     --------------------------------------------------------------------- */
+  function muzigiKes() {
+    /* (a) ANA SES DÜĞÜMÜNÜ SIFIRLA — bu, çalan her sesi ANINDA keser.
+       (Osilatör stop() bazı tarayıcılarda planlanmış notaları kaçırabilir;
+        gain'i 0 yapmak garantili yöntemdir.) */
+    try {
+      var anaGain = window.__splashAnaGain;
+      var c0 = window.__splashAudioCtx;
+      if (anaGain && c0) {
+        try {
+          anaGain.gain.cancelScheduledValues(0);
+          anaGain.gain.value = 0;              /* doğrudan sıfır — anında sessizlik */
+          anaGain.gain.setValueAtTime(0, c0.currentTime);
+        } catch (e) {}
+      }
+    } catch (e) {}
+
+    /* (b) Kayıtlı osilatörleri sustur */
+    try {
+      (window.__splashOsc || []).forEach(function (o) {
+        try { o.stop(0); } catch (e) {}
+        try { o.disconnect(); } catch (e) {}
+      });
+      window.__splashOsc = [];
+    } catch (e) {}
+
+    /* (c) Ses düğümünü tamamen kapat — kalan tüm ses anında susar */
+    try {
+      var c = window.__splashAudioCtx;
+      if (c && c.state !== 'closed') { try { c.close(); } catch (e) {} }
+      window.__splashAudioCtx = null;
+    } catch (e) {}
+
+    /* (d) Müziği başlatan bekleyen dokunma dinleyicilerini kaldır */
+    try {
+      if (window.__splashResume) {
+        document.removeEventListener('click', window.__splashResume);
+        document.removeEventListener('touchstart', window.__splashResume);
+        window.__splashResume = null;
+      }
+    } catch (e) {}
+  }
+  window.__splashMuzikKes = muzigiKes;
 
   // "Geç" butonu
   var skipBtn = document.getElementById('splash-skip');
@@ -125,14 +144,29 @@
     splash.addEventListener('touchstart', closeSplash);
   }
 
-  // MÜZİK - OTOMATIK BAŞLAR (tarayıcı izin verirse)
+  /* MÜZİK — tarayıcı izin verirse otomatik başlar.
+     NOT: AudioContext window.__splashAudioCtx'e, osilatörler
+     window.__splashOsc'e kaydedilir; böylece "Geç" denince
+     muzigiKes() hepsini anında susturup ses düğümünü kapatabilir. */
   try {
     var AC = window.AudioContext || window.webkitAudioContext;
     if (AC) {
       var ctx = new AC();
-      // Eğer suspended ise kullanıcı etkileşimi bekle
+      window.__splashAudioCtx = ctx;
       if (ctx.state === 'suspended') {
-        var resume = function() { ctx.resume(); startSplashMusic(ctx); document.removeEventListener('click', resume); document.removeEventListener('touchstart', resume); };
+        /* Tarayıcı otomatik çalmayı engelledi → ilk dokunuşta başlat.
+           "Geç" butonuna basıldığında da bu dinleyici tetiklenir ama
+           closeSplash önce çalışıp splashClosed=true yaptığı için
+           müzik başlamaz (aşağıdaki kontrol). */
+        var resume = function () {
+          document.removeEventListener('click', resume);
+          document.removeEventListener('touchstart', resume);
+          window.__splashResume = null;
+          if (splashClosed) return;          /* splash kapandıysa müzik başlatma */
+          try { ctx.resume(); } catch (e) {}
+          startSplashMusic(ctx);
+        };
+        window.__splashResume = resume;
         document.addEventListener('click', resume);
         document.addEventListener('touchstart', resume);
       } else {
@@ -142,8 +176,16 @@
   } catch(e) {}
 
   function startSplashMusic(ctx) {
-    if (ctx._started) return;
+    if (ctx._started || splashClosed) return;
     ctx._started = true;
+    if (!window.__splashOsc) window.__splashOsc = [];
+    var KAYDET = function (o) { window.__splashOsc.push(o); return o; };
+    /* TÜM sesler bu ana gain üzerinden geçer → tek hamlede susdurulabilir */
+    var anaGain = ctx.createGain();
+    anaGain.gain.value = 1;
+    anaGain.connect(ctx.destination);
+    window.__splashAnaGain = anaGain;
+    var HEDEF = anaGain;
     var t = ctx.currentTime;
     // Güzel piyano benzeri melodi - C majör arpej + melodi
     var melody = [
@@ -170,7 +212,7 @@
     ];
     melody.forEach(function(n) {
       // Ana ton (piyano benzeri - sine + hafif triangle karışımı)
-      var osc = ctx.createOscillator();
+      var osc = KAYDET(ctx.createOscillator());
       var gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.value = n.f;
@@ -178,22 +220,22 @@
       gain.gain.linearRampToValueAtTime(0.12, t + n.s + 0.03);
       gain.gain.setValueAtTime(0.10, t + n.s + n.d * 0.4);
       gain.gain.exponentialRampToValueAtTime(0.001, t + n.s + n.d);
-      osc.connect(gain); gain.connect(ctx.destination);
+      osc.connect(gain); gain.connect(HEDEF);
       osc.start(t + n.s); osc.stop(t + n.s + n.d + 0.05);
       // Harmonik (oktav üstü, çok hafif)
-      var osc2 = ctx.createOscillator();
+      var osc2 = KAYDET(ctx.createOscillator());
       var gain2 = ctx.createGain();
       osc2.type = 'triangle';
       osc2.frequency.value = n.f * 2;
       gain2.gain.setValueAtTime(0, t + n.s);
       gain2.gain.linearRampToValueAtTime(0.02, t + n.s + 0.03);
       gain2.gain.exponentialRampToValueAtTime(0.001, t + n.s + n.d * 0.7);
-      osc2.connect(gain2); gain2.connect(ctx.destination);
+      osc2.connect(gain2); gain2.connect(HEDEF);
       osc2.start(t + n.s); osc2.stop(t + n.s + n.d + 0.05);
     });
     // Pad (arka plan ambiyans - C majör akor)
     [261.63, 329.63, 392.00].forEach(function(freq) {
-      var osc = ctx.createOscillator();
+      var osc = KAYDET(ctx.createOscillator());
       var gain = ctx.createGain();
       osc.type = 'triangle';
       osc.frequency.value = freq;
@@ -201,18 +243,18 @@
       gain.gain.linearRampToValueAtTime(0.025, t + 1.5);
       gain.gain.setValueAtTime(0.025, t + 5.5);
       gain.gain.linearRampToValueAtTime(0, t + 7);
-      osc.connect(gain); gain.connect(ctx.destination);
+      osc.connect(gain); gain.connect(HEDEF);
       osc.start(t); osc.stop(t + 7.1);
     });
     // Chime (parlak dokunuşlar)
     [{f:2093, s:0.5}, {f:1568, s:2.1}, {f:1760, s:4.4}, {f:2093, s:6.0}].forEach(function(c) {
-      var osc = ctx.createOscillator();
+      var osc = KAYDET(ctx.createOscillator());
       var gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.value = c.f;
       gain.gain.setValueAtTime(0.05, t + c.s);
       gain.gain.exponentialRampToValueAtTime(0.001, t + c.s + 1.0);
-      osc.connect(gain); gain.connect(ctx.destination);
+      osc.connect(gain); gain.connect(HEDEF);
       osc.start(t + c.s); osc.stop(t + c.s + 1.1);
     });
   }

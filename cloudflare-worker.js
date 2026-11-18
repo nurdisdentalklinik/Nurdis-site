@@ -77,7 +77,7 @@ function corsHeaders(origin) {
   const ok = origin && IZINLI_ORIGINLER.includes(origin);
   return {
     "Access-Control-Allow-Origin": ok ? origin : IZINLI_ORIGINLER[0],
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
     "Vary": "Origin",
@@ -197,6 +197,22 @@ async function handleRequest(request, env) {
     return new Response(null, { status: 204, headers: corsHeaders(origin) });
   }
 
+  /* CANLI ZİYARETÇİ SAYACI — GET ve POST kabul eder */
+  try {
+    const yol = new URL(request.url).pathname;
+    /* /canli: CORS preflight (tarayıcı GET/POST öncesi sorar) */
+  if ((yol === "/canli" || yol === "/canli/") && request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders(origin) });
+  }
+
+  if (yol === "/canli" || yol === "/canli/") {
+      if (origin && !IZINLI_ORIGINLER.includes(origin)) {
+        return json({ error: "Bu kaynaktan erişim izni yok." }, 403, origin);
+      }
+      return await handleCanli(request, env, origin);
+    }
+  } catch (e) {}
+
   /* Yöntem kontrolü */
   if (request.method !== "POST") {
     return new Response(JSON.stringify({ error: "Sadece POST kabul edilir." }), {
@@ -225,6 +241,7 @@ async function handleRequest(request, env) {
   let action = "chat";
   if (body.action === "smile") action = "smile";
   else if (body.action === "magaza-ai") action = "magaza-ai";
+  else if (body.action === "bildirim") action = "bildirim";
 
   /* Hız limiti */
   const limit = await hizLimiti(request, action);
@@ -233,6 +250,7 @@ async function handleRequest(request, env) {
   }
 
   try {
+    if (action === "bildirim") return await handleBildirim(body, origin, env);
     if (action === "smile") return await handleSmileDesign(body, origin, env);
     if (action === "magaza-ai") return await handleMagazaAI(body, origin, env);
     return await handleChat(body, origin, env);
@@ -525,4 +543,179 @@ async function handleMagazaAI(body, origin, env) {
   }
 
   return json({ reply: data.choices[0].message.content }, 200, origin);
+}
+
+/* =====================================================================
+   CANLI ZİYARETÇİ SAYACI (Durable Object)
+   =====================================================================
+   NEDEN DURABLE OBJECT?
+   Cloudflare Workers'ta global değişken yok — her istek yeni bir
+   izole ortamda çalışır. "Şu an kaç kişi sitede" bilgisini tutmak için
+   tek bir Durable Object kullanılır: tüm istekler aynı nesneye gider,
+   sayaç tutarlı kalır.
+
+   NASIL ÇALIŞIR?
+   • Tarayıcı her 25 saniyede bir "nabız" gönderir (POST /canli)
+   • Sayaç, her oturum için son görülme zamanını tutar
+   • 60 saniye içinde nabız atan oturumlar "çevrimiçi" sayılır
+   • GET /canli → { sayi: 12 }
+
+   MALİYET: Durable Object istekleri ücretsiz plana dahil (1M/gün).
+   Gizlilik: IP saklanmaz, yalnızca rastgele oturum kimliği tutulur.
+   ===================================================================== */
+
+export class CanliSayac {
+  constructor(state, env) {
+    this.state = state;
+    this.env = env;
+    /* Bellekte tutulan oturum haritası: { oturumId: sonGorulmeMs } */
+    this.oturumlar = {};
+  }
+
+  async fetch(request) {
+    const url = new URL(request.url);
+    const simdi = Date.now();
+
+    /* Süresi dolmuş oturumları temizle (60 sn) */
+    const ESKI = 60000;
+    Object.keys(this.oturumlar).forEach((k) => {
+      if (simdi - this.oturumlar[k] > ESKI) delete this.oturumlar[k];
+    });
+
+    if (url.pathname.endsWith("/nabiz")) {
+      /* POST: oturum nabzı */
+      let body = {};
+      try { body = await request.json(); } catch (e) {}
+      const oturum = String(body.oturum || "").slice(0, 64);
+      if (oturum) this.oturumlar[oturum] = simdi;
+      return Response.json({ sayi: Object.keys(this.oturumlar).length });
+    }
+
+    /* GET: sadece sayı */
+    return Response.json({ sayi: Object.keys(this.oturumlar).length });
+  }
+}
+
+/* ---- /canli rotası ---- */
+async function handleCanli(request, env, origin) {
+  if (!env.CANLI_SAYAC) {
+    return json({ sayi: 0, kapali: true }, 200, origin);
+  }
+  try {
+    const id = env.CANLI_SAYAC.idFromName("tek");
+    const nesne = env.CANLI_SAYAC.get(id);
+    const hedef = request.method === "POST"
+      ? "https://sayac/nabiz"
+      : "https://sayac/sayi";
+    const yanit = await nesne.fetch(hedef, {
+      method: request.method === "POST" ? "POST" : "GET",
+      body: request.method === "POST" ? await request.text() : undefined,
+      headers: { "Content-Type": "application/json" }
+    });
+    const veri = await yanit.json();
+    return json({ sayi: veri.sayi || 0 }, 200, origin);
+  } catch (err) {
+    console.error("[canli] sayaç hatası:", err && err.message);
+    return json({ sayi: 0, hata: true }, 200, origin);
+  }
+}
+
+/* =====================================================================
+   RANDEVU BİLDİRİMİ (madde 7)
+   =====================================================================
+   SORUN: Randevu alındığında kliniğe HİÇBİR bildirim gitmiyordu.
+   Doktor paneli açılmadıkça randevu görülmüyordu. Üstelik internet
+   kesilirse randevu yalnızca hastanın cihazında kalıyordu ("done_offline").
+
+   ÇÖZÜM (iki katman):
+     1) ANINDA E-POSTA: Resend API ile kliniğe özet mail.
+        Ücretsiz plan: 100 mail/gün — bu hacim için fazlasıyla yeterli.
+     2) WHATSAPP YEDEĞİ: E-posta gitmese bile hasta adı/telefonu
+        WhatsApp mesajı olarak hazırlanır ve yönetici panelinde
+        "gönder" butonu olarak çıkar.
+
+   GEREKLİ SECRET: RESEND_KEY (opsiyonel — yoksa yalnız WhatsApp yedeği)
+   GEREKLİ SECRET: BILDIRIM_EPOSTA (klinik e-posta adresi)
+   ===================================================================== */
+
+async function handleBildirim(body, origin, env) {
+  const r = body.randevu || {};
+  const ad = String(r.name || "").slice(0, 80);
+  const tel = String(r.phone || "").slice(0, 25);
+  const tarih = String(r.date || "").slice(0, 20);
+  const saat = String(r.time || "").slice(0, 10);
+  const not = String(r.note || "").slice(0, 500);
+  const hizmet = String(r.service || "Muayene").slice(0, 60);
+
+  if (!ad || !tel || !tarih) {
+    return json({ ok: false, error: "Eksik randevu bilgisi." }, 400, origin);
+  }
+
+  const anahtar = (env && env.RESEND_KEY) || "";
+  const hedefEposta = (env && env.BILDIRIM_EPOSTA) || "";
+
+  /* ---- WhatsApp mesajı (her durumda üretilir) ---- */
+  const waMetin =
+    "🦷 YENİ RANDEVU\n" +
+    "Hasta: " + ad + "\n" +
+    "Telefon: " + tel + "\n" +
+    "Tarih: " + tarih + " " + saat + "\n" +
+    "İşlem: " + hizmet + "\n" +
+    (not ? "Not: " + not + "\n" : "") +
+    "Kaynak: nurdis.pages.dev";
+
+  let epostaGitti = false;
+  let hata = "";
+
+  if (anahtar && hedefEposta) {
+    try {
+      const html =
+        '<div style="font-family:Arial,sans-serif;max-width:520px;">' +
+        '<h2 style="color:#0B6E86;margin:0 0 4px;">🦷 Yeni Randevu</h2>' +
+        '<p style="color:#666;font-size:12px;margin:0 0 14px;">nurdis.pages.dev üzerinden alındı</p>' +
+        '<table style="border-collapse:collapse;width:100%;font-size:14px;">' +
+        '<tr><td style="padding:7px 0;color:#666;width:110px;">Hasta</td><td style="padding:7px 0;font-weight:700;">' + escapeHtmlBasit(ad) + '</td></tr>' +
+        '<tr><td style="padding:7px 0;color:#666;">Telefon</td><td style="padding:7px 0;font-weight:700;"><a href="tel:' + escapeHtmlBasit(tel) + '">' + escapeHtmlBasit(tel) + '</a></td></tr>' +
+        '<tr><td style="padding:7px 0;color:#666;">Tarih</td><td style="padding:7px 0;font-weight:700;">' + escapeHtmlBasit(tarih) + ' · ' + escapeHtmlBasit(saat) + '</td></tr>' +
+        '<tr><td style="padding:7px 0;color:#666;">İşlem</td><td style="padding:7px 0;">' + escapeHtmlBasit(hizmet) + '</td></tr>' +
+        (not ? '<tr><td style="padding:7px 0;color:#666;">Not</td><td style="padding:7px 0;">' + escapeHtmlBasit(not) + '</td></tr>' : '') +
+        '</table>' +
+        '<p style="margin-top:18px;font-size:12px;color:#999;">Bu bildirim otomatiktir. Yönetici panelinden randevuyu onaylayabilirsiniz.</p>' +
+        '</div>';
+
+      const yanit = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + anahtar,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          from: "Nur Dis Randevu <onboarding@resend.dev>",
+          to: [hedefEposta],
+          subject: "🦷 Yeni Randevu: " + ad + " — " + tarih + " " + saat,
+          html: html
+        })
+      });
+      epostaGitti = yanit.ok;
+      if (!yanit.ok) hata = "E-posta servisi: " + yanit.status;
+    } catch (e) {
+      hata = "E-posta gönderilemedi";
+      console.error("[bildirim] eposta hatasi:", e && e.message);
+    }
+  } else {
+    hata = "RESEND_KEY / BILDIRIM_EPOSTA tanımlı değil";
+  }
+
+  return json({
+    ok: true,
+    epostaGitti: epostaGitti,
+    waLink: "https://wa.me/?text=" + encodeURIComponent(waMetin),
+    uyari: hata || undefined
+  }, 200, origin);
+}
+
+function escapeHtmlBasit(s) {
+  return String(s || "").replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
 }
