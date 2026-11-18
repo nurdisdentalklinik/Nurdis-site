@@ -126,6 +126,13 @@
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icon-192.png" />
 <link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="icon-192.png" />
+<!-- iOS PWA (Ana Ekrana Ekle) — v73 -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Nur Diş" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="format-detection" content="telephone=no" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <!-- FONT OPTİMİZASYONU (madde 12): 3 aile -> 2 aile.
      IBM Plex Mono yalnızca küçük etiketlerde kullanılıyordu; Manrope'a
@@ -558,31 +565,32 @@
   70%  { box-shadow: 0 0 0 7px rgba(105,240,174,0); }
   100% { box-shadow: 0 0 0 0 rgba(105,240,174,0); }
 }
+/* ══════════════════════════════════════════════════════════════
+   iOS / SAFARI DÜZELTMELERİ (v73)
+   ──────────────────────────────────────────────────────────────
+   1) -webkit-tap-highlight-color: iOS'ta dokununca gri kutu çıkıyor
+   2) -webkit-touch-callout   : uzun basınca menü çıkıyor
+   3) -webkit-overflow-scrolling: iOS'ta kaydırma takılması
+   4) 100vh                   : iOS adres çubuğu yüksekliği yanlış
+   5) input font-size < 16px  : iOS sayfayı ZOOM'LUYOR (asıl şikayet!)
+   6) touch-action            : çift dokunma zoom'unu engelle
+   ══════════════════════════════════════════════════════════════ */
+* { -webkit-tap-highlight-color: rgba(0,0,0,0); }
+button, a, [data-action] {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;        /* çift dokunma zoom'u kapalı */
+}
+/* iOS'ta girdi alanına dokununca sayfa zoom yapmasın (font < 16px ise zoomlar) */
+@media screen and (max-width: 820px) {
+  input, textarea, select { font-size: 16px !important; }
+}
+/* iOS dinamik yükseklik — adres çubuğu payı */
+.splash-screen { height: 100vh; height: -webkit-fill-available; }
+/* Kaydırma sürtünmesi (iOS momentum scroll) */
+body, .screen, main { -webkit-overflow-scrolling: touch; }
 </style>
-<script>
-/* ===== ÖNBELLEK KIRICI (v61) =====
-   Eski service worker yüzünden kullanıcı eski index.html/js görüyorsa
-   bu blok devreye girer: SW'yi günceller, gerekirse önbelleği atlayarak
-   sayfayı bir kez tazeler. Çeviri/dil butonunun "ölü" kalmasını engeller. */
-(function () {
-  try {
-    if (!("serviceWorker" in navigator)) return;
-    navigator.serviceWorker.getRegistrations().then(function (kayitlar) {
-      kayitlar.forEach(function (k) { try { k.update(); } catch (e) {} });
-    });
-    /* i18n.js gerçekten yüklendi mi? 2.5 sn içinde yüklenmediyse
-       (eski önbellekteki HTML) önbelleği atlayan adresle tazele. */
-    setTimeout(function () {
-      if (typeof window.dilDegistir === "function") return;
-      var zaten = sessionStorage.getItem("nurdis_kirici");
-      if (zaten) return;                       /* sonsuz döngü koruması */
-      sessionStorage.setItem("nurdis_kirici", "1");
-      var u = location.origin + location.pathname + "?v=" + Date.now() + (location.hash || "#home");
-      location.replace(u);
-    }, 2500);
-  } catch (e) {}
-})();
-</script>
+<script src="js/onbellek-kirici.js?v=73"></script>
 </head>
 <body>
 

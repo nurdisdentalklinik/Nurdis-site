@@ -120,7 +120,20 @@
     var riza = rizaOku();
     if (riza === null) {
       /* Henüz karar vermemiş: 2 sn sonra sor (açılışı bloklamasın) */
-      setTimeout(seritGoster, 2000);
+      /* ⚠️ iOS DÜZELTMESİ (v73): Çerez şeridi z-index:100002 ile splash'in
+         (z-index:99999) ÜSTÜNDE açılıyordu. iPhone'da "Geç" butonunun tam
+         üstüne denk geliyor, kullanıcı "Geç"e basamıyordu. Ayrıca splash
+         açıkken şerit görünmesi kafa karıştırıyordu.
+         ÇÖZÜM: Splash ekranda duruyorsa şeridi GÖSTERME; splash kapanınca
+         2 sn sonra göster. */
+      var bekleSplash = function () {
+        if (document.getElementById("splash-screen")) {
+          setTimeout(bekleSplash, 600);
+          return;
+        }
+        seritGoster();
+      };
+      setTimeout(bekleSplash, 2000);
     } else if (riza.kabul) {
       gaYukle();
     }
