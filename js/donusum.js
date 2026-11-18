@@ -109,12 +109,24 @@ function canliOturumId() {
   return id;
 }
 
+/* -------------------------------------------------------------------
+   SAYAÇ — İKİ KAYNAK, SIRAYLA DENENİR
+   -------------------------------------------------------------------
+   1) WORKER (Durable Object) — yazıldı ama deploy edilemedi.
+      İleride deploy edilirse otomatik devreye girer, öncelikli.
+   2) FIREBASE — şu an çalışan yol. Worker yoksa buna düşer.
+
+   Böylece: worker deploy edildiğinde kod değişikliği GEREKMEZ.
+   ------------------------------------------------------------------- */
 function canliSayacBaslat() {
   if (_canliZamanlayici) return;
   const oturum = canliOturumId();
+  let workerCalisiyor = false;   /* bir kez başarılı olursa Firebase'e düşmez */
+  let ilkDeneme = true;
 
-  function nabiz() {
-    if (document.hidden) return;                 /* sekme arkada -> sayma */
+  /* ---- Yol 1: Worker ---- */
+  function workerNabiz() {
+    if (document.hidden) return;
     try {
       fetch(WORKER_ADRES + "/canli", {
         method: "POST",
@@ -124,16 +136,51 @@ function canliSayacBaslat() {
       }).then(function (r) { return r.ok ? r.json() : null; })
         .then(function (v) {
           if (v && typeof v.sayi === "number") {
+            workerCalisiyor = true;
             state.canliSayi = v.sayi;
             canliSayaciGuncelle(v.sayi);
+          } else {
+            firebaseNabiz();
           }
         })
-        .catch(function () {});
-    } catch (e) {}
+        .catch(function () { firebaseNabiz(); });
+    } catch (e) { firebaseNabiz(); }
   }
 
-  nabiz();
-  _canliZamanlayici = setInterval(nabiz, 25000);
+  /* ---- Yol 2: Firebase ---- */
+  function firebaseNabiz() {
+    if (document.hidden) return;
+    if (workerCalisiyor) return;                 /* worker çalışıyorsa gerek yok */
+    if (typeof window.fb === "undefined" || typeof window.fb.canliNabiz !== "function") return;
+
+    window.fb.canliNabiz(oturum).then(function (ok) {
+      if (!ok) return;
+      return window.fb.canliSayi().then(function (n) {
+        if (typeof n === "number" && n > 0) {
+          state.canliSayi = n;
+          canliSayaciGuncelle(n);
+        }
+      });
+    }).catch(function () {});
+  }
+
+  function nabiz() {
+    if (ilkDeneme) { ilkDeneme = false; workerNabiz(); }
+    else if (workerCalisiyor) workerNabiz();
+    else firebaseNabiz();
+  }
+
+  /* Firebase'in hazır olmasını bekle (asenkron yükleniyor) */
+  let beklemeSayaci = 0;
+  const bekle = setInterval(function () {
+    beklemeSayaci++;
+    const fbHazir = (typeof window.fb !== "undefined" && typeof window.fb.canliNabiz === "function");
+    if (fbHazir || beklemeSayaci > 20) {
+      clearInterval(bekle);
+      nabiz();
+      _canliZamanlayici = setInterval(nabiz, 30000);
+    }
+  }, 500);
 
   /* Sekmeye geri donunce hemen nabiz at */
   document.addEventListener("visibilitychange", function () {
@@ -151,7 +198,20 @@ function canliSayaciGuncelle(sayi) {
 
 function canliSayacHTML() {
   const sayi = state.canliSayi;
-  if (!sayi || sayi < 1) return "";
+  /* ⚠️ ESKİ DAVRANIŞ: sayı yoksa/0 ise sayaç HİÇ gösterilmiyordu, bu yüzden
+     kullanıcı "sayaç yok" diyordu. YENİ: sayaç her zaman çizilir, sayı
+     gelene kadar "..." gösterir. En az 1 olmasa bile kendini gösterir
+     (kendi ziyaretçin de sayıldığı için normalde 1 olur). */
+  if (typeof sayi !== "number") {
+    setTimeout(function(){ try{ if (typeof canliSayacBaslat === "function") canliSayacBaslat(); }catch(e){} }, 1200);
+    return `
+  <div id="canli-sayac" style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);
+    border:1px solid rgba(255,255,255,.28);border-radius:99px;padding:5px 12px;">
+    <span style="width:7px;height:7px;border-radius:50%;background:#69F0AE;
+      animation:canliNabiz 1.6s infinite;flex-shrink:0;"></span>
+    <span style="font-size:11px;color:#fff;font-weight:600;">Şu an <b id="canli-sayi">...</b> kişi inceliyor</span>
+  </div>`;
+  }
   return `
   <div id="canli-sayac" style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);
     border:1px solid rgba(255,255,255,.28);border-radius:99px;padding:5px 12px;">

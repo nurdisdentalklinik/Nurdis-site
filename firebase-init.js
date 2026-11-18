@@ -668,6 +668,48 @@ window.fb = {
   addReview: (data) => addItem("reviews", data),
   subscribeProducts: (cb) => subscribe("products_custom", cb),
   addProduct: (data) => addItem("products_custom", data),
+  /* =================================================================
+     CANLI ZİYARETÇİ SAYACI — Firebase tabanlı
+     -----------------------------------------------------------------
+     NEDEN FIREBASE? Worker'daki Durable Object sürümü yazıldı ama
+     deploy edilemedi (telefondan wrangler çalışmıyor). Firebase zaten
+     bağlı olduğu için ekstra servis/deploy gerekmiyor.
+
+     NASIL ÇALIŞIR?
+       • Her ziyaretçi 30 sn'de bir "canli_ziyaretci/<oturumId>" belgesine
+         son görülme zamanını yazar (tek belge, sürekli üzerine yazılır)
+       • Sayaç, son 70 sn içinde yazmış oturumları sayar
+       • Sekme arkadaysa nabız atmaz → yanlış sayı olmaz
+
+     MALİYET: Her ziyaretçi dakikada 2 yazma + 1 okuma. Ücretsiz kota
+     20.000 yazma/gün → günde ~10.000 ziyaretçiye kadar bedava.
+
+     GİZLİLİK: Sadece rastgele oturum kimliği tutulur, IP/ad yok.
+     KVKK: meşru menfaat kapsamında anonim istatistik, çerez gerektirmez.
+     ================================================================= */
+  canliNabiz: async (oturum) => {
+    if (!oturum) return false;
+    try {
+      await setDoc(doc(db, "canli_ziyaretci", String(oturum).slice(0, 48)), {
+        son: Date.now()
+      });
+      return true;
+    } catch (e) { return false; }
+  },
+
+  canliSayi: async () => {
+    try {
+      const esik = Date.now() - 70000;
+      const snap = await getDocs(collection(db, "canli_ziyaretci"));
+      let n = 0;
+      snap.forEach((d) => {
+        const v = d.data() || {};
+        if (typeof v.son === "number" && v.son > esik) n++;
+      });
+      return n;
+    } catch (e) { return null; }
+  },
+
   subscribeAppointments: (cb) => subscribe("appointments", cb),
   addAppointment: (data) => addItem("appointments", data),
   /* İade / değişim talepleri */
