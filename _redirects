@@ -18,3 +18,23 @@
 
 /eski-site            /                         301
 /anasayfa             /                         301
+
+# Arapça sayfalar Cloudflare'den kaldırıldı (kullanıcı isteği).
+# GitHub'da duruyor; canlıda erişilmesin diye ana sayfaya yönlendiriliyor.
+# NOT: 302 kullanılıyor (301 DEĞİL) — Google kalıcı olarak öğrenmesin,
+# ileride Arapça sayfaları geri getirmek istersek sorun çıkmasın.
+/ar/                       /                          302
+/ar/index.html             /                          302
+/ar/hizmet/                /hizmet/                   302
+/ar/hizmet/muayene         /hizmet/muayene            302
+/ar/hizmet/temizlik        /hizmet/temizlik           302
+/ar/hizmet/dolgu           /hizmet/dolgu              302
+/ar/hizmet/kanal           /hizmet/kanal              302
+/ar/hizmet/cekim           /hizmet/cekim              302
+/ar/hizmet/beyazlatma      /hizmet/beyazlatma         302
+/ar/hizmet/implant         /hizmet/implant            302
+/ar/hizmet/zirkonyum       /hizmet/zirkonyum          302
+/ar/hizmet/ortodonti       /hizmet/ortodonti          302
+/ar/hizmet/seffafplak      /hizmet/seffafplak         302
+/ar/hizmet/kopru           /hizmet/kopru              302
+/ar/*                      /                          302

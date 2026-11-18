@@ -256,6 +256,14 @@ def sayfa_html(baslik, aciklama, yol, icerik, jsonld, tur="hizmet", dil="tr", hr
 # Yalnızca hizmetler ve ana bilgi başlıkları çevrilir — tıbbi makale
 # gövdeleri hekim onayı olmadan çevrilmemeli (yanlış anlaşılma riski).
 
+# ---------------------------------------------------------------------------
+# ⚠️ KULLANICI KARARI (18 Kasım 2026): Arapça sayfalar CANLIDA İSTEMEDİ.
+# Dosyalar repoda korunuyor; canlıda _redirects ile ana sayfaya yönlendirildi.
+# Build tekrar çalıştığında dosyaların üzerine YAZILMASIN diye üretim kapalı.
+# Geri açmak için: ARAPCA_URET = True
+# ---------------------------------------------------------------------------
+ARAPCA_URET = False
+
 AR_HIZMET = {
     "muayene":     ("فحص الأسنان", "فحص شامل لصحة الفم وتخطيط العلاج. الفحص الأول مجاني."),
     "temizlik":    ("تنظيف الأسنان (إزالة الجير)", "إزالة الجير والتصبغات وتلميع الأسنان. غير مؤلم ويستغرق 20-30 دقيقة."),
@@ -565,10 +573,12 @@ def main():
         urller.append(("/" + yol, 0.7, "monthly"))
     print("  %d makale sayfası" % len(makaleler))
 
-    # --- ARAPÇA SAYFALAR (madde 15) ---
+    # --- ARAPÇA SAYFALAR (madde 15) — kullanıcı isteğiyle ÜRETİM KAPALI ---
+    if not ARAPCA_URET:
+        print("  (Arapça sayfa üretimi KAPALI — mevcut dosyalar korunuyor)")
     os.makedirs(os.path.join(KOK, "ar", "hizmet"), exist_ok=True)
     ar_sayfa = 0
-    for s_h in hizmetler:
+    for s_h in (hizmetler if ARAPCA_URET else []):
         if s_h["id"] not in AR_HIZMET:
             continue
         digerleri = [d for d in hizmetler if d["id"] != s_h["id"]]
@@ -578,40 +588,41 @@ def main():
         urller.append(("/" + yol, 0.8, "monthly"))
         ar_sayfa += 1
 
-    # Arapça ana sayfa
-    ar_kartlar = "".join(
-        '<a href="/ar/hizmet/%s.html">%s <span>· %s</span></a>'
-        % (h["id"], html.escape(AR_HIZMET[h["id"]][0]), html.escape(AR_HIZMET[h["id"]][1][:55]))
-        for h in hizmetler if h["id"] in AR_HIZMET)
-    ar_icerik = (
-        '<h1>عيادة نور لطب الأسنان</h1>'
-        '<p class="ozet">%s — %s</p>' % (ADRES, "رعاية أسنان موثوقة في قزلتَبه، ماردين")
-        + '<a class="cta" href="/#booking">🦷 %s</a>' % AR_SABLON["randevu"]
-        + '<div class="cta-alt"><a class="ara" href="tel:%s">📞 %s</a>'
-          '<a class="wa" href="https://wa.me/905051050302">💬 %s</a></div>'
-          % (TEL, AR_SABLON["ara"], AR_SABLON["wa"])
-        + '<div class="ilgili"><h2>العلاجات</h2>%s</div>' % ar_kartlar
-        + '<div class="uyari">%s</div>' % AR_SABLON["uyari"]
-        + '<p style="font-size:13px;color:#5D7480;">الموقع بالتركية: '
-          '<a href="/">nurdis.pages.dev</a></p>'
-    )
-    ar_jsonld = {
-        "@context": "https://schema.org", "@type": "Dentist",
-        "name": "Nur Diş & Dental Klinik", "alternateName": "عيادة نور لطب الأسنان",
-        "telephone": TEL, "url": SITE + "/ar/", "inLanguage": "ar",
-        "address": {"@type": "PostalAddress", "streetAddress": "TOKİ Mahallesi",
-                    "addressLocality": "Kızıltepe", "addressRegion": "Mardin",
-                    "addressCountry": "TR"},
-        "openingHours": ["Mo-Fr 09:00-18:00", "Sa 10:00-14:00"]
-    }
-    ar_ana = sayfa_html("عيادة نور لطب الأسنان — قزلتَبه ماردين | Nur Diş",
-                        "عيادة أسنان في قزلتَبه ماردين. زراعة، تقويم، تبييض، علاج عصب. الفحص الأول مجاني.",
-                        "ar/index.html", ar_icerik, ar_jsonld, dil="ar",
-                        hreflang=hreflang_etiketleri("index.html", "ar/index.html"))
-    with open(os.path.join(KOK, "ar", "index.html"), "w", encoding="utf-8") as f:
-        f.write(ar_ana)
-    urller.append(("/ar/", 0.9, "monthly"))
-    ar_sayfa += 1
+    if ARAPCA_URET:
+        # Arapça ana sayfa
+        ar_kartlar = "".join(
+            '<a href="/ar/hizmet/%s.html">%s <span>· %s</span></a>'
+            % (h["id"], html.escape(AR_HIZMET[h["id"]][0]), html.escape(AR_HIZMET[h["id"]][1][:55]))
+            for h in hizmetler if h["id"] in AR_HIZMET)
+        ar_icerik = (
+            '<h1>عيادة نور لطب الأسنان</h1>'
+            '<p class="ozet">%s — %s</p>' % (ADRES, "رعاية أسنان موثوقة في قزلتَبه، ماردين")
+            + '<a class="cta" href="/#booking">🦷 %s</a>' % AR_SABLON["randevu"]
+            + '<div class="cta-alt"><a class="ara" href="tel:%s">📞 %s</a>'
+              '<a class="wa" href="https://wa.me/905051050302">💬 %s</a></div>'
+              % (TEL, AR_SABLON["ara"], AR_SABLON["wa"])
+            + '<div class="ilgili"><h2>العلاجات</h2>%s</div>' % ar_kartlar
+            + '<div class="uyari">%s</div>' % AR_SABLON["uyari"]
+            + '<p style="font-size:13px;color:#5D7480;">الموقع بالتركية: '
+              '<a href="/">nurdis.pages.dev</a></p>'
+        )
+        ar_jsonld = {
+            "@context": "https://schema.org", "@type": "Dentist",
+            "name": "Nur Diş & Dental Klinik", "alternateName": "عيادة نور لطب الأسنان",
+            "telephone": TEL, "url": SITE + "/ar/", "inLanguage": "ar",
+            "address": {"@type": "PostalAddress", "streetAddress": "TOKİ Mahallesi",
+                        "addressLocality": "Kızıltepe", "addressRegion": "Mardin",
+                        "addressCountry": "TR"},
+            "openingHours": ["Mo-Fr 09:00-18:00", "Sa 10:00-14:00"]
+        }
+        ar_ana = sayfa_html("عيادة نور لطب الأسنان — قزلتَبه ماردين | Nur Diş",
+                            "عيادة أسنان في قزلتَبه ماردين. زراعة، تقويم، تبييض، علاج عصب. الفحص الأول مجاني.",
+                            "ar/index.html", ar_icerik, ar_jsonld, dil="ar",
+                            hreflang=hreflang_etiketleri("index.html", "ar/index.html"))
+        with open(os.path.join(KOK, "ar", "index.html"), "w", encoding="utf-8") as f:
+            f.write(ar_ana)
+        urller.append(("/ar/", 0.9, "monthly"))
+        ar_sayfa += 1
     print("  %d Arapça sayfa (ar/)" % ar_sayfa)
 
     # --- sitemap.xml ---
