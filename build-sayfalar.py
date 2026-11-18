@@ -31,7 +31,7 @@ import html
 import datetime
 
 KOK = os.path.dirname(os.path.abspath(__file__))
-SITE = "https://nurdis.pages.dev"
+SITE = "https://nurdisdentalklinik.github.io/Nurdis-site"
 KLINIK = "Nur Diş & Dental Klinik"
 TEL = "+905051050302"
 TEL_GORUNUM = "0505 105 03 02"
@@ -232,13 +232,13 @@ def sayfa_html(baslik, aciklama, yol, icerik, jsonld, tur="hizmet", dil="tr", hr
 </header>
 
 <div class="kap">
-  <p class="kirinti"><a href="/">Ana Sayfa</a> · <a href="/blog.html">Bilgi Merkezi</a></p>
+  <p class="kirinti"><a href="/Nurdis-site/">Ana Sayfa</a> · <a href="/Nurdis-site/blog.html">Bilgi Merkezi</a></p>
 
   {icerik}
 
   <footer>
     <p><b>{html.escape(KLINIK)}</b><br/>{html.escape(ADRES)}<br/>
-    <a href="tel:{TEL}">{TEL_GORUNUM}</a> · <a href="/">nurdis.pages.dev</a></p>
+    <a href="tel:{TEL}">{TEL_GORUNUM}</a> · <a href="/Nurdis-site/">nurdisdentalklinik.github.io</a></p>
     <p style="margin-top:10px;">Bu sayfadaki bilgiler genel bilgilendirme amaçlıdır, hekim muayenesinin yerine geçmez.</p>
   </footer>
 </div>
@@ -310,13 +310,13 @@ def arapca_hizmet_sayfasi(s, ar_veri, digerleri):
     baslik = "%s — قزلتَبه ماردين | %s" % (ad_ar, KLINIK)
 
     p = []
-    p.append('<p class="kirinti"><a href="/ar/">%s</a></p>' % AR_SABLON["ana"])
+    p.append('<p class="kirinti"><a href="/Nurdis-site/ar/">%s</a></p>' % AR_SABLON["ana"])
     p.append('<h1>%s</h1>' % html.escape(ad_ar))
     if s["price"] and s["price"].lower() != "muayene sonrası":
         p.append('<div class="fiyat">%s</div>' % html.escape(s["price"]))
     p.append('<p class="ozet">%s</p>' % html.escape(aciklama_ar))
 
-    p.append('<a class="cta" href="/#booking">🦷 %s</a>' % AR_SABLON["randevu"])
+    p.append('<a class="cta" href="/Nurdis-site/#booking">🦷 %s</a>' % AR_SABLON["randevu"])
     p.append('<div class="cta-alt"><a class="ara" href="tel:%s">📞 %s</a>'
              '<a class="wa" href="https://wa.me/905051050302">💬 %s</a></div>'
              % (TEL, AR_SABLON["ara"], AR_SABLON["wa"]))
@@ -325,7 +325,7 @@ def arapca_hizmet_sayfasi(s, ar_veri, digerleri):
     p.append('<div class="uyari">%s</div>' % AR_SABLON["uyari"])
 
     if digerleri:
-        bag = "".join('<a href="/ar/hizmet/%s.html">%s</a>' % (d["id"], html.escape(AR_HIZMET[d["id"]][0]))
+        bag = "".join('<a href="/Nurdis-site/ar/hizmet/%s.html">%s</a>' % (d["id"], html.escape(AR_HIZMET[d["id"]][0]))
                       for d in digerleri[:5] if d["id"] in AR_HIZMET)
         p.append('<div class="ilgili"><h2>%s</h2>%s</div>' % (AR_SABLON["diger"], bag))
 
@@ -373,7 +373,7 @@ def hizmet_sayfasi(s, tedavi, digerleri):
         parcalar.append('<div class="fiyat">%s</div>' % html.escape(fiyat))
     parcalar.append('<p class="ozet">%s</p>' % html.escape(desc))
 
-    parcalar.append('<a class="cta" href="/#booking">🦷 Ücretsiz Muayene — Randevu Al</a>')
+    parcalar.append('<a class="cta" href="/Nurdis-site/#booking">🦷 Ücretsiz Muayene — Randevu Al</a>')
     parcalar.append('<div class="cta-alt"><a class="ara" href="tel:%s">📞 Hemen Ara</a>'
                     '<a class="wa" href="https://wa.me/905051050302?text=%s">💬 WhatsApp</a></div>'
                     % (TEL, html.escape("Merhaba, %s hakkında bilgi almak istiyorum." % ad)))
@@ -400,7 +400,7 @@ def hizmet_sayfasi(s, tedavi, digerleri):
                     'için hekim muayenesi gerekir.</div>')
 
     if digerleri:
-        baglanti = "".join('<a href="/hizmet/%s.html">%s <span>· %s</span></a>'
+        baglanti = "".join('<a href="/Nurdis-site/hizmet/%s.html">%s <span>· %s</span></a>'
                            % (d["id"], html.escape(d["name"]), html.escape(d["price"]))
                            for d in digerleri[:5])
         parcalar.append('<div class="ilgili"><h2>Diğer tedaviler</h2>%s</div>' % baglanti)
@@ -436,7 +436,7 @@ def rehber_sayfasi(t):
     p = []
     p.append(f'<h1>{html.escape(ad)}</h1>')
     p.append('<p class="ozet">%s</p>' % html.escape(t.get("nedir", "")))
-    p.append('<a class="cta" href="/#booking">🦷 Ücretsiz Muayene — Randevu Al</a>')
+    p.append('<a class="cta" href="/Nurdis-site/#booking">🦷 Ücretsiz Muayene — Randevu Al</a>')
 
     k = []
     for etiket, anahtar in [("Ne zaman yapılmalı?", "neZaman"), ("Kaç seans?", "seans"),
@@ -473,10 +473,10 @@ def makale_sayfasi(m, sira):
     if m.get("ozet"):
         p.append('<p class="ozet">%s</p>' % html.escape(m["ozet"]))
     p.append('<div class="kart"><p>%s</p></div>' % html.escape(m.get("govde", "")))
-    p.append('<a class="cta" href="/#booking">🦷 Ücretsiz Muayene — Randevu Al</a>')
+    p.append('<a class="cta" href="/Nurdis-site/#booking">🦷 Ücretsiz Muayene — Randevu Al</a>')
     p.append('<div class="uyari">⚠️ Bu içerik genel bilgilendirme amaçlıdır. '
              'Şikayetiniz sürüyorsa hekiminize başvurun.</div>')
-    p.append('<div class="ilgili"><h2>Diğer yazılar</h2><a href="/blog.html">← Bilgi Merkezine dön</a></div>')
+    p.append('<div class="ilgili"><h2>Diğer yazılar</h2><a href="/Nurdis-site/blog.html">← Bilgi Merkezine dön</a></div>')
 
     jsonld = {
         "@context": "https://schema.org",
@@ -591,20 +591,20 @@ def main():
     if ARAPCA_URET:
         # Arapça ana sayfa
         ar_kartlar = "".join(
-            '<a href="/ar/hizmet/%s.html">%s <span>· %s</span></a>'
+            '<a href="/Nurdis-site/ar/hizmet/%s.html">%s <span>· %s</span></a>'
             % (h["id"], html.escape(AR_HIZMET[h["id"]][0]), html.escape(AR_HIZMET[h["id"]][1][:55]))
             for h in hizmetler if h["id"] in AR_HIZMET)
         ar_icerik = (
             '<h1>عيادة نور لطب الأسنان</h1>'
             '<p class="ozet">%s — %s</p>' % (ADRES, "رعاية أسنان موثوقة في قزلتَبه، ماردين")
-            + '<a class="cta" href="/#booking">🦷 %s</a>' % AR_SABLON["randevu"]
+            + '<a class="cta" href="/Nurdis-site/#booking">🦷 %s</a>' % AR_SABLON["randevu"]
             + '<div class="cta-alt"><a class="ara" href="tel:%s">📞 %s</a>'
               '<a class="wa" href="https://wa.me/905051050302">💬 %s</a></div>'
               % (TEL, AR_SABLON["ara"], AR_SABLON["wa"])
             + '<div class="ilgili"><h2>العلاجات</h2>%s</div>' % ar_kartlar
             + '<div class="uyari">%s</div>' % AR_SABLON["uyari"]
             + '<p style="font-size:13px;color:#5D7480;">الموقع بالتركية: '
-              '<a href="/">nurdis.pages.dev</a></p>'
+              '<a href="/Nurdis-site/">nurdisdentalklinik.github.io</a></p>'
         )
         ar_jsonld = {
             "@context": "https://schema.org", "@type": "Dentist",
@@ -656,19 +656,19 @@ def main():
 
     bloklar.append('<div class="ilgili"><h2>Tedavi rehberleri</h2>')
     for t in tedaviler.values():
-        bloklar.append('<a href="/rehber/%s.html">%s <span>· aşama aşama</span></a>'
+        bloklar.append('<a href="/Nurdis-site/rehber/%s.html">%s <span>· aşama aşama</span></a>'
                        % (t["id"], html.escape(t["ad"])))
     bloklar.append('</div>')
 
     for grup, liste in gruplar.items():
         bloklar.append('<div class="ilgili"><h2>%s</h2>' % html.escape(grup))
         for m in liste:
-            bloklar.append('<a href="/bilgi/%s.html">%s <span>· %s</span></a>'
+            bloklar.append('<a href="/Nurdis-site/bilgi/%s.html">%s <span>· %s</span></a>'
                            % (slug(m["baslik"]), html.escape(m["baslik"]),
                               html.escape(m.get("ozet", "")[:60])))
         bloklar.append('</div>')
 
-    bloklar.append('<a class="cta" href="/#booking">🦷 Ücretsiz Muayene — Randevu Al</a>')
+    bloklar.append('<a class="cta" href="/Nurdis-site/#booking">🦷 Ücretsiz Muayene — Randevu Al</a>')
 
     jsonld = {
         "@context": "https://schema.org",

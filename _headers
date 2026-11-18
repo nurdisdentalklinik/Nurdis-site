@@ -63,24 +63,3 @@
 
 /js/*
   Cache-Control: public, max-age=0, must-revalidate
-
-
-# ============================================================================
-#  SİLİNMİŞ DOSYALARI ZORLA ENGELLE
-# ============================================================================
-# signing.keystore ve signing-key-info.txt repodan silindi ama Cloudflare
-# edge cache'inde kalıntı olabilir. Bu kurallar o yolları KALICI olarak
-# 410 Gone yapar — cache'te kalıntı olsa bile istemciye içerik gitmez.
-/signing.keystore
-  Content-Type: text/plain
-  X-Robots-Tag: noindex
-  Cache-Control: no-store
-  ! Content-Length
-  ! ETag
-
-/signing-key-info.txt
-  Content-Type: text/plain
-  X-Robots-Tag: noindex
-  Cache-Control: no-store
-  ! Content-Length
-  ! ETag

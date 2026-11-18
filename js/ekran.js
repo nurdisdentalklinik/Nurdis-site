@@ -103,7 +103,7 @@ function render() {
 
 /* ---------------- HASH ROUTING ----------------
    Mağazalar (Google Play / App Store) "veri silme URL'si" ister.
-   https://nurdis.pages.dev/#hesap-sil gibi doğrudan bağlantı çalışmalı. */
+   https://nurdisdentalklinik.github.io/Nurdis-site/#hesap-sil gibi doğrudan bağlantı çalışmalı. */
 function hashUygula() {
   const h = (location.hash || "").replace(/^#/, "").trim();
   if (!h) return false;

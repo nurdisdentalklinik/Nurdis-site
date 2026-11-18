@@ -1,7 +1,7 @@
 /* =====================================================================
    🗑️ HESAP VE VERİ SİLME  (KVKK m.7 + Google Play / App Store zorunluluğu)
    ---------------------------------------------------------------------
-   Kalıcı adres: https://nurdis.pages.dev/#hesap-sil
+   Kalıcı adres: https://nurdisdentalklinik.github.io/Nurdis-site/#hesap-sil
 
    MAĞAZA ŞARTI:
      • Google Play  — 2023'ten beri zorunlu (User Data policy)
