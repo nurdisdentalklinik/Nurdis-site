@@ -196,8 +196,14 @@ function canliSayaciGuncelle(sayi) {
   if (kap) kap.style.display = sayi > 0 ? "flex" : "none";
 }
 
-function canliSayacHTML() {
+function canliSayacHTML(altMod) {
   const sayi = state.canliSayi;
+  /* altMod=true → footer'da çiziliyor (koyu zemin, ortalanmış, biraz büyük) */
+  const alt = altMod === true;
+  const stil = alt
+    ? "display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.22);border-radius:99px;padding:7px 15px;"
+    : "display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:99px;padding:5px 12px;";
+  const yaziBoyut = alt ? "12px" : "11px";
   /* ⚠️ ESKİ DAVRANIŞ: sayı yoksa/0 ise sayaç HİÇ gösterilmiyordu, bu yüzden
      kullanıcı "sayaç yok" diyordu. YENİ: sayaç her zaman çizilir, sayı
      gelene kadar "..." gösterir. En az 1 olmasa bile kendini gösterir
@@ -205,19 +211,17 @@ function canliSayacHTML() {
   if (typeof sayi !== "number") {
     setTimeout(function(){ try{ if (typeof canliSayacBaslat === "function") canliSayacBaslat(); }catch(e){} }, 1200);
     return `
-  <div id="canli-sayac" style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);
-    border:1px solid rgba(255,255,255,.28);border-radius:99px;padding:5px 12px;">
+  <div id="canli-sayac" style="${stil}">
     <span style="width:7px;height:7px;border-radius:50%;background:#69F0AE;
       animation:canliNabiz 1.6s infinite;flex-shrink:0;"></span>
-    <span style="font-size:11px;color:#fff;font-weight:600;">Şu an <b id="canli-sayi">...</b> kişi inceliyor</span>
+    <span style="font-size:${yaziBoyut};color:#fff;font-weight:600;">Şu an <b id="canli-sayi">...</b> kişi inceliyor</span>
   </div>`;
   }
   return `
-  <div id="canli-sayac" style="display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);
-    border:1px solid rgba(255,255,255,.28);border-radius:99px;padding:5px 12px;">
+  <div id="canli-sayac" style="${stil}">
     <span style="width:7px;height:7px;border-radius:50%;background:#69F0AE;box-shadow:0 0 0 0 rgba(105,240,174,.7);
       animation:canliNabiz 1.6s infinite;flex-shrink:0;"></span>
-    <span style="font-size:11px;color:#fff;font-weight:600;">
+    <span style="font-size:${yaziBoyut};color:#fff;font-weight:600;">
       Şu an <b id="canli-sayi">${sayi}</b> kişi inceliyor
     </span>
   </div>`;

@@ -667,7 +667,6 @@ function renderHome() {
           <p class="subtitle">Mardin, Kızıltepe TOKİ'de güven veren bakım.</p>
 
           ${(typeof yorumRozetiHTML === "function") ? `<div style="margin-top:12px;">${yorumRozetiHTML()}</div>` : ""}
-          ${(typeof canliSayacHTML === "function") ? `<div style="margin-top:9px;">${canliSayacHTML()}</div>` : ""}
 
           ${(typeof ucretsizRandevuButonuHTML === "function") ? `
           <div style="margin-top:14px;width:100%;max-width:300px;">
@@ -729,6 +728,12 @@ function renderHome() {
           TÜM MENÜ →
         </button>
         <p class="footer-phone">${icon("mail",14)} 0505 105 03 02</p>
+
+        ${(typeof canliSayacHTML === "function") ? `
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.18);
+          display:flex;justify-content:center;">
+          ${canliSayacHTML(true)}
+        </div>` : ""}
       </div>
     </div>`;
 }

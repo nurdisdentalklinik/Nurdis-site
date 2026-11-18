@@ -3,14 +3,25 @@
 (function() {
   var splashClosed = false;
   var currentSlide = 0;
-  var totalSlides = 4;
-  /* Sahne etiketleri — KULLANICI İSTEĞİ (18 Kasım 2026):
-     "Uzaydan geliyoruz" ve "Kıtalar görünüyor / dünya" ifadeleri kaldırıldı.
-     Klinik/marka odaklı, sade akış bırakıldı. */
+  var totalSlides = 7;
+  /* Sahne etiketleri — 7 slayt, GÖRSELLERLE BİREBİR eşleşir:
+       s1 space.webp      → açılış
+       s2 continents.jpg  → bölge
+       s3 turkey.jpg      → ülke
+       s4 mardin.jpg      → şehir
+       s5 toki.jpg        → mahalle
+       s6 clinic.jpg      → klinik
+       s7 door.webp       → karşılama
+     ⚠️ KULLANICI İSTEĞİ: "Uzaydan geliyoruz" ve "Kıtalar görünüyor /
+     dünya" ifadeleri KALDIRILDI. Görsel sayısı 7 olduğu için etiket de
+     7 olmak ZORUNDA — eksik olursa slayt takılır (daha önce bozulmuştu). */
   var sceneLabels = [
     'Nur Diş & Dental Klinik',
-    'Mardin · Kızıltepe',
-    'Gülümsemenin adresi',
+    'Mardin bölgesi',
+    'Türkiye',
+    'Mardin',
+    'Kızıltepe TOKİ',
+    'Kliniğimiz',
     'Hoş geldiniz'
   ];
 
@@ -132,7 +143,7 @@
       if (sceneLabel) sceneLabel.textContent = sceneLabels[currentSlide];
       if (bar) bar.style.width = ((currentSlide+1)/totalSlides*100) + '%';
     }
-  }, 1000);
+  }, 800);
   window.__splashInterval = slideInterval;
 
   setTimeout(closeSplash, 7000);
