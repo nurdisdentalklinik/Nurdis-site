@@ -429,13 +429,13 @@
   from { transform: scale(1.15); }
   to { transform: scale(1); }
 }
-/* ⚡ AÇILIŞ HIZI (v64): 7 splash görseli (~380 KB) burada tanımlıyken
+/* ⚡ AÇILIŞ HIZI (v74): 5 splash görseli burada tanımlıyken
    sayfa açılır açılmaz HEPSİ indiriliyordu. Artık yalnızca 1. görsel
    CSS'te; 2-7 arası js/tembel.js tarafından sırayla yükleniyor.
    Böylece ilk ekran 6 gereksiz görseli beklemiyor. */
 .splash-slide.s1 { background-image: url('splash-1-space.webp'); animation-delay: 0s; }
 .splash-slide.s2, .splash-slide.s3, .splash-slide.s4,
-.splash-slide.s5, .splash-slide.s6, .splash-slide.s7 { background-image: none; }
+.splash-slide.s5 { background-image: none; }
 /* Koyu overlay */
 .splash-overlay {
   position: absolute;
@@ -601,8 +601,6 @@ body, .screen, main { -webkit-overflow-scrolling: touch; }
   <div class="splash-slide s3"></div>
   <div class="splash-slide s4"></div>
   <div class="splash-slide s5"></div>
-  <div class="splash-slide s6"></div>
-  <div class="splash-slide s7"></div>
   <div class="splash-overlay"></div>
 
   <img src="icon-192.png" class="splash-logo" alt="Nur Diş" />

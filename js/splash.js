@@ -1,9 +1,34 @@
 /* Açılış (splash) ekranı — CSP uyumu için index.html'den taşındı.
    Satır içi <script> yasak olduğundan ayrı dosyada çalışır. */
 (function() {
+  /* ═══════════════════════════════════════════════════════════════
+     KULLANICI ŞİKAYETİ: "Splash giriş çok ağır, giriş tekrar ediyor"
+
+     ÇÖZÜMLER:
+       1) Tek seferlik  : aynı OTURUMDA splash bir daha gösterilmez
+                          (sessionStorage). Uygulamayı her açışta 4 saniye
+                          beklemek zorunda kalmazsınız.
+       2) Hızlandırıldı : 5 sahne x 620 ms = 3.1 sn, kapanma 4.2 sn
+                          (önce 7 sahne x 800 ms = 5.6 sn / kapanma 7 sn)
+       3) 'Geç' + dokunma aynı: anında kapanır
+
+     ⚠️ Aynı oturumda bir kez gösterilir; tarayıcı/uygulama tamamen
+        kapatılıp açılırsa yeniden gösterilir (marka karşılaması).
+     ═══════════════════════════════════════════════════════════════ */
+  var ATLA_ANAHTAR = "nurdis_splash_gosterildi";
+  try {
+    if (sessionStorage.getItem(ATLA_ANAHTAR) === "1") {
+      /* Bu oturumda zaten gösterildi → splash DOM'dan hemen kaldır.
+         (CSS yüzünden kısa bir an görünmemesi için anında silinir.) */
+      var esk = document.getElementById("splash-screen");
+      if (esk && esk.parentNode) esk.parentNode.removeChild(esk);
+      return;
+    }
+  } catch (e) {}
+
   var splashClosed = false;
   var currentSlide = 0;
-  var totalSlides = 7;
+  var totalSlides = 5;
   /* Sahne etiketleri — 7 slayt, GÖRSELLERLE BİREBİR eşleşir:
        s1 space.webp      → açılış
        s2 continents.jpg  → bölge
@@ -16,13 +41,11 @@
      dünya" ifadeleri KALDIRILDI. Görsel sayısı 7 olduğu için etiket de
      7 olmak ZORUNDA — eksik olursa slayt takılır (daha önce bozulmuştu). */
   var sceneLabels = [
-    'Nur Diş & Dental Klinik',
-    'Mardin bölgesi',
+    'Uzaydan dünyaya',
     'Türkiye',
     'Mardin',
-    'Kızıltepe TOKİ',
-    'Kliniğimiz',
-    'Hoş geldiniz'
+    'Kızıltepe',
+    'Nur Diş & Dental Klinik'
   ];
 
   /* =====================================================================
@@ -50,6 +73,9 @@
   function closeSplash() {
     if (splashClosed) return;
     splashClosed = true;
+
+    /* Bu oturumda bir daha gösterme (tekrar eden splash sorunu) */
+    try { sessionStorage.setItem(ATLA_ANAHTAR, "1"); } catch (e) {}
 
     /* 1) MÜZİK ANINDA KESİLSİN */
     muzigiKes();
@@ -143,10 +169,10 @@
       if (sceneLabel) sceneLabel.textContent = sceneLabels[currentSlide];
       if (bar) bar.style.width = ((currentSlide+1)/totalSlides*100) + '%';
     }
-  }, 800);
+  }, 620);
   window.__splashInterval = slideInterval;
 
-  setTimeout(closeSplash, 7000);
+  setTimeout(closeSplash, 4200);
 
   // Dokunma ile atla
   var splash = document.getElementById('splash-screen');

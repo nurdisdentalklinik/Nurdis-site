@@ -3030,6 +3030,7 @@ function renderAdminPanel() {
     { id: "announcements", label: "📢 Duyurular", count: state.announcements.length },
     { id: "portal", label: "🏥 Hasta Portalı", count: (state.patientNotes || []).filter(n => !n.doktorYanit).length + (state.patientFiles || []).filter(f => !f.doktorGordu).length },
     { id: "accounting", label: "💰 Muhasebe", count: 0 },
+    { id: "yedek", label: "💾 YEDEKLEME", count: 0 },
     { id: "guvenlik", label: "🔐 Güvenlik", count: 0 }
   ];
 
@@ -3266,6 +3267,13 @@ function renderAdminPanel() {
 
   if (state.adminTab === "accounting") {
     tabContent = renderAccounting();
+  } else if (state.adminTab === "yedek") {
+    /* KULLANICI İSTEĞİ: Yedekleme ayrı sekmede olsun; istenildiğinde
+       buradan yedek alınsın, istenildiğinde buradan geri yüklensin.
+       Açılışta hiçbir uyarı çıkmaz. */
+    tabContent = (typeof renderAccYedek === "function")
+      ? renderAccYedek()
+      : `<div class="card p4"><p>Yedekleme ekranı yüklenemedi.</p></div>`;
   } else if (state.adminTab === "guvenlik") {
     tabContent = renderGuvenlikPaneli();
   }

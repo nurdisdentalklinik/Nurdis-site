@@ -31,10 +31,15 @@
 (function () {
   "use strict";
 
+  /* v74 — SADECE 5 SAHNE (kullanıcı: uzaydan dünyaya → Türkiye → Mardin
+     → klinik). Önce 7 görselin tamamı indiriliyordu; splash ağırlaşıyordu.
+     Artık yalnız 5. görsel yükleniyor, süre kısaldı. */
   var SPLASH_GORSELLERI = [
-    "splash-1-space.webp", "splash-2-continents.jpg", "splash-3-turkey.jpg",
-    "splash-4-mardin.jpg", "splash-5-toki.jpg", "splash-6-clinic.jpg",
-    "splash-7-door.webp"
+    "splash-1-space.webp",      /* s1: uzaydan dünyaya */
+    "splash-3-turkey.jpg",      /* s2: Türkiye */
+    "splash-4-mardin.jpg",      /* s3: Mardin */
+    "splash-5-toki.jpg",        /* s4: Kızıltepe */
+    "splash-6-clinic.jpg"       /* s5: klinik */
   ];
 
   /* ---- 1) Splash: yalnizca 1. gorsel basta, digerleri sirayla ---- */

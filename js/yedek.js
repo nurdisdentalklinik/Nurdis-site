@@ -127,19 +127,13 @@ function yedekYasGun() {
 
 /* Otomatik hatırlatma kontrolü */
 function yedekHatirlatmaKontrol() {
-  const gun = yedekYasGun();
-  const hatirlatildi = localStorage.getItem("nurdis_yedek_hatirlatma_" + accToday());
-  if (hatirlatildi) return;
+  /* v74 — KULLANICI İSTEĞİ: Otomatik yedek uyarısı İSTENMİYOR.
+     "Bildirmesine gerek yok; istenildiği zaman oraya (yönetici paneli >
+     YEDEKLEME sekmesi) yedeklensin, istenildiğinde oradan yüklensin."
 
-  if (gun === null || gun >= 7) {
-    localStorage.setItem("nurdis_yedek_hatirlatma_" + accToday(), "1");
-    setTimeout(() => {
-      const mesaj = gun === null
-        ? "⚠️ Hiç yedek almadınız!\n\nVerileriniz kaybolursa geri getirilemez.\n\nŞimdi yedek almak ister misiniz?"
-        : "⚠️ Son yedeğiniz " + gun + " gün önce alındı.\n\nHaftada en az bir kez yedek almanız önerilir.\n\nŞimdi yedek almak ister misiniz?";
-      if (confirm(mesaj)) yedekIndir();
-    }, 3000);
-  }
+     Bu fonksiyon artık HİÇBİR ŞEY yapmıyor (eski çağrılar hata vermesin
+     diye duruyor). Yedekleme tamamen ELLE, yönetici panelinden yapılır. */
+  return;
 }
 
 /* Yedeği geri yükle */

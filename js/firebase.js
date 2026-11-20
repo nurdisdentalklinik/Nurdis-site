@@ -844,10 +844,18 @@ if (validScreens.includes(hash)) state.screen = hash;
 history.replaceState({ screen: state.screen }, "", "#" + state.screen);
 render();
 
-/* Otomatik yedek hatırlatması — günde bir kez, 5 sn sonra */
-setTimeout(() => {
-  try { if (typeof yedekHatirlatmaKontrol === "function") yedekHatirlatmaKontrol(); } catch (e) {}
-}, 5000);
+/* ══════════════════════════════════════════════════════════════════
+   OTOMATİK YEDEK HATIRLATMASI KALDIRILDI (v74)
+   ──────────────────────────────────────────────────────────────────
+   KULLANICI İSTEĞİ: "Uygulamaya giriş yapınca yedek uyarısı veriyor.
+   Hayır, sadece yönetici giriş sekmesinde olsun, orada sekme olsun.
+   Bildirmesine gerek yok. İstenildiği zaman oraya yedeklensin,
+   istenildiğinde yine oradan yüklensin. Kullanıcıların yedek yapmasına
+   gerek yok; zaten gerekli bilgiler Firebase'e kaydediliyor."
+
+   → Açılışta `confirm()` çıkmıyor. Yedekleme/gERİ yükleme tamamen
+     YÖNETİCİ PANELİNDEKİ "YEDEKLEME" sekmesinden elle yapılır.
+   ══════════════════════════════════════════════════════════════════ */
 
 /* Senkron kuyruğunu otomatik başlat */
 setTimeout(() => {
