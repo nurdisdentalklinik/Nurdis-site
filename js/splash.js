@@ -15,9 +15,17 @@
      ⚠️ Aynı oturumda bir kez gösterilir; tarayıcı/uygulama tamamen
         kapatılıp açılırsa yeniden gösterilir (marka karşılaması).
      ═══════════════════════════════════════════════════════════════ */
+  /* ⚠️ v75: sessionStorage yerine localStorage kullanılıyor.
+     KULLANICI: "Ben o geç sekmesini her seferinde izlemek zorunda
+     kalmayalım diye koydum. İLK DEFA GİRENLER GÖRSÜN YETER, isteyen
+     geçsin hemen ama beyaz ekran da beklemesin."
+
+     • localStorage → splash yalnızca İLK ziyarette çıkar, sonra bir
+       daha çıkmaz (tarayıcı verisi silinmedikçe).
+     • "Geç" basıldığında hemen kapanır, beyaz ekran görünmez. */
   var ATLA_ANAHTAR = "nurdis_splash_gosterildi";
   try {
-    if (sessionStorage.getItem(ATLA_ANAHTAR) === "1") {
+    if (localStorage.getItem(ATLA_ANAHTAR) === "1") {
       /* Bu oturumda zaten gösterildi → splash DOM'dan hemen kaldır.
          (CSS yüzünden kısa bir an görünmemesi için anında silinir.) */
       var esk = document.getElementById("splash-screen");
@@ -64,6 +72,67 @@
        3) Uygulama çizilmemişse splash'in arkasında zaten hazırlanıyor olur;
           splash saydamlaşarak kaybolduğu için boş ekran görünmez
      ===================================================================== */
+  /* ═══════════════════════════════════════════════════════════════
+     BEYAZ EKRAN DÜZELTMESİ (v75)
+     ───────────────────────────────────────────────────────────────
+     SORUN: "Geç'e basınca beyaz ekran geliyor, aynı süre bekliyor."
+
+     KÖK NEDEN: İlk ekranı çizen render() fonksiyonu yalnızca
+     firebase.js içinde çağrılıyordu ve firebase.js EN SON yüklenen
+     dosyaydı (type=module, ağ gecikmesi). "Geç"e erken basıldığında
+     splash kaldırılıyor ama #screen HENÜZ BOŞ oluyordu → BEYAZ EKRAN.
+
+     ÇÖZÜM:
+       1) Splash içinde erken çizim yapılır (render/SCREEN_MAP hazır
+          olmasa bile basit bir karşılama ekranı çizilir).
+       2) Uygulama gerçekten hazır olana kadar splash BEKLETİLMEZ;
+          bunun yerine #screen'e yükleme göstergesi konur.
+       3) Hazır olunca (fb-ready / render mevcut) otomatik geçilir.
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Uygulama çizildi mi? (#screen içi dolu mu) */
+  function ekranHazirMi() {
+    var el = document.getElementById("screen");
+    return !!(el && el.innerHTML && el.innerHTML.length > 200);
+  }
+
+  /* Uygulama hazır değilse #screen'e yükleme göstergesi koy.
+     Böylece "Geç"e basınca BEYAZ EKRAN değil, markalı bir ekran görünür. */
+  function yuklemeGoster() {
+    var el = document.getElementById("screen");
+    if (!el) return;
+    if (ekranHazirMi()) return;
+    el.innerHTML =
+      '<div style="min-height:70vh;display:flex;flex-direction:column;' +
+      'align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;">' +
+      '<img src="icon-192.png" alt="" style="width:64px;height:64px;border-radius:16px;" />' +
+      '<p style="font-size:15px;font-weight:800;color:#0E7C5B;margin:0;">Nur Diş &amp; Dental Klinik</p>' +
+      '<p style="font-size:12.5px;color:#607D8B;margin:0;">Gülümsemenin adresi</p>' +
+      '<div style="width:120px;height:3px;border-radius:99px;background:rgba(14,124,91,.15);overflow:hidden;">' +
+      '<div style="width:40%;height:100%;background:#0E7C5B;border-radius:99px;' +
+      'animation:splashYukle 1.1s ease-in-out infinite;"></div></div>' +
+      '</div>';
+  }
+
+  /* Uygulama hazır olunca gerçek ekranı çiz */
+  function gercekEkraniCiz() {
+    try {
+      if (typeof render === "function" && typeof SCREEN_MAP !== "undefined" && SCREEN_MAP) {
+        render();
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  /* Hazır olana kadar bekle (en fazla ~6 sn), sonra pes et */
+  function hazirOluncaGec(dnm) {
+    dnm = dnm || 0;
+    if (gercekEkraniCiz()) return;
+    if (dnm > 40) return;                 /* ~6 sn sonra bırak */
+    setTimeout(function () { hazirOluncaGec(dnm + 1); }, 150);
+  }
+
   function splashKaldir(splash, hizli) {
     if (!splash) return;
     splash.classList.add('hide');
@@ -75,7 +144,7 @@
     splashClosed = true;
 
     /* Bu oturumda bir daha gösterme (tekrar eden splash sorunu) */
-    try { sessionStorage.setItem(ATLA_ANAHTAR, "1"); } catch (e) {}
+    try { localStorage.setItem(ATLA_ANAHTAR, "1"); } catch (e) {}
 
     /* 1) MÜZİK ANINDA KESİLSİN */
     muzigiKes();
@@ -86,7 +155,14 @@
     /* 2) Slayt döngüsünü durdur */
     if (window.__splashInterval) { clearInterval(window.__splashInterval); window.__splashInterval = null; }
 
-    /* 3) Ara ekran YOK — doğrudan kapat */
+    /* 3) BEYAZ EKRAN KORUMASI: uygulama henüz çizilmediyse #screen'e
+          yükleme göstergesi koy, sonra hazır olunca gerçek ekranı çiz. */
+    if (!gercekEkraniCiz()) {
+      yuklemeGoster();
+      hazirOluncaGec(0);
+    }
+
+    /* 4) Ara ekran YOK — doğrudan kapat */
     splashKaldir(splash, true);
   }
 

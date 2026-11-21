@@ -656,5 +656,20 @@ body, .screen, main { -webkit-overflow-scrolling: touch; }
   <script src="js/kvkk.js?v=63"></script>
   <script src="js/yedek.js?v=63"></script>
   <script src="js/firebase.js?v=61"></script>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       BEYAZ EKRAN DÜZELTMESİ (v75)
+       ──────────────────────────────────────────────────────────────
+       SORUN: "Geç"e basınca beyaz ekran geliyor, aynı süre bekliyor.
+
+       KÖK NEDEN: Uygulamanın ilk ekranını çizen render() yalnızca
+       js/firebase.js içinde (EN SON dosya, type=module) çağrılıyordu.
+       "Geç"e ondan önce basılırsa #screen BOŞ kalıyordu → beyaz ekran.
+
+       ÇÖZÜM: Burada, tüm script'ler yüklendikten hemen sonra bir kez
+       çizim denenir. render() ve SCREEN_MAP hazırsa ekran anında dolar.
+       (Ayrıca splash.js de kendi içinde aynı kontrolü yapıyor.)
+       ══════════════════════════════════════════════════════════════ -->
+  <script src="js/erken-cizim.js?v=75"></script>
 </body>
 </html>
